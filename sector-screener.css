@@ -1,0 +1,178 @@
+/* CAN-SLIM leader screener draft, scoped to sector pages only. */
+.leader-screen{display:block;min-width:0;line-height:1.55}
+.leader-screen[hidden]{display:none!important}
+.leader-screen .ls-intro{padding:14px 15px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;margin:0 0 12px}
+.leader-screen .ls-intro h2{margin:0 0 7px;font-size:16px;color:#152b4b}
+.leader-screen .ls-intro p{font-size:12px;color:#475569;margin:0 0 7px;line-height:1.7}
+.leader-screen .ls-intro p:last-child{margin-bottom:0}
+.leader-screen .ls-method{font-size:11px!important;color:#64748b!important}
+.leader-screen .ls-market{border:1px solid #d9e4f2;background:#f4f7fb;padding:10px 12px;margin:0 0 12px;font-size:12px;color:#334155;border-radius:5px}
+.leader-screen .ls-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.leader-screen .ls-controls label,.leader-screen .ls-editor-grid label{display:block;font-size:11px;font-weight:700;color:#475569}
+.leader-screen .ls-controls input,.leader-screen .ls-controls select,.leader-screen .ls-editor-grid input,.leader-screen .ls-editor-grid select{display:block;width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:3px;background:#fff;color:#182437;padding:8px 9px;margin:5px 0 0;font:12px/1.35 Arial,"Noto Sans JP",sans-serif}
+.leader-screen .ls-controls input:focus,.leader-screen .ls-controls select:focus,.leader-screen .ls-editor-grid input:focus,.leader-screen .ls-editor-grid select:focus{outline:2px solid #97b7e7;outline-offset:0}
+.leader-screen .ls-guidance-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.leader-screen .ls-guidance-tile{padding:12px 14px;border:1px solid;border-radius:5px;font-size:13px;font-weight:600;line-height:1.65;overflow-wrap:anywhere}
+.leader-screen .ls-guidance-tile span{display:block;margin-top:5px;font-size:12px;font-weight:400;line-height:1.6}
+.leader-screen .ls-guidance-eps{background:#fff7e6;border-color:#f0d39b;color:#604514}
+.leader-screen .ls-guidance-roe{background:#eaf5ff;border-color:#a6c9e8;color:#174365}
+.leader-screen .ls-guidance-slowdown{background:#f5f0fb;border-color:#d1b9ea;color:#4c2869}
+.leader-screen .ls-guidance-industry-leader{background:#e9f5ee;border-color:#b7d8c4;color:#285a41}
+@media(max-width:700px){.leader-screen .ls-guidance-tiles{grid-template-columns:1fr}}
+.leader-screen .ls-stat{font-size:12px;color:#334155;margin:7px 0 9px;font-weight:600}
+.leader-screen .ls-table-wrap{overflow:auto;max-height:min(75vh,800px);overscroll-behavior:contain;border:1px solid #dce4ee;border-radius:6px;max-width:100%;background:#fff}
+.leader-screen table.ls-table{width:100%;min-width:1000px;max-width:none;border-collapse:separate;border-spacing:0;table-layout:auto;text-align:center}
+.leader-screen table.ls-table th,.leader-screen table.ls-table td{box-sizing:border-box;padding:9px 7px;vertical-align:middle;border-bottom:1px solid #e5eaf1;white-space:nowrap;font-size:11px;height:auto}
+.leader-screen table.ls-table thead th{position:sticky;top:0;z-index:2;background:#eaf0f6;box-shadow:0 1px 0 #cbd5e1;color:#334155;font-size:11px;font-weight:700;text-align:center;line-height:1.45}
+.leader-screen table.ls-table tbody tr:nth-child(even){background:#fafbfd}
+.leader-screen table.ls-table tbody tr:hover{background:#f1f5f9}
+.leader-screen table.ls-table th.ls-name-heading,.leader-screen table.ls-table td.ls-name{width:264px;min-width:135px}
+.leader-screen table.ls-table td.ls-name{text-align:left;overflow:hidden}
+.leader-screen .ls-name a{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#1e40af;text-decoration:none;font-weight:700}
+.leader-screen .ls-name a:hover{text-decoration:underline}
+.leader-screen .ls-name small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#64748b}
+.leader-screen button.ls-review-inline{font:inherit;font-size:11px;font-weight:700;color:#1e40af;background:transparent;border:0;border-bottom:1px dotted #94a3b8;padding:1px 3px;cursor:pointer}
+.leader-screen button.ls-review-inline:hover{background:#eff6ff;border-bottom-color:#1e40af}
+.leader-screen button.ls-review-inline:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.leader-screen .ls-sector-name{text-align:left;font-size:11px;max-width:185px;overflow:hidden;text-overflow:ellipsis}
+.leader-screen table.ls-table th.ls-industry-heading,.leader-screen table.ls-table td.ls-industry-name{min-width:90px}
+.leader-screen table.ls-table td.ls-industry-name{text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.leader-screen .ls-positive{color:#15803d;font-weight:700}
+.leader-screen .ls-negative{color:#dc2626;font-weight:700}
+.leader-screen .ls-muted{color:#64748b}
+.leader-screen .ls-good{color:#15803d;font-weight:700}
+.leader-screen .ls-pill{display:inline-block;border:1px solid #cbd5e1;color:#475569;background:#f8fafc;padding:3px 6px;border-radius:2px;white-space:nowrap;font-size:10px;font-weight:700}
+.leader-screen .ls-pill.ls-leader{background:#eef6ff;border-color:#bcd3f3;color:#174c91}
+.leader-screen .ls-pill.ls-pending{background:#fafafa;color:#94a3b8;border-color:#e2e8f0}
+.leader-screen button.ls-edit{border:1px solid #cbd5e1;border-radius:2px;color:#1e40af;background:#fff;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer}
+.leader-screen button.ls-edit:hover{background:#f1f5f9}
+.leader-screen .ls-editor{margin:12px 0;padding:14px;border:1px solid #cbd5e1;border-radius:5px;background:#f8fafc}
+.leader-screen .ls-editor[hidden]{display:none!important}
+.leader-screen .ls-editor h3{margin:0 0 5px;font-size:14px;color:#152b4b}
+.leader-screen .ls-editor p{margin:0 0 10px;font-size:11px}
+.leader-screen .ls-editor-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.leader-screen .ls-editor-actions{display:flex;align-items:center;gap:8px;margin-top:13px;font-size:11px;color:#475569}
+.leader-screen .ls-editor-actions button{padding:7px 13px;border:1px solid #cbd5e1;border-radius:2px;background:#fff;color:#334155;cursor:pointer}
+.leader-screen .ls-editor-actions #ls-save{background:#152b4b;color:#fff;border-color:#152b4b}
+.leader-screen .ls-foot{font-size:11px;color:#64748b;line-height:1.8;margin:12px 0 20px}
+@media(max-width:850px){.leader-screen .ls-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.leader-screen .ls-editor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.leader-screen .ls-controls,.leader-screen .ls-editor-grid{grid-template-columns:1fr}.leader-screen .ls-intro{padding:11px}.leader-screen .ls-market{padding:8px}.leader-screen table.ls-table th,.leader-screen table.ls-table td{padding:7px 6px}}
+
+/* Multi-select sector checkboxes: same layout on Japan and US screeners. */
+.leader-screen .ls-sector-fieldset{min-width:0;margin:0 0 13px;padding:12px 13px 14px;border:1px solid #dce4ee;border-radius:6px;background:#fff}
+.leader-screen .ls-sector-fieldset legend{padding:0 5px;font-weight:700;font-size:12px;color:#152b4b}
+.leader-screen .ls-sector-toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.leader-screen .ls-sector-toolbar button{padding:6px 11px;border:1px solid #cbd5e1;border-radius:3px;background:#fff;color:#334155;font-size:11px;font-weight:600;cursor:pointer}
+.leader-screen .ls-sector-toolbar button:hover{background:#eef2f7}
+.leader-screen .ls-sector-toolbar span{margin-left:4px;color:#64748b;font-size:11px}
+.leader-screen .ls-sector-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:7px 10px}
+.leader-screen .ls-sector-options label.ls-sector-option{display:flex;align-items:center;gap:8px;min-height:34px;padding:6px 9px;background:#fff;border:1px solid #e2e8f0;border-radius:4px;color:#334155;font-size:11px;font-weight:600;cursor:pointer}
+.leader-screen .ls-sector-options label.ls-sector-option:has(input:checked){background:#f0f5fd;border-color:#b9cbe6;color:#152b4b}
+.leader-screen .ls-sector-options label.ls-sector-option:has(input:focus-visible){outline:2px solid #2563eb;outline-offset:1px}
+.leader-screen .ls-sector-options input[type="checkbox"]{display:inline-block;width:15px;height:15px;min-width:15px;margin:0;padding:0;accent-color:#234e86;cursor:pointer;flex:none}
+.leader-screen .ls-sector-options label span{min-width:0;line-height:1.4}
+@media(max-width:560px){.leader-screen .ls-sector-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.leader-screen .ls-sector-fieldset{padding:9px}}
+
+/* Green leader markers match the daily sector-ranking indicator. */
+.leader-screen .ls-sector-leader-marker,.leader-screen .ls-sector-laggard-marker{
+ display:inline-block;flex:0 0 9px;width:9px;height:9px;min-width:9px;
+ border-radius:50%;vertical-align:middle;margin-right:6px;
+}
+.leader-screen .ls-sector-leader-marker{background:#16a34a}
+.leader-screen .ls-sector-laggard-marker{background:#dc2626}
+.leader-screen .ls-sector-options .ls-sector-leader-marker,
+.leader-screen .ls-sector-options .ls-sector-laggard-marker{margin-right:0}
+.leader-screen .ls-sector-legend{display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px;margin:10px 0 0;color:#64748b;font-size:11px;line-height:1.5}
+.leader-screen .ls-sector-legend>span{display:inline-flex;align-items:center;gap:4px}
+.leader-screen .ls-sector-legend .ls-sector-leader-marker,
+.leader-screen .ls-sector-legend .ls-sector-laggard-marker{margin-right:3px}
+
+/* Full JPX universe paging; avoid rendering thousands of DOM table rows at once. */
+.leader-screen .ls-pagination{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:12px;margin:10px 0 16px;font-size:11px;color:#475569}
+.leader-screen .ls-pagination button{border:1px solid #cbd5e1;background:#fff;color:#1e40af;cursor:pointer;border-radius:3px;padding:7px 12px;font-size:11px;font-weight:700}
+.leader-screen .ls-pagination button:disabled{opacity:.45;cursor:default;background:#f8fafc;color:#64748b}
+.leader-screen .ls-pagination span{min-width:100px;text-align:center;font-variant-numeric:tabular-nums}
+
+
+/* One-click, per-column filters for screened stocks. */
+.leader-screen .ls-column-toolbar{padding:9px 11px;margin:0 0 12px;border:1px solid #dce4ee;background:#fff;border-radius:4px;font-size:11px;color:#475569}
+.leader-screen .ls-column-toolbar-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.leader-screen .ls-column-toolbar-top b{color:#1d4ed8}
+.leader-screen #ls-reset-all{border:1px solid #cbd5e1;border-radius:3px;padding:5px 9px;background:#fff;color:#334155;font-size:11px;cursor:pointer}
+.leader-screen #ls-reset-all:hover:not(:disabled){background:#eef2ff}
+.leader-screen #ls-reset-all:disabled{opacity:.5;cursor:default}
+.leader-screen .ls-filter-chips{display:flex;flex-wrap:wrap;gap:5px}
+.leader-screen .ls-filter-chips:not(:empty){margin-top:8px}
+.leader-screen .ls-filter-chips button,.leader-screen .ls-filter-chips span{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:3px;padding:3px 7px;font-size:11px;max-width:100%;overflow-wrap:anywhere}
+.leader-screen .ls-filter-chips button{cursor:pointer}
+.leader-screen .ls-column-toggle{display:flex;align-items:center;justify-content:center;min-width:23px;width:23px;height:21px;margin:4px auto 0;padding:0;border:1px solid #b7c8db;border-radius:3px;background:#fff;color:#475569;cursor:pointer;font-size:12px;font-weight:700;line-height:1}
+.leader-screen .ls-column-toggle:hover,.leader-screen .ls-column-toggle:focus-visible{background:#e0eaf9;outline:2px solid transparent;border-color:#427cbd}
+.leader-screen .ls-column-toggle.ls-column-active{background:#1e40af;border-color:#1e40af;color:#fff}
+.leader-screen .ls-column-popup{position:fixed;z-index:3000;box-sizing:border-box;width:282px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;border:1px solid #94a3b8;border-radius:6px;background:white;padding:13px;box-shadow:0 10px 28px rgba(15,23,42,.18);color:#334155;font-size:12px;text-align:left}
+.leader-screen .ls-column-popup[hidden]{display:none!important}
+.leader-screen .ls-column-popup button{cursor:pointer}
+.leader-screen .ls-column-pophead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:13px}
+.leader-screen .ls-column-pophead button{background:transparent;border:none;color:#64748b;font-size:18px;padding:0 5px}
+.leader-screen .ls-column-popup label{display:block;font-size:11px;font-weight:700;margin:8px 0;color:#475569}
+.leader-screen .ls-column-popup input,.leader-screen .ls-column-popup select{box-sizing:border-box;display:block;width:100%;min-width:0;margin-top:5px;padding:7px;border:1px solid #cbd5e1;border-radius:3px;color:#172b4d;background:#fff;font-size:12px}
+.leader-screen .ls-column-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.leader-screen .ls-column-error{font-size:11px;color:#b91c1c;min-height:3px}
+.leader-screen .ls-column-sortactions,.leader-screen .ls-column-actions{display:flex;justify-content:space-between;gap:7px;margin-top:10px}
+.leader-screen .ls-column-sortactions button,.leader-screen .ls-column-actions button{flex:1;border:1px solid #cbd5e1;background:#fff;border-radius:3px;color:#334155;padding:7px 4px;font-size:11px}
+.leader-screen .ls-column-sortactions button:hover,.leader-screen .ls-column-actions button:hover{background:#eaf0f6}
+.leader-screen .ls-column-actions button.ls-column-apply{background:#1e40af;border-color:#1e40af;color:#fff}
+@media(max-width:560px){.leader-screen .ls-column-toolbar{padding:8px}.leader-screen .ls-column-toggle{margin:4px auto 0;min-width:22px;width:22px;height:22px}}
+
+
+/* Private authenticated EPS sync (public page, no public financial dataset). */
+.leader-screen .ls-private-sync{padding:11px 13px;margin:12px 0;background:#fff;border:1px solid #dce4ee;border-radius:5px;color:#334155;font-size:11px}
+.leader-screen .ls-private-sync-head{display:flex;flex-wrap:wrap;gap:9px;align-items:center;justify-content:space-between}
+.leader-screen .ls-private-sync-head strong{font-size:13px;color:#1e293b}
+.leader-screen .ls-private-sync p{margin:6px 0 10px;color:#475569;line-height:1.7}
+.leader-screen .ls-private-sync summary{cursor:pointer;font-weight:700;padding:6px 2px}
+.leader-screen .ls-private-sync details[open]{padding:6px 0 10px}
+.leader-screen .ls-sync-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.leader-screen .ls-sync-fields label{display:block;font-weight:600;color:#475569}
+.leader-screen .ls-sync-fields input{box-sizing:border-box;display:block;min-width:0;width:100%;margin-top:5px;padding:7px;border:1px solid #cbd5e1;border-radius:3px;font-size:12px}
+.leader-screen .ls-sync-remember{display:flex;gap:7px;align-items:flex-start;margin:10px 0;line-height:1.5}
+.leader-screen .ls-sync-remember input{margin-top:2px;accent-color:#1e40af}
+.leader-screen .ls-sync-buttons{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 0}
+.leader-screen .ls-sync-buttons button{padding:6px 10px;border:1px solid #cbd5e1;border-radius:3px;background:#fff;color:#334155;cursor:pointer;font-size:11px}
+.leader-screen .ls-sync-buttons button#ls-sync-connect{background:#1e40af;border-color:#1e40af;color:#fff}
+.leader-screen .ls-sync-buttons a{font-size:11px}
+.leader-screen #ls-sync-state{color:#475569;font-size:11px}
+.leader-screen #ls-sync-state.ls-sync-error{color:#b91c1c}
+@media(max-width:640px){.leader-screen .ls-sync-fields{grid-template-columns:1fr}}
+
+/* Searchable, multi-select industry suggestions in the US column filter. */
+.leader-screen .ls-industry-options{max-height:230px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #d8e0ea;border-radius:4px;padding:3px}
+.leader-screen .ls-column-popup .ls-industry-option{display:flex;align-items:center;gap:7px;margin:0;padding:6px 5px;font-weight:400;cursor:pointer;border-bottom:1px solid #f1f5f9;line-height:1.4}
+.leader-screen .ls-column-popup .ls-industry-option:hover{background:#edf4ff}
+.leader-screen .ls-column-popup .ls-industry-option.ls-industry-hidden{display:none}
+.leader-screen .ls-column-popup .ls-industry-option input[type="checkbox"]{display:inline-block;flex:none;width:15px;height:15px;margin:0;accent-color:#1e40af}
+.leader-screen .ls-industry-option span{flex:1;overflow-wrap:anywhere}
+.leader-screen .ls-industry-option small{flex:none;color:#64748b;font-size:10px}
+.leader-screen .ls-industry-count,.leader-screen .ls-industry-hint,.leader-screen .ls-industry-empty{font-size:11px;color:#64748b;margin:6px 0}
+
+/* Compact MA columns. Stack the filter control under the label to avoid widening the table. */
+.leader-screen table.ls-table th.ls-ma-col,.leader-screen table.ls-table td.ls-ma-col{width:50px;min-width:50px;padding:7px 2px}
+.leader-screen table.ls-table th.ls-ma-col .ls-column-toggle{display:block;margin:3px auto 0;min-width:20px;width:20px;height:18px;padding:0;font-size:10px}
+@media(max-width:560px){.leader-screen table.ls-table th.ls-ma-col,.leader-screen table.ls-table td.ls-ma-col{padding:6px 2px}}
+
+/* Daily close relative to the 20-session simple moving average. */
+.leader-screen .ls-ma-status{display:inline-block;min-width:1.2em;font-size:16px;font-weight:700;line-height:1.1}
+
+/* Mouse and keyboard column resizing; header remains sticky. */
+.leader-screen table.ls-table thead th.ls-resizable-heading{padding-right:9px;position:sticky;overflow:visible}
+.leader-screen .ls-column-resize-handle{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;touch-action:none;z-index:4;border-left:1px solid transparent;background:transparent}
+.leader-screen .ls-column-resize-handle:hover,.leader-screen .ls-column-resize-handle:focus-visible{border-left-color:#2563eb;background:rgba(37,99,235,.12);outline:0}
+.leader-screen table.ls-table tbody td{overflow:hidden;text-overflow:ellipsis}
+
+/* Drag-reorder the header itself without stealing the separate filter or resize controls. */
+.leader-screen table.ls-table thead th.ls-column-reorderable{cursor:grab;user-select:none;-webkit-user-select:none}
+.leader-screen table.ls-table thead th.ls-column-dragging{cursor:grabbing;opacity:.68;background:#dceafb}
+.leader-screen table.ls-table thead th.ls-drop-before{box-shadow:inset 4px 0 #2563eb,0 1px 0 #cbd5e1}
+.leader-screen table.ls-table thead th.ls-drop-after{box-shadow:inset -4px 0 #2563eb,0 1px 0 #cbd5e1}
+.leader-screen #ls-reset-column-order{border:1px solid #cbd5e1;border-radius:3px;padding:5px 9px;background:#fff;color:#334155;font-size:11px;cursor:pointer}
+.leader-screen #ls-reset-column-order:hover:not(:disabled){background:#eef2ff}
+.leader-screen #ls-reset-column-order:disabled{opacity:.5;cursor:default}

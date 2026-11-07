@@ -1,0 +1,64 @@
+/* Shared three-tier navigation for Stock Dashboard */
+#stock-dashboard-header{background:transparent;color:#152b4b;padding:15px 18px;min-height:54px;display:flex;align-items:center}
+#stock-dashboard-header a{color:#152b4b!important;text-decoration:none;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:.1px}
+#stock-dashboard-header a:hover{text-decoration:underline}
+.page-tabs{display:flex!important;gap:0!important;flex-wrap:nowrap!important;margin:0!important;padding:0!important;overflow-x:auto!important;scrollbar-width:thin;border:1px solid #152b4b!important;border-bottom:0!important;border-radius:0!important;background:#152b4b!important}
+.page-tabs a{flex:0 0 auto!important;display:inline-flex!important;align-items:center;justify-content:center;text-align:center;white-space:nowrap;margin:0!important;padding:11px 15px!important;border:0!important;border-right:1px solid #40516f!important;border-radius:0!important;background:#152b4b!important;color:#eaf1fb!important;font-size:12px!important;line-height:1.4;font-weight:700!important;text-decoration:none!important;box-shadow:none!important}
+.page-tabs a:hover:not([aria-current="page"]){background:#264771!important;color:#fff!important}
+.page-tabs a[aria-current="page"]{background:#345b92!important;color:#fff!important;box-shadow:inset 0 -3px 0 #abc7ec!important}
+.stock-dashboard-subtabs{display:flex!important;gap:0!important;column-gap:0!important;flex-wrap:nowrap!important;margin:0 0 14px!important;padding:0!important;overflow-x:auto;scrollbar-width:thin;background:#eef3f9;border:1px solid #cbd5e1;border-top:0;border-radius:0!important}
+.stock-dashboard-subtabs button{flex:0 0 auto;white-space:nowrap;background:#f8fafc;border:0;border-right:1px solid #e2e8f0;border-radius:0;color:#475569;font:600 12px/1.4 Arial,"Noto Sans JP",sans-serif;padding:9px 17px;cursor:pointer;margin:0!important;min-width:0;border-radius:0!important}
+.stock-dashboard-subtabs button:hover:not([aria-selected="true"]){background:#e2e8f0;color:#1d4ed8}
+.stock-dashboard-subtabs button[aria-selected="true"]{background:#dbeafe;color:#1d4ed8;font-weight:700}
+.stock-dashboard-subtabs button:focus-visible,.page-tabs a:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.stock-dashboard-pane[hidden]{display:none!important}
+@media(max-width:650px){#stock-dashboard-header{padding:12px}#stock-dashboard-header a{font-size:21px}.page-tabs a{padding:10px 12px!important;font-size:11px!important}.stock-dashboard-subtabs button{padding:9px 13px;font-size:11px}}
+
+/* The market overview three secondary tabs and three date-range tabs share continuous square edges. */
+.stock-dashboard-subtabs button+button{border-left:0!important}
+.market-range-tabs{display:inline-flex!important;flex-wrap:nowrap!important;gap:0!important;align-items:stretch;margin:8px 0!important}
+.market-range-tabs button{border-radius:0!important;margin:0!important;border:1px solid #cbd5e1!important;padding:7px 12px!important;font-weight:700;background:#fff;color:#334155}
+.market-range-tabs button+button{border-left:0!important}
+.market-range-tabs button.active{background:#1e3558!important;border-color:#1e3558!important;color:#fff!important}
+.market-range-tabs button.active+button{border-left-color:#1e3558!important}
+
+/* A modest gap below the last navigation row, without separating primary and secondary tabs. */
+main > nav.page-tabs {margin-bottom:20px!important}
+main > nav.page-tabs:has(+ .stock-dashboard-subtabs) {margin-bottom:0!important}
+main > .stock-dashboard-subtabs {margin-bottom:20px!important}
+
+/* White site canvas and white analysis surfaces across every page. */
+body{background:#ffffff!important}
+main .guide,main .lead,main .card,main .panel,main .history,main .rank-panel,main .stat,main .metric,main .table-wrap{background:#ffffff!important}
+
+/* One shared canvas width, page inset, and wordmark style for all seven pages. */
+body > main{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:15px auto!important;
+  padding:0 30px 45px!important;
+}
+#stock-dashboard-header{
+  box-sizing:border-box!important;
+  padding:15px 0!important;
+}
+#stock-dashboard-header a{
+  font-family:Arial,"Noto Sans JP",sans-serif!important;
+  font-size:23px!important;
+  font-weight:700!important;
+  line-height:1.3!important;
+}
+@media(max-width:650px){
+  body > main{
+    margin:10px auto!important;
+    padding:0 30px 32px!important;
+  }
+  #stock-dashboard-header{padding:12px 0!important}
+  #stock-dashboard-header a{font-size:21px!important}
+}
+
+/* Keep wordmark aligned between pages, including pages with and without vertical scrolling. */
+html{scrollbar-gutter:auto}
+body > main > #stock-dashboard-header{padding-left:0!important;padding-right:0!important}
+@media(max-width:650px){body > main > #stock-dashboard-header{padding-left:0!important;padding-right:0!important}}

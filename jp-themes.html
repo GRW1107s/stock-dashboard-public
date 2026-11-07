@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日本株テーマ投資｜テンバガー研究</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f8fb;color:#182437;font:12px/1.65 Arial,"Noto Sans JP",sans-serif}
+main{max-width:1550px;margin:15px auto;padding:0 12px 45px}h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:0 0 9px}h3{font-size:13px;margin:0 0 5px}
+a{color:#1d4ed8}.muted,.small{font-size:11px;color:#64748b}.sub{color:#64748b;margin:0 0 12px}
+.page-tabs{display:flex;gap:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid #dbe3ed;margin:0 0 13px;-webkit-overflow-scrolling:touch}
+.page-tabs a{display:flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:38px;margin-left:-1px;padding:9px 14px;text-decoration:none;white-space:nowrap;border:1px solid #dbe3ed;border-radius:0;background:#fff;color:#475569;font-size:12px;font-weight:700}
+.page-tabs a:first-child{margin-left:0}.page-tabs a[aria-current="page"]{position:relative;background:#1e40af;border-color:#1e40af;color:#fff;z-index:1}
+.lead{background:#fff;border:1px solid #e2e8f0;border-left:3px solid #64748b;padding:10px 12px;margin:10px 0 13px;line-height:1.85}
+.tabs{display:flex;flex-wrap:nowrap;gap:0;overflow-x:auto;border-bottom:1px solid #cbd5e1;margin-bottom:13px}
+button{cursor:pointer;font:12px Arial,"Noto Sans JP",sans-serif;background:#fff;color:#334155;border:1px solid #cbd5e1;border-radius:4px;padding:7px 11px}
+button:hover{background:#f1f5f9}button.primary{background:#1e40af;color:white;border-color:#1e40af}button.danger{color:#b91c1c;border-color:#fecaca}
+.tabs button{flex:0 0 auto;border-radius:0;margin-right:-1px;border-bottom:0;min-height:35px;padding:9px 15px;font-weight:700;white-space:nowrap}
+.tabs button.active{background:#1e293b;color:#fff;position:relative;z-index:1}
+.pane{display:none}.pane.active{display:block}.card{background:white;border:1px solid #e1e7ef;border-radius:6px;padding:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:9px 0}
+.fields .wide{grid-column:span 2}.fields .full{grid-column:1/-1}
+label{display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:3px}
+input,select,textarea{width:100%;min-width:0;padding:7px 8px;border:1px solid #cbd5e1;border-radius:4px;background:white;color:#182437;font:12px Arial,"Noto Sans JP",sans-serif}
+textarea{min-height:64px;resize:vertical;line-height:1.6}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:11px 0 3px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:8px 0 12px}
+.stat{background:white;border:1px solid #e1e7ef;border-radius:5px;text-align:center;padding:9px}
+.stat b{display:block;font-size:19px;font-variant-numeric:tabular-nums}.stat span{color:#64748b;font-size:11px}
+.scroller{overflow:auto;border:1px solid #e2e8f0;border-radius:5px}table{width:100%;min-width:790px;border-collapse:collapse;font-size:11px}
+th,td{padding:7px 8px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}
+th{background:#eaf0f6;color:#334155;position:sticky;top:0;z-index:1}tbody tr:nth-child(even){background:#fafbfd}
+td button{font-size:10px;padding:4px 7px}.pos{color:#15803d;font-weight:700}
+.mini{border:1px solid #e2e8f0;background:#fafbfd;border-radius:5px;padding:10px}
+.mini p{color:#475569;margin:4px 0}.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:8px 0}.toolbar>div{min-width:135px}
+.factor{display:grid;grid-template-columns:minmax(0,1fr) 135px;gap:11px;align-items:center;padding:9px 0;border-bottom:1px solid #e2e8f0}
+.factor strong{display:block}.factor small{display:block;color:#64748b}
+.result{background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:11px;margin:11px 0;line-height:1.85}
+.question{padding:9px 0;border-bottom:1px solid #e2e8f0}.question strong{display:block}
+.memo{padding:10px 0;border-bottom:1px solid #e2e8f0}.memo p{white-space:pre-wrap;overflow-wrap:anywhere}
+ol{padding-left:18px;line-height:1.9}li{margin-bottom:5px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){main{padding:0 7px}.grid3{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.fields .wide{grid-column:span 1}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.factor{grid-template-columns:minmax(0,1fr) 100px}.card{padding:10px}}
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261103o" defer></script><script defer src="./jp-tenbaggers.js?v=1"></script></head><body><main>
+<nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html" aria-current="page">日本株テーマ投資</a></nav>
+<h1>日本株テーマ投資｜テンバガー研究</h1>
+<p class="sub">大化け銘柄の事前条件と、買う・持つ・売るルールを研究するためのページ</p>
+<div class="lead"><b>研究の原則：</b>「過去に10倍になった銘柄の特徴」と「当時それを見つけ、買い、保有できたか」は別々に検証します。株式分割を調整した同一基準の価格を使い、業績や時価総額は<b>起点時点に公表済み</b>の情報で判定します。売買ルールの数値は検証前の仮設定です。</div>
+<div class="tabs" role="tablist"><button class="active" data-tab="history" role="tab" aria-selected="true">過去10年の大化け一覧</button><button data-tab="cases" role="tab" aria-selected="false">大化け銘柄</button><button data-tab="factors" role="tab" aria-selected="false">上昇条件</button><button data-tab="rules" role="tab" aria-selected="false">売買ルール</button><button data-tab="memo" role="tab" aria-selected="false">研究メモ・出典</button></div>
+<section class="pane active" id="pane-history" role="tabpanel">
+<div class="card">
+<h2>過去10年の日本株・大化け銘柄ランキング</h2>
+<p class="small">東証上場の国内普通株式について、過去10年間（または3・5年間）の<b>分割調整後の日次終値</b>から「先に付けた安値→その後の高値」の最大倍率を計算します。最高値で売買できたという意味ではありません。IPOなど上場10年未満の銘柄は取得できた上場後の期間のみを集計します。</p>
+<div class="stat-grid">
+<div class="stat"><b id="tbDataCount">—</b><span>調査済み / 対象銘柄数</span></div>
+<div class="stat"><b id="tbTenCount">—</b><span>10倍以上（選択期間）</span></div>
+<div class="stat"><b id="tbFiveCount">—</b><span>5倍以上（選択期間）</span></div>
+<div class="stat"><b id="tbMatched">—</b><span>条件に一致する銘柄数</span></div>
+</div>
+<div class="toolbar">
+<div><label for="tbYears">計測期間</label><select id="tbYears"><option value="10">直近10年</option><option value="5">直近5年</option><option value="3">直近3年</option></select></div>
+<div><label for="tbMin">最低上昇倍率</label><select id="tbMin"><option value="2">2倍以上</option><option value="3">3倍以上</option><option value="5" selected>5倍以上</option><option value="10">10倍以上</option><option value="20">20倍以上</option><option value="50">50倍以上</option></select></div>
+<div><label for="tbIndustry">33業種（東証分類）</label><select id="tbIndustry"><option value="">すべての業種</option></select></div>
+<div><label for="tbSearch">銘柄・証券コード検索</label><input id="tbSearch" type="search" placeholder="銘柄名・証券コード"></div>
+<div><label for="tbSort">並び順</label><select id="tbSort"><option value="multiple">最大上昇倍率が高い順</option><option value="date">高値が新しい順</option><option value="speed">上昇速度が速い順</option><option value="current">期間初からの現時点倍率順</option></select></div>
+</div>
+<p id="tbStatus" class="small" aria-live="polite">日本株の過去の株価履歴を読み込んでいます。</p>
+<div class="scroller"><table style="min-width:1190px"><thead><tr><th>順位</th><th>銘柄</th><th>業種</th><th>最大上昇倍率</th><th>安値日</th><th>安値（調整後）</th><th>高値日</th><th>高値（調整後）</th><th>所要年数</th><th>期間初→直近 / 高値から直近</th><th>操作</th></tr></thead><tbody id="tbRows"><tr><td colspan="11">読み込み中...</td></tr></tbody></table></div>
+<p id="tbShown" class="small"></p><div class="actions"><button id="tbMore" type="button" hidden>さらに100件表示</button><button id="tbCsv" type="button" disabled>表示条件のCSV出力</button></div>
+<p class="small" id="tbUpdated"></p>
+</div>
+<div class="card"><h3>集計範囲とデータの注意点</h3>
+<p>現在上場する銘柄から<b>順次</b>株価を取得する仕組みです。調査済み銘柄数は画面上に示します。未調査銘柄、上場廃止・合併済み銘柄は網羅できないため、<b>日本株全体の確定ランキングや達成率ではありません</b>。日々の更新で調査対象を増やします。株式分割調整後の「終値」を用い、配当は含めません。非公式価格データには欠落・誤調整の可能性があります。</p>
+<p class="small">データ：<a href="https://www.jpx.co.jp/markets/statistics-equities/misc/01.html" target="_blank" rel="noopener noreferrer">JPX 東証上場銘柄一覧</a>／<a href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer">Yahoo Finance 日次株価</a>。参考：<a href="https://kabu-challenge.com/10bugger/achieve_term_10years/last_10years/list" target="_blank" rel="noopener noreferrer">テンバガーチェッカーの直近10年達成一覧（独立した算出条件）</a>。上昇倍率の起点・期間・出来高条件が異なるため、数字や件数は一致しません。</p>
+</div>
+</section>
+<section class="pane" id="pane-cases" role="tabpanel">
+<div class="grid3">
+<div class="mini"><strong>構造変化・テーマ拡大</strong><p>AI、インフラ更新、政策、技術転換など。テーマの需要が利益につながるか。</p></div>
+<div class="mini"><strong>業績・利益率の変化</strong><p>増収、利益率改善、黒字転換、上方修正。事前に観測できた変化を記録。</p></div>
+<div class="mini"><strong>需給・値動きの変化</strong><p>時価総額、出来高急増、高値更新、相対強度、ベース形成を検証。</p></div>
+</div>
+<div class="stat-grid"><div class="stat"><b id="countAll">0</b><span>登録事例</span></div><div class="stat"><b id="count10">0</b><span>10倍以上</span></div><div class="stat"><b id="medianX">—</b><span>倍率の中央値</span></div><div class="stat"><b id="medianY">—</b><span>計測期間の中央値</span></div></div>
+<div class="card"><h2>大化け銘柄の事例を記録</h2>
+<p class="small">研究台帳は手入力です。実際の株価の自動取得や、網羅的な10倍株の抽出はまだありません。比較日を最高値とする場合は「理論上の最大倍率」であり、実際の投資成績とは異なります。</p>
+<form id="caseForm"><div class="fields">
+<div><label for="code">証券コード</label><input id="code" required maxlength="6" placeholder="例：5803"></div>
+<div><label for="name">会社名</label><input id="name" required placeholder="銘柄名"></div>
+<div><label for="theme">テーマ</label><input id="theme" required placeholder="例：AIインフラ"></div>
+<div><label for="type">上昇の型</label><select id="type"><option>構造変化・テーマ</option><option>高成長</option><option>業績転換</option><option>市況循環</option><option>思惑・需給</option><option>その他</option></select></div>
+<div><label for="start">起点日</label><input id="start" type="date" required></div>
+<div><label for="end">比較日</label><input id="end" type="date" required></div>
+<div><label for="p0">起点の調整後株価（円）</label><input id="p0" type="number" min=".01" step="any" required></div>
+<div><label for="p1">比較日の調整後株価（円）</label><input id="p1" type="number" min=".01" step="any" required></div>
+<div><label for="cap">起点時価総額（億円）</label><input id="cap" type="number" min="0" step="any" placeholder="任意"></div>
+<div><label for="sales">起点時点の増収率（％）</label><input id="sales" type="number" step="any" placeholder="任意"></div>
+<div><label for="margin">起点時点の営業利益率（％）</label><input id="margin" type="number" step="any" placeholder="任意"></div>
+<div><label for="source">情報の出典URL</label><input id="source" type="url" placeholder="https://..."></div>
+<div class="full"><label for="caseMemo">事前の材料・決算・ベース形成・途中の下落など</label><textarea id="caseMemo"></textarea></div>
+</div><div class="actions"><button class="primary" type="submit" id="saveCase">事例を登録</button><button id="clearCase" type="button">入力をクリア</button><span id="caseInfo" class="small" aria-live="polite"></span></div></form></div>
+<div class="card"><h2>登録事例の比較</h2><div class="toolbar">
+<div><label for="minX">倍率</label><select id="minX"><option value="0">すべて</option><option value="5">5倍以上</option><option value="10">10倍以上</option><option value="20">20倍以上</option></select></div>
+<div><label for="typeFilter">上昇の型</label><select id="typeFilter"><option value="">すべて</option><option>構造変化・テーマ</option><option>高成長</option><option>業績転換</option><option>市況循環</option><option>思惑・需給</option><option>その他</option></select></div>
+<div><label for="caseQuery">銘柄・テーマ検索</label><input id="caseQuery" type="search" placeholder="キーワード"></div>
+<div><label for="caseSort">表示順</label><select id="caseSort"><option value="x">倍率が高い順</option><option value="date">比較日が新しい順</option><option value="speed">年率換算が高い順</option></select></div></div>
+<p id="caseCount" class="small">登録データがありません。</p>
+<div class="scroller"><table><thead><tr><th>銘柄</th><th>テーマ</th><th>上昇の型</th><th>起点</th><th>比較日</th><th>調整後株価</th><th>倍率</th><th>年数</th><th>起点時価総額</th><th>操作</th></tr></thead><tbody id="caseRows"></tbody></table></div>
+<div class="actions"><button type="button" id="csv">CSV出力</button><button type="button" class="backup">全データをJSON保存</button><button type="button" class="restore">JSONから復元</button><input type="file" id="jsonFile" accept=".json,application/json" hidden></div><p class="small">記録はこのブラウザに保存されます。スマホ・PCでは同期されません。定期的にJSONを保存してください。</p>
+</div></section>
+<section class="pane" id="pane-factors" role="tabpanel"><div class="grid">
+<div class="card"><h2>銘柄の条件を評価する</h2><p class="small">各条件の「確認」「非該当」「未確認」は検証用の分類です。確認件数は上昇確率ではありません。</p>
+<div class="fields" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><label for="fCode">証券コード</label><input id="fCode" maxlength="6"></div><div><label for="fName">会社名・仮説名</label><input id="fName"></div></div>
+<div id="factorRows"></div><div class="result" id="factorResult" aria-live="polite"></div>
+<div class="actions"><button class="primary" id="factorSave">評価を保存</button><button id="factorClear">すべて未確認に戻す</button><span class="small" id="factorInfo"></span></div></div>
+<div class="card"><h2>調べるべき論点</h2>
+<div class="question"><strong>時価総額と上昇余地</strong><span class="small">小型株ほど10倍到達率が高いのか。株数・流動性・希薄化も考慮する。</span></div>
+<div class="question"><strong>増収・利益率改善と上昇倍率</strong><span class="small">判断日に公表済みの売上高・営業利益・利益率を用いて比較する。</span></div>
+<div class="question"><strong>テーマ初動と株価初動は一致するか</strong><span class="small">テーマ発生日、初の上方修正、もみ合い上放れ、買い集めの順番を追う。</span></div>
+<div class="question"><strong>保有途中の最大下落</strong><span class="small">10倍までに何％の下落があったか。逆指値で早期に売らされないかを検証。</span></div>
+<div class="question"><strong>失敗した類似銘柄との比較</strong><span class="small">10倍に到達しなかった類似銘柄も母集団に入れて、後知恵を減らす。</span></div>
+<h3 style="margin-top:16px">保存済み評価</h3><div id="factorSaved" class="small"></div></div></div></section>
+<section class="pane" id="pane-rules" role="tabpanel"><div class="grid">
+<div class="card"><h2>買う・保有する・売るルールの設計</h2>
+<div class="fields">
+<div class="wide"><label for="strategy">検討する投資戦略</label><select id="strategy"><option value="swing">テーマ初動・スイング型</option><option value="hold">テーマ長期成長・保有型</option></select></div>
+<div class="wide"><label for="entryRule">買いの条件</label><input id="entryRule"></div>
+<div><label for="vol">出来高倍率（倍）</label><input id="vol" type="number" step=".1" min=".1"></div>
+<div><label for="stop">初期損切り幅（％）</label><input id="stop" type="number" step=".5" min=".1" max="99"></div>
+<div><label for="trail">高値からの追随逆指値幅（％）</label><input id="trail" type="number" step=".5" min=".1" max="99"></div>
+<div><label for="allocation">1銘柄の最大投資比率（％）</label><input id="allocation" type="number" step=".5" min=".1" max="100"></div>
+<div><label for="risk">1回の許容損失（資産の％）</label><input id="risk" type="number" step=".1" min=".01" max="20"></div>
+<div><label for="review">点検頻度</label><select id="review"><option>毎日</option><option>週1回</option><option>四半期決算ごと</option></select></div>
+<div class="full"><label for="exitRule">売却・撤退条件</label><textarea id="exitRule"></textarea></div>
+</div>
+<div class="actions"><button class="primary" id="ruleSave">この戦略を保存</button><button id="ruleReset">初期値へ戻す</button><span class="small" id="ruleInfo"></span></div><div class="result" id="ruleText"></div></div>
+<div class="card"><h2>損失許容額から購入株数を計算</h2><p class="small">逆指値価格で約定した場合の概算。急落時のスリッページ、取引コスト、税金を含みません。</p>
+<div class="fields" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><label for="capital">運用資金（円）</label><input id="capital" type="number" value="5000000" min="1"></div><div><label for="price">想定買値（円）</label><input id="price" type="number" value="1200" min=".01" step="any"></div><div><label for="unit">売買単位（株）</label><input id="unit" type="number" value="100" min="1" step="1"></div><div><label for="usedStop">使用する損切り幅</label><input id="usedStop" readonly></div></div>
+<div class="stat-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><b id="qty">—</b><span>購入株数</span></div><div class="stat"><b id="cost">—</b><span>購入金額</span></div><div class="stat"><b id="loss">—</b><span>想定損切り損失</span></div><div class="stat"><b id="budget">—</b><span>許容損失上限</span></div></div><p id="calcNote" class="small"></p>
+<h3>戦略を混同しない</h3><p>短期でテーマ初動を捉える戦略と、利益成長を数年保有する戦略は別です。利確・損切り・買い増し・決算をまたぐ基準は、それぞれ独立して検証します。</p></div></div></section>
+<section class="pane" id="pane-memo" role="tabpanel"><div class="grid">
+<div class="card"><h2>研究メモ</h2><label for="memoTitle">論点・仮説</label><input id="memoTitle" placeholder="例：上方修正後に高値更新した銘柄の保有成績"><label for="memoBody" style="margin-top:9px">検証条件・結果・未解決の疑問</label><textarea id="memoBody" style="min-height:105px"></textarea>
+<div class="actions"><button id="memoSave" class="primary">メモを追加</button><span id="memoInfo" class="small"></span></div><div id="memoRows"></div></div>
+<div class="card"><h2>検証で守る条件</h2><ol>
+<li>起点と終点、3・5・10年などの保有期間を先に固定する。10倍到達時の最高値だけで判断しない。</li>
+<li>株価は分割等を調整。配当の扱いも統一。母集団には10倍未達銘柄・上場廃止銘柄を含める。</li>
+<li>公表前の決算・将来の業績を買い条件に混ぜない。実際の注文が可能な約定時点を決める。</li>
+<li>最大ドローダウン、途中の売却、再エントリー、出来高不足、売買コストを区別して検証。</li>
+<li>条件の探索期間と結果の検証期間を分け、TOPIX等との比較を実施する。</li></ol>
+<h3>参考資料</h3>
+<p><a target="_blank" rel="noopener noreferrer" href="https://www.okasan.co.jp/marketinfo/data/pdf/seminar/20230914.pdf">岡三証券｜未来のテンバガーを探す（2023）</a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://go.sbisec.co.jp/media/report/dom_em_weekly/dom_em_weekly_251008.html">SBI証券｜テンバガー達成銘柄の特徴（2025）</a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://media.rakuten-sec.net/articles/print/26806">楽天証券｜10倍株のパターン（2020）</a></p>
+<div class="actions"><button class="backup">全データをJSON保存</button><button class="restore">JSONから復元</button></div>
+<p class="small">記録はブラウザのローカルストレージに保存。端末間同期はありません。株価データの自動取得・バックテスト・発注機能は未実装です。</p></div></div></section>
+<footer class="small">日本株テーマ投資 研究版 v1｜研究用。銘柄の推奨や収益の保証ではありません。</footer></main>
+<script>
+(function(){
+'use strict';
+var KEY='jp-theme-research-v1',F=[
+ ['theme','複数年にわたる構造的な需要','一時的な話題ではなく受注・投資・消費に結びつくか'],
+ ['sales','判断時点で増収が確認できる','公表済み決算または会社予想の売上成長'],
+ ['earn','営業利益成長・利益率改善','上方修正、利益率の継続改善、黒字転換'],
+ ['cap','時価総額に成長余地がある','流通株数・希薄化・バリュエーションも確認'],
+ ['rs','TOPIXに対して相対的に強い','同一期間の相対リターンで確認'],
+ ['vol','上昇局面で出来高・売買代金が増加','株価上昇と参加者増加を同時に観測'],
+ ['base','ベース形成後の高値更新','明確な抵抗線突破と出来高増を記録'],
+ ['event','将来に検証できる材料がある','決算、受注、設備投資、政策の時点と確度']
+];
+var presets={
+ swing:{entry:'20日高値更新＋テーマへの資金流入',vol:1.5,stop:8,trail:15,allocation:10,risk:.5,review:'週1回',exit:'初期損切り到達、出来高を伴う下方ブレイク、テーマ失速で撤退。利確は別途検証。'},
+ hold:{entry:'週足の高値更新＋利益成長・上方修正',vol:1.5,stop:12,trail:25,allocation:10,risk:.5,review:'四半期決算ごと',exit:'需要・利益成長の仮説崩れ、長期トレンド割れ、追随逆指値到達で撤退。固定倍率だけで売らない。'}
+};
+function $(id){return document.getElementById(id);}function v(id){return $(id).value.trim();}
+function n(id){var s=v(id);return s===''?NaN:Number(s);}function fmt(x,d){return Number.isFinite(x)?x.toLocaleString('ja-JP',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}):'—';}
+function load(){try{var x=JSON.parse(localStorage.getItem(KEY)||'null');return x&&typeof x==='object'?x:{};}catch(e){return {};}}
+var db=load();db.cases=Array.isArray(db.cases)?db.cases:[];db.factors=db.factors||{};db.rules=db.rules||{};db.notes=Array.isArray(db.notes)?db.notes:[];
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){alert('ブラウザに保存できません。JSONでバックアップしてください。');}}
+function yr(a,b){return (new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/(365.25*86400000);}
+function ratio(c){return Number(c.p1)/Number(c.p0);}
+function med(a){if(!a.length)return NaN;var s=a.slice().sort(function(x,y){return x-y;}),i=Math.floor(s.length/2);return s.length%2?s[i]:(s[i-1]+s[i])/2;}
+function button(text,fn,danger){var b=document.createElement('button');b.type='button';b.textContent=text;if(danger)b.className='danger';b.addEventListener('click',fn);return b;}
+function cell(tr,text){var t=document.createElement('td');t.textContent=text;tr.appendChild(t);return t;}
+function dl(name,content,mime){var url=URL.createObjectURL(new Blob([content],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);}
+function tab(id){document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('active',p.id==='pane-'+id);});document.querySelectorAll('[data-tab]').forEach(function(b){var x=b.dataset.tab===id;b.classList.toggle('active',x);b.setAttribute('aria-selected',x?'true':'false');});}
+document.querySelectorAll('[data-tab]').forEach(function(b){b.addEventListener('click',function(){tab(b.dataset.tab);});});
+var caseIds=['code','name','theme','type','start','end','p0','p1','cap','sales','margin','source','caseMemo'];var editId=null;
+function caseClear(){$('caseForm').reset();editId=null;$('saveCase').textContent='事例を登録';$('caseInfo').textContent='';}
+$('clearCase').addEventListener('click',caseClear);
+$('caseForm').addEventListener('submit',function(e){e.preventDefault();var c={};caseIds.forEach(function(k){c[k]=v(k);});if(!(Number(c.p0)>0&&Number(c.p1)>0&&yr(c.start,c.end)>0)){$('caseInfo').textContent='価格・日付を確認してください。';return;}c.id=editId||('case-'+Date.now()+'-'+Math.random());if(editId){db.cases=db.cases.map(function(x){return x.id===editId?c:x;});}else{db.cases.push(c);}save();caseClear();casesRender();});
+function casesRender(){
+ var list=db.cases.filter(function(c){return Number(c.p0)>0&&Number(c.p1)>0&&yr(c.start,c.end)>0;});
+ $('countAll').textContent=fmt(db.cases.length);$('count10').textContent=fmt(list.filter(function(c){return ratio(c)>=10;}).length);
+ $('medianX').textContent=list.length?fmt(med(list.map(ratio)),2)+'倍':'—';$('medianY').textContent=list.length?fmt(med(list.map(function(c){return yr(c.start,c.end);})),1)+'年':'—';
+ var threshold=n('minX'),type=v('typeFilter'),query=v('caseQuery').toLowerCase(),sort=v('caseSort');
+ var arr=list.filter(function(c){return ratio(c)>=threshold&&(!type||c.type===type)&&[c.code,c.name,c.theme,c.caseMemo].join(' ').toLowerCase().includes(query);});
+ arr.sort(function(a,b){return sort==='date'?b.end.localeCompare(a.end):sort==='speed'?(Math.log(ratio(b))/yr(b.start,b.end)-Math.log(ratio(a))/yr(a.start,a.end)):(ratio(b)-ratio(a));});
+ var body=$('caseRows');body.replaceChildren();
+ if(!arr.length){var t=document.createElement('tr');cell(t,'該当する事例がありません').colSpan=10;body.appendChild(t);}
+ arr.forEach(function(c){var t=document.createElement('tr');
+ cell(t,c.code+' / '+c.name);cell(t,c.theme);cell(t,c.type);cell(t,c.start);cell(t,c.end);
+ cell(t,fmt(Number(c.p0),2)+' → '+fmt(Number(c.p1),2));var x=cell(t,fmt(ratio(c),2)+'倍');if(ratio(c)>=10)x.className='pos';
+ cell(t,fmt(yr(c.start,c.end),2)+'年');cell(t,c.cap?fmt(Number(c.cap),1)+'億円':'—');
+ var ops=cell(t,'');ops.appendChild(button('編集',function(){editId=c.id;caseIds.forEach(function(id){$(id).value=c[id]||'';});$('saveCase').textContent='変更を保存';tab('cases');$('caseForm').scrollIntoView({behavior:'smooth',block:'start'});}));
+ ops.appendChild(button('削除',function(){if(confirm(c.name+' を削除しますか？')){db.cases=db.cases.filter(function(q){return q.id!==c.id;});save();casesRender();}},true));
+ if(c.source){var a=document.createElement('a');a.href=c.source;a.target='_blank';a.rel='noopener noreferrer';a.textContent=' 出典';ops.appendChild(a);}
+ if(c.caseMemo)t.title=c.caseMemo;body.appendChild(t);
+ });$('caseCount').textContent=arr.length+'件表示 / 全'+db.cases.length+'件。倍率は調整後株価の比率で計算。';
+}
+['minX','typeFilter','caseQuery','caseSort'].forEach(function(id){$(id).addEventListener('input',casesRender);});
+$('csv').addEventListener('click',function(){var keys=caseIds.concat('ratio');var esc=function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';};var data=[keys.map(esc).join(',')].concat(db.cases.map(function(c){return keys.map(function(k){return esc(k==='ratio'?ratio(c):c[k]);}).join(',');}));dl('jp-theme-cases.csv','\uFEFF'+data.join('\r\n'),'text/csv;charset=utf-8');});
+function backup(){dl('jp-theme-research.json',JSON.stringify({version:1,data:db,exportedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');}
+document.querySelectorAll('.backup').forEach(function(b){b.addEventListener('click',backup);});
+document.querySelectorAll('.restore').forEach(function(b){b.addEventListener('click',function(){$('jsonFile').click();});});
+$('jsonFile').addEventListener('change',function(){var file=this.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(){try{var x=JSON.parse(reader.result),d=x.data||x;if(!Array.isArray(d.cases)||!Array.isArray(d.notes)||!d.factors||!d.rules)throw Error('形式が違います');if(!confirm('現在の保存データを上書きしますか？'))return;db=d;save();allRender();alert('復元しました。');}catch(e){alert('読み込み失敗：'+e.message);}finally{$('jsonFile').value='';}};reader.readAsText(file,'UTF-8');});
+F.forEach(function(f){var row=document.createElement('div');row.className='factor';var d=document.createElement('div');var title=document.createElement('strong');title.textContent=f[1];var desc=document.createElement('small');desc.textContent=f[2];d.appendChild(title);d.appendChild(desc);var s=document.createElement('select');s.id='factor-'+f[0];s.setAttribute('aria-label',f[1]);[['unknown','未確認'],['yes','確認'],['no','非該当']].forEach(function(o){var opt=document.createElement('option');opt.value=o[0];opt.textContent=o[1];s.appendChild(opt);});s.addEventListener('change',factorCount);row.appendChild(d);row.appendChild(s);$('factorRows').appendChild(row);});
+function factorCount(){var yes=0,no=0;F.forEach(function(f){var v=$('factor-'+f[0]).value;if(v==='yes')yes++;if(v==='no')no++;});$('factorResult').textContent='確認 '+yes+' / 判定済み '+(yes+no)+'（全8項目）。非該当 '+no+'、未確認 '+(8-yes-no)+'。確認件数は予測確率ではありません。';}
+function factorRender(){var div=$('factorSaved');div.replaceChildren();var keys=Object.keys(db.factors);if(!keys.length){div.textContent='まだ保存されていません。';return;}keys.forEach(function(key){var s=db.factors[key],line=document.createElement('div');line.className='question';var count=Object.values(s.answers).filter(function(x){return x==='yes';}).length;var text=document.createElement('span');text.textContent=s.code+' / '+s.name+'｜確認 '+count+'/8　';line.appendChild(text);line.appendChild(button('表示',function(){$('fCode').value=s.code;$('fName').value=s.name;F.forEach(function(f){$('factor-'+f[0]).value=s.answers[f[0]]||'unknown';});factorCount();}));line.appendChild(button('削除',function(){if(confirm(s.code+' の評価を削除しますか？')){delete db.factors[key];save();factorRender();}},true));div.appendChild(line);});}
+$('factorSave').addEventListener('click',function(){var code=v('fCode');if(!code){$('factorInfo').textContent='コードを入力してください。';return;}var s={code:code,name:v('fName'),answers:{}};F.forEach(function(f){s.answers[f[0]]=$('factor-'+f[0]).value;});db.factors[code]=s;save();factorRender();$('factorInfo').textContent='保存しました。';});
+$('factorClear').addEventListener('click',function(){F.forEach(function(f){$('factor-'+f[0]).value='unknown';});factorCount();});
+var ruleIds=['entryRule','vol','stop','trail','allocation','risk','review','exitRule'];
+function ruleObj(){var x={};ruleIds.forEach(function(k){x[k==='entryRule'?'entry':k==='exitRule'?'exit':k]=v(k);});return x;}
+function ruleApply(r){ruleIds.forEach(function(k){$(k).value=r[k==='entryRule'?'entry':k==='exitRule'?'exit':k];});calc();}
+function calc(){var r=ruleObj(),capital=n('capital'),price=n('price'),unit=n('unit'),stop=Number(r.stop),risk=Number(r.risk),max=Number(r.allocation);
+ $('usedStop').value=Number.isFinite(stop)?fmt(stop,1)+'％':'—';
+ var valid=capital>0&&price>0&&Number.isInteger(unit)&&unit>0&&stop>0&&stop<100&&risk>0&&max>0&&max<=100;
+ var budget=capital*risk/100,share=valid?Math.max(0,Math.floor(Math.min(budget/(price*stop/100),capital*max/100/price,capital/price)/unit)*unit):NaN;
+ $('qty').textContent=Number.isFinite(share)?fmt(share)+'株':'—';$('cost').textContent=Number.isFinite(share)?fmt(Math.round(share*price))+'円':'—';
+ $('loss').textContent=Number.isFinite(share)?fmt(Math.round(share*price*stop/100))+'円':'—';$('budget').textContent=valid?fmt(Math.round(budget))+'円':'—';
+ $('calcNote').textContent=!valid?'数値を確認してください。':share===0?'指定した売買単位とリスク上限では購入できません。':'許容損失・銘柄上限・現金残高のうち最小の株数へ切り下げ。逆指値での約定を保証しません。';
+ $('ruleText').textContent='買い：'+r.entry+'（出来高目安 '+r.vol+'倍）／初期損切り：-'+r.stop+'％／追随逆指値：高値から-'+r.trail+'％／点検：'+r.review+'／売却：'+r.exit;
+}
+$('strategy').addEventListener('change',function(){ruleApply(db.rules[v('strategy')]||presets[v('strategy')]);$('ruleInfo').textContent='';});
+$('ruleReset').addEventListener('click',function(){ruleApply(presets[v('strategy')]);$('ruleInfo').textContent='初期値を表示中。保存すると反映されます。';});
+$('ruleSave').addEventListener('click',function(){var r=ruleObj();if(!(Number(r.stop)>0&&Number(r.stop)<100&&Number(r.trail)>0&&Number(r.trail)<100&&Number(r.allocation)>0&&Number(r.allocation)<=100&&Number(r.risk)>0&&Number(r.risk)<=20)){$('ruleInfo').textContent='入力値を確認してください。';return;}db.rules[v('strategy')]=r;save();$('ruleInfo').textContent='保存しました。';calc();});
+ruleIds.concat(['capital','price','unit']).forEach(function(k){$(k).addEventListener('input',calc);});
+function memoRender(){var root=$('memoRows');root.replaceChildren();if(!db.notes.length){root.textContent='研究メモはまだありません。';return;}db.notes.forEach(function(x){var div=document.createElement('div');div.className='memo';var b=document.createElement('strong');b.textContent=x.title;var date=document.createElement('div');date.className='small';date.textContent=x.date;var p=document.createElement('p');p.textContent=x.body;div.appendChild(b);div.appendChild(date);div.appendChild(p);div.appendChild(button('削除',function(){if(confirm('このメモを削除しますか？')){db.notes=db.notes.filter(function(y){return y.id!==x.id;});save();memoRender();}},true));root.appendChild(div);});}
+$('memoSave').addEventListener('click',function(){if(!v('memoTitle')||!v('memoBody')){$('memoInfo').textContent='両方入力してください。';return;}db.notes.unshift({id:Date.now()+'-'+Math.random(),date:new Date().toLocaleString('ja-JP'),title:v('memoTitle'),body:v('memoBody')});$('memoTitle').value='';$('memoBody').value='';$('memoInfo').textContent='保存しました。';save();memoRender();});
+function allRender(){casesRender();factorRender();memoRender();$('strategy').value='swing';ruleApply(db.rules.swing||presets.swing);F.forEach(function(f){$('factor-'+f[0]).value='unknown';});factorCount();}
+allRender();
+})();
+</script></body></html>

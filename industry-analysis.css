@@ -1,0 +1,48 @@
+/* Sector / industry analysis tables */
+.industry-analysis-panel{background:#fff;border:1px solid #e1e7ef;padding:12px;margin:8px 0 16px;border-radius:4px}
+.industry-analysis-panel h2{margin:0 0 8px;font-size:16px;color:#1e293b}
+.industry-analysis-panel .ia-description,.industry-analysis-panel .ia-notes{font-size:11px;color:#64748b;line-height:1.7;margin:8px 0}
+.industry-analysis-panel .ia-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:12px 0}
+.industry-analysis-panel .ia-controls label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:#334155}
+.industry-analysis-panel .ia-controls select,.industry-analysis-panel .ia-controls input{font:inherit;font-size:11px;color:#1e293b;border:1px solid #cbd5e1;border-radius:3px;background:#fff;padding:6px 7px;min-width:135px}
+.industry-analysis-panel .ia-status{font-size:11px;color:#475569;margin:6px 0 9px;line-height:1.6}
+.industry-analysis-panel .ia-scroll{overflow-x:auto;border:1px solid #dce5ee;border-radius:3px}
+.industry-analysis-panel .ia-table{border-collapse:collapse;width:100%;min-width:1010px;text-align:center;table-layout:auto;font-size:11px}
+.industry-analysis-panel .ia-table thead{background:#eaf0f6;color:#334155}
+.industry-analysis-panel .ia-table th,.industry-analysis-panel .ia-table td{padding:8px 6px;border-bottom:1px solid #e5eaf1;white-space:nowrap;font-size:11px}
+.industry-analysis-panel .ia-table tbody tr:nth-child(even){background:#fafbfd}
+.industry-analysis-panel .ia-table .ia-industry,.industry-analysis-panel .ia-table .ia-sector,.industry-analysis-panel .ia-table .ia-leaders{text-align:left}
+.industry-analysis-panel .ia-table .ia-leaders{min-width:200px;white-space:normal;line-height:1.7}
+.industry-analysis-panel .ia-table .ia-leaders a{color:#1d4ed8;text-decoration:none}
+.industry-analysis-panel .ia-table small{font-size:10px;color:#64748b}
+.industry-analysis-panel .ia-pos{color:#15803d;font-weight:700}
+.industry-analysis-panel .ia-neg{color:#dc2626;font-weight:700}
+.industry-analysis-panel .ia-muted{color:#94a3b8}
+@media(max-width:640px){.industry-analysis-panel{padding:8px}.industry-analysis-panel .ia-controls label{flex:1 1 130px}.industry-analysis-panel .ia-controls select,.industry-analysis-panel .ia-controls input{width:100%;min-width:0}}
+/* Column filters: one control per industry-table heading. */
+.industry-analysis-panel .ia-table th{position:sticky;top:0;z-index:1;background:#eaf0f6}
+.industry-analysis-panel .ia-col-toggle{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;min-width:22px;height:21px;margin:2px 0 0 5px;padding:0 4px;border:1px solid #b7c8db;border-radius:3px;background:#fff;color:#475569;cursor:pointer;font-size:12px;font-weight:700}
+.industry-analysis-panel .ia-col-toggle:hover,.industry-analysis-panel .ia-col-toggle:focus-visible{background:#e0eaf9;border-color:#427cbd}
+.industry-analysis-panel .ia-col-toggle.ia-filter-active{background:#e0eaf9;color:#164c90;border-color:#86a6cd}
+.industry-analysis-panel .ia-filter-toolbar{display:flex;gap:7px 12px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:8px 9px;border:1px solid #e0e7f0;border-radius:3px;background:#fafbfd;font-size:11px;color:#475569}
+.industry-analysis-panel .ia-filter-toolbar .ia-reset{border:1px solid #cbd5e1;border-radius:3px;background:white;color:#334155;padding:6px 9px;cursor:pointer;font-size:11px}
+.industry-analysis-panel .ia-filter-chips{display:flex;flex:1 0 100%;align-items:center;flex-wrap:wrap;gap:5px}
+.industry-analysis-panel .ia-filter-chips:empty{display:none}
+.industry-analysis-panel .ia-filter-chips button{border:1px solid #b6d3f8;border-radius:3px;background:#eff6ff;color:#1d4ed8;font-size:11px;padding:4px 7px;cursor:pointer}
+.ia-col-popup{position:fixed;z-index:1000;box-sizing:border-box;width:min(350px,calc(100vw - 16px));max-height:75vh;overflow:auto;padding:12px;border:1px solid #94a3b8;background:white;box-shadow:0 6px 24px #1f293733;border-radius:4px;color:#334155;font:11px/1.5 Arial,"Noto Sans JP",sans-serif}
+.ia-col-popup[hidden]{display:none!important}
+.ia-col-popup label{display:flex;flex-direction:column;gap:4px;margin:5px 0;font-size:11px;font-weight:600}
+.ia-col-popup input:not([type="checkbox"]),.ia-col-popup select{width:100%;min-width:0;box-sizing:border-box;border:1px solid #cbd5e1;padding:7px 8px;border-radius:3px;background:#fff;color:#1e293b;font:11px Arial,"Noto Sans JP",sans-serif}
+.ia-col-popup .ia-popup-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;font-size:12px}
+.ia-col-popup .ia-popup-head button{border:0;background:#fff;padding:2px 7px;cursor:pointer;font-size:18px}
+.ia-col-popup .ia-filter-ranges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 9px}
+.ia-col-popup .ia-option-list{max-height:235px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:3px;padding:3px}
+.ia-col-popup .ia-filter-option{display:flex;flex-direction:row;align-items:center;gap:7px;padding:5px 7px;border-bottom:1px solid #f1f5f9;cursor:pointer;min-width:0}
+.ia-col-popup .ia-filter-option[hidden]{display:none!important}
+.ia-col-popup .ia-filter-option input{flex:0 0 15px;margin:0}
+.ia-col-popup .ia-filter-option span{flex:1;min-width:0;overflow-wrap:anywhere}
+.ia-col-popup .ia-filter-option small{color:#64748b;font-size:10px}
+.ia-col-popup .ia-popup-sort,.ia-col-popup .ia-popup-actions{display:flex;gap:7px;justify-content:space-between;margin-top:10px}
+.ia-col-popup .ia-popup-sort button,.ia-col-popup .ia-popup-actions button{flex:1;border:1px solid #cbd5e1;border-radius:3px;padding:7px 5px;background:#fff;color:#334155;cursor:pointer;font-size:11px}
+.ia-col-popup .ia-popup-actions button[data-action="apply"]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.ia-col-popup .ia-popup-error{font-size:11px;color:#b91c1c;margin:4px 0}
