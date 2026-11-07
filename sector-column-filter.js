@@ -222,7 +222,8 @@ root.createLeaderColumnFilters=function(ctx){
   {id:"cap",label:"時価総額",kind:"number",unit:"億円",
    get:r=>{const v=marketCapJPY(r);return finite(v)?v/1e8:null;}},
   ...(market==="jp"?[{id:"size",label:"規模",kind:"choice",
-   get:r=>r.size||"—",options:["大型","中型","小型","—"]}]:[]),
+   get:r=>{const cap=marketCapJPY(r);return !finite(cap)?"—":cap>=1e12?"超大型":cap>=3e11?"大型":cap>=5e10?"中型":cap>=1e10?"小型":"超小型";},
+   options:["超大型","大型","中型","小型","超小型","—"]}]:[]),
   ...(market==="jp"?[
    {id:"short",label:"大口空売り残高",kind:"number",unit:"%",get:r=>numeric(r.short_ratio)},
    {id:"shortChg",label:"空売り増減",kind:"number",unit:"pt",get:r=>numeric(r.short_d_ratio)},

@@ -116,10 +116,6 @@ def parse_catalogue(payload, sectors):
         stock_name = column(row, "銘柄名")
         if not stock_name:
             continue
-        # JPX scale category (規模区分): TOPIX100 = Core30 + Large70.
-        scale = column(row, "規模区分") if "規模区分" in headers else ""
-        size = ("大型" if scale in ("TOPIX Core30", "TOPIX Large70")
-                else "中型" if scale == "TOPIX Mid400" else "小型")
         counts[market] += 1
         raw_date = column(row, "日付")
         if raw_date and not reference:
@@ -133,7 +129,6 @@ def parse_catalogue(payload, sectors):
             "industry_name": industry_name or None,
             "industry_source": "JPX 33業種" if industry_name else None,
             "market": market,
-            "size": size,
         })
     seen = set()
     unique = []
