@@ -42,9 +42,10 @@ def numeric(value):
 
 
 def index_prices(symbol, tz_name='America/New_York', cutoff=dt.time(16, 15)):
-    # Fetch ~400 calendar days (usually >250 trading sessions), without 5-year history.
+    # Full history since 2015: the recent 200 sessions feed data.json and
+    # every year feeds its own history-YYYY.json archive page.
     end = int(time.time()) + 86400
-    start = end - 400 * 86400
+    start = int(dt.datetime(2015, 1, 1, tzinfo=dt.timezone.utc).timestamp())
     params = urllib.parse.urlencode({'period1': start, 'period2': end, 'interval': '1d'})
     tz = ZoneInfo(tz_name)
     now = dt.datetime.now(tz)
@@ -66,8 +67,6 @@ def index_prices(symbol, tz_name='America/New_York', cutoff=dt.time(16, 15)):
                     prices[date.isoformat()] = {'close': close, 'low': numeric(low), 'volume': numeric(volume)}
                 if len(prices) < 30:
                     raise ValueError('Too few sessions')
-                dates = sorted(prices)
-                prices = {day: prices[day] for day in dates[-FETCH_US_SESSIONS:]}
                 print(f'YAHOO {symbol}: {len(prices)} calculation sessions (published {PUBLISH_SESSIONS})')
                 return prices
             except Exception as e:
@@ -381,8 +380,8 @@ def prepare_tse(previous, volume, indices):
             elif classify(numeric(record['change']), numeric(record['volume'])) == 'sell':
                 dd_active.append((i, close))
             record['dd_count'] = len(dd_active) if i >= 24 else None
-    final = []
-    for day in sorted(history, reverse=True)[:PUBLISH_SESSIONS]:
+    all_final = []
+    for day in sorted(history, reverse=True):
         out = {'date': day}
         for key in MARKETS:
             rec = history[day].get(key, {})
@@ -393,12 +392,13 @@ def prepare_tse(previous, volume, indices):
                         'judge': classify(price_change, volume_change),
                         'dd_number': rec.get('dd_number'), 'dd_count': rec.get('dd_count'),
                         'ra_day': None, 'shares_10000': rec.get('shares_10000')}
-        final.append(out)
+        all_final.append(out)
+    final = all_final[:PUBLISH_SESSIONS]
     kept_days = set(sorted(history, reverse=True)[:PUBLISH_SESSIONS])
     snapshots = {key: {day: {'close': history[day][key]['close'], 'low': history[day][key].get('low')}
                        for day in kept_days if key in history[day] and numeric(history[day][key].get('close')) is not None}
                  for key in MARKETS}
-    return final, snapshots
+    return final, snapshots, all_final
 
 
 NIKKEI_VI_CSV = 'https://indexes.nikkei.co.jp/nkave/historical/nikkei_stock_average_vi_daily_jp.csv'
@@ -616,7 +616,7 @@ def main():
             print('WARNING TSE volume backfill failed:', repr(exc))
     else:
         print('TSE third-party ingestion disabled via ALLOW_TSE_THIRD_PARTY_DATA=false')
-    tse_rows, snapshots = prepare_tse(previous, volume, indices)
+    tse_rows, snapshots, tse_full = prepare_tse(previous, volume, indices)
     nikkei_vi = {}
     try:
         nikkei_vi = fetch_nikkei_vi()
@@ -624,25 +624,45 @@ def main():
     except Exception as exc:
         print('WARNING Nikkei VI ingestion failed:', repr(exc))
     if nikkei or nikkei_vi:
-        by_date = {r['date']: r for r in tse_rows}
+        by_date = {r['date']: r for r in tse_full}
         for day, record in nikkei.items():
             by_date.setdefault(day, {'date': day})['nikkei'] = record
         for day, record in nikkei_vi.items():
             by_date.setdefault(day, {'date': day})['nikkei_vi'] = record
-        tse_rows = sorted(by_date.values(), key=lambda r: r['date'], reverse=True)[:PUBLISH_SESSIONS]
-    japan_days = sorted(r['date'] for r in tse_rows if r['date'])
+        tse_full = sorted(by_date.values(), key=lambda r: r['date'], reverse=True)
+        tse_rows = tse_full[:PUBLISH_SESSIONS]
+    else:
+        tse_full = sorted(tse_full, key=lambda r: r['date'], reverse=True)
+    japan_days = sorted(r['date'] for r in tse_full if r['date'])
     us_days = sorted(set(us['sp500']) & set(us['nasdaq']) & set(us['nasdaq100']) & set(us['dow']), reverse=True)
-    rows = []
-    for day in us_days[:PUBLISH_SESSIONS]:
+    rows_all = []
+    for day in us_days:
         loc = bisect.bisect_right(japan_days, day)
         # Japan next session relative to a US trading date, no same-day alignment.
         japan = japan_days[loc] if loc < len(japan_days) else None
-        rows.append({'date': day, 'japan_date': japan,
-                     'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
-                     'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
-                     'vix': vix.get(day)})
+        rows_all.append({'date': day, 'japan_date': japan,
+                         'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
+                         'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
+                         'vix': vix.get(day)})
+    rows = rows_all[:PUBLISH_SESSIONS]
     if len(rows) < 25:
         raise ValueError('US market history insufficient')
+    # Per-year archive pages for the history tab: history-YYYY.json holds
+    # that year's US rows plus the TSE rows they reference (and the rest of
+    # that year's TSE rows), so each year is a self-contained page.
+    years = sorted({int(r['date'][:4]) for r in rows_all}, reverse=True)
+    tse_by_date_full = {r['date']: r for r in tse_full}
+    for year in years:
+        yrows = [r for r in rows_all if int(r['date'][:4]) == year]
+        needed = {r['japan_date'] for r in yrows if r.get('japan_date')}
+        ytse = [r for r in tse_full
+                if int(r['date'][:4]) == year or r['date'] in needed]
+        (ROOT / f'history-{year}.json').write_text(
+            json.dumps({'year': year, 'rows': yrows, 'tse_rows': ytse},
+                       ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    (ROOT / 'history-index.json').write_text(
+        json.dumps({'years': years}, separators=(',', ':')), encoding='utf-8')
+    print(f'HISTORY PAGES: {years}')
     # 49 clean sessions are required to display fully warmed-up 25-day
     # distribution counts across all 25 history columns.
     valid_tse_days = sorted(
