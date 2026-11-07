@@ -386,6 +386,35 @@ def prepare_tse(previous, volume, indices):
     return final, snapshots
 
 
+NIKKEI_VI_CSV = 'https://indexes.nikkei.co.jp/nkave/historical/nikkei_stock_average_vi_daily_jp.csv'
+
+
+def fetch_nikkei_vi():
+    """Nikkei 225 VI daily closes from Nikkei Indexes' official CSV.
+
+    Returns {date: {'close': level, 'change': pct vs previous session}}.
+    """
+    request = urllib.request.Request(NIKKEI_VI_CSV, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(request, timeout=25) as response:
+        raw = response.read()
+    try:
+        text = raw.decode('cp932')
+    except UnicodeDecodeError:
+        text = raw.decode('utf-8-sig', 'replace')
+    closes = {}
+    for line in text.splitlines():
+        parts = [p.strip().strip('"') for p in line.split(',')]
+        if len(parts) < 2 or not re.match(r'\d{4}/\d{2}/\d{2}$', parts[0]):
+            continue
+        close = numeric(parts[1])
+        if close is not None:
+            closes[parts[0].replace('/', '-')] = close
+    days = sorted(closes)
+    return {day: {'close': round(closes[day], 2),
+                  'change': round((closes[day] / closes[days[i - 1]] - 1) * 100, 4) if i else None}
+            for i, day in enumerate(days)}
+
+
 def main():
     previous = existing_published()
     us = {key: enrich_us(us_prices(symbol)) for key, symbol in
@@ -436,10 +465,18 @@ def main():
     else:
         print('TSE third-party ingestion disabled via ALLOW_TSE_THIRD_PARTY_DATA=false')
     tse_rows, snapshots = prepare_tse(previous, volume, indices)
-    if nikkei:
+    nikkei_vi = {}
+    try:
+        nikkei_vi = fetch_nikkei_vi()
+        print(f'NIKKEI VI: {len(nikkei_vi)} sessions')
+    except Exception as exc:
+        print('WARNING Nikkei VI ingestion failed:', repr(exc))
+    if nikkei or nikkei_vi:
         by_date = {r['date']: r for r in tse_rows}
         for day, record in nikkei.items():
             by_date.setdefault(day, {'date': day})['nikkei'] = record
+        for day, record in nikkei_vi.items():
+            by_date.setdefault(day, {'date': day})['nikkei_vi'] = record
         tse_rows = sorted(by_date.values(), key=lambda r: r['date'], reverse=True)[:PUBLISH_SESSIONS]
     japan_days = sorted(r['date'] for r in tse_rows if r['date'])
     us_days = sorted(set(us['sp500']) & set(us['nasdaq']) & set(us['nasdaq100']) & set(us['dow']), reverse=True)
@@ -471,7 +508,8 @@ def main():
     result = {'updated_at': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
               'source': {'us': 'Yahoo Finance unofficial', 'vix': 'Yahoo Finance unofficial (^VIX)', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
                          'japan_indices': 'stock-marketdata.com index history',
-                         'japan_volume': 'stock-marketdata.com', 'nikkei225': 'Yahoo Finance unofficial'},
+                         'japan_volume': 'stock-marketdata.com', 'nikkei225': 'Yahoo Finance unofficial',
+                         'nikkei_vi': 'Nikkei Indexes official daily CSV'},
               'tse_enabled': ALLOW, 'tse_dd_coverage': coverage, 'rows': rows, 'tse_rows': tse_rows,
               'tse_index_snapshots': snapshots}
     (ROOT / 'data.json').write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
