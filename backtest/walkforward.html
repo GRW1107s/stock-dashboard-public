@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>逐次学習・初見検証 | 太陽誘電 6976</title>
+<style>
+:root{--bg:#f6f8fb;--ink:#1e293b;--line:#dce4ee;--green:#057b64;--red:#b33152}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:13px/1.65 system-ui,-apple-system,sans-serif;margin:0}
+main{max-width:1200px;margin:auto;padding:20px 15px 40px}.tabs{display:flex;border:1px solid #cad6e5;max-width:690px;margin-bottom:20px}
+.tabs a{flex:1;text-align:center;padding:11px 5px;color:#345274;background:white;text-decoration:none;font-weight:700}
+.tabs a+a{border-left:1px solid #cad6e5}.tabs a.active{background:#2359bb;color:white}
+h1{font-size:24px;margin:0}h2{font-size:17px;margin:0 0 10px}p{margin:8px 0}
+.card{background:white;border:1px solid var(--line);border-radius:8px;padding:17px;margin:12px 0}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.metric{border:1px solid var(--line);padding:12px;border-radius:6px;min-width:0}
+.metric .key{font-size:11px;color:#64748b}.metric .val{display:block;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:690px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 9px;border-bottom:1px solid #e5ebf3;text-align:right;white-space:nowrap}th{background:#f6f8fb;font-size:11px;color:#5a6d85}
+th:first-child,td:first-child{text-align:left}.pos{color:var(--green);font-weight:650}.neg{color:var(--red);font-weight:650}.sub{color:#64748b}.small{font-size:11px}
+.message{background:#f3f7fc;border:1px solid #d9e3f1;padding:10px 13px;border-radius:5px}
+@media(max-width:650px){main{padding:12px 8px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.metric .val{font-size:17px}h1{font-size:20px}}
+</style><script defer src="./walkforward.js?v=1"></script><style>main > nav {display:none!important} body{background:#fff!important}</style></head><body><main>
+<nav class="tabs"><a href="./index.html">固定ルール</a><a href="./episode.html">x/y反復学習</a><a href="./walkforward.html" class="active" aria-current="page">逐次学習・初見検証</a><a href="./five-minute.html">5分足</a></nav>
+<header><div class="small sub">STOCK STRATEGY LAB / 6976.T</div><h1>太陽誘電｜3日ごとの逐次学習</h1><p class="sub">未来の足を使わず、3取引日で学習 → 新しい3取引日を先に採点 → その後に再学習</p></header>
+<section class="card"><h2>検証状況</h2><div class="message" id="status">実データと保存済みの検証結果を読み込んでいます…</div>
+<div class="metrics">
+<div class="metric"><span class="key">初回学習期間</span><span class="val" id="baseline">—</span></div>
+<div class="metric"><span class="key">初見検証日数</span><span class="val" id="days">—</span></div>
+<div class="metric"><span class="key">初見損益合計</span><span class="val" id="profit">—</span></div>
+<div class="metric"><span class="key">初見勝率</span><span class="val" id="winrate">—</span></div>
+</div><p class="small sub">損益は取引ごとのリターンの単純合計で、資産全体の騰落率ではありません。前場・後場内での信用買いのみ、当日決済。指値の約定可能性と板状況は未検証です。</p></section>
+<section class="card"><h2>SBI証券の日計り信用を想定したコスト</h2>
+<p>売買手数料 0%、当日決済の買方金利 0% を仮定。スプレッド 0.02%、スリッページ 0.04%、合計往復 0.06% の約定摩擦を控除します。摩擦の数値はSBIが保証する料率ではなく研究用の仮定です。</p>
+<div class="scroll"><table><thead><tr><th>往復コスト</th><th>初見損益合計</th><th>取引数</th></tr></thead><tbody id="costRows"></tbody></table></div></section>
+<section class="card"><h2>初見テスト：取引日ごとの成績</h2>
+<div class="scroll"><table><thead><tr><th>テスト日</th><th>学習に使った最終日</th><th>取引数</th><th>勝率</th><th>損益合計</th><th>評価得点</th></tr></thead><tbody id="dayRows"></tbody></table></div></section>
+<section class="card"><h2>初見テスト：実際に想定した売買</h2>
+<div class="scroll"><table><thead><tr><th>日付</th><th>買い時刻</th><th>買い価格</th><th>売り時刻</th><th>売り価格</th><th>決済理由</th><th>コスト控除後</th></tr></thead><tbody id="tradeRows"></tbody></table></div>
+<p class="small sub">価格は1分足に基づく理論約定です。利確・損切りでは端数価格になる場合があり、実際の呼値や約定可否を保証しません。</p></section>
+<section class="card"><h2>次の3日間での再学習</h2><div id="pending" class="message">—</div>
+<div class="scroll"><table><thead><tr><th>再学習に使用した取引日</th><th>再学習期間の得点</th><th>損益合計</th><th>取引数</th></tr></thead><tbody id="retrainRows"></tbody></table></div>
+<p class="small sub">新しい日については先に旧方策を固定して評価し、その結果を確定してから学習を行います。初見テストを見て良い方策を選び直すことはしません。</p></section>
+</main></body></html>

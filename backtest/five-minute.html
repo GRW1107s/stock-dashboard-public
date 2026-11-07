@@ -1,0 +1,40 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>太陽誘電 5分足バックテスト</title>
+<style>
+body{margin:0;background:#f6f8fb;color:#1e293b;font:13px/1.7 system-ui,"Noto Sans JP",sans-serif}
+main{max-width:1160px;margin:auto;padding:20px 14px}h1{font-size:24px}h2{font-size:17px}
+nav{display:flex;flex-wrap:wrap}nav a{padding:10px 15px;background:white;border:1px solid #cbd5e1;color:#245bc7;text-decoration:none}nav a.active{background:#245bc7;color:white}
+section{background:#fff;border:1px solid #dce4ee;border-radius:8px;padding:17px;margin:14px 0}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.metric{padding:10px;border:1px solid #e2e8f0;border-radius:7px}.metric small{color:#64748b;display:block}.metric strong{font-size:20px;font-variant-numeric:tabular-nums}
+.sub{color:#64748b}.warn{background:#fff8e9;border:1px solid #f1dcb5;padding:12px;border-radius:5px}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:9px;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap}th{background:#f1f5f9}th:first-child,td:first-child{text-align:left}
+.pos{color:#087f62;font-weight:700}.neg{color:#b33152;font-weight:700}
+@media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}h1{font-size:21px}}
+</style><script src="./five-minute.js?v=1" defer></script><style>main > nav {display:none!important} body{background:#fff!important}</style></head><body><main>
+<nav><a href="./index.html">1分足</a><a href="./episode.html">x/y反復学習</a><a href="./walkforward.html">逐次検証</a><a class="active" href="./five-minute.html">5分足</a></nav>
+<h1>太陽誘電｜5分足・x/yバックテスト</h1>
+<p class="sub">Yahoo Financeから取得できる約60暦日の5分足で、より長期間の検証を行います。</p>
+<section><h2>データ状況</h2><p id="status" class="warn">5分足データを確認しています…</p>
+<div class="grid">
+<div class="metric"><small>実5分足</small><strong id="bars">—</strong></div>
+<div class="metric"><small>検証可能日数</small><strong id="days">—</strong></div>
+<div class="metric"><small>学習日数</small><strong id="trainDays">—</strong></div>
+<div class="metric"><small>未使用日数</small><strong id="testDays">—</strong></div></div>
+<p class="sub" id="range"></p>
+<p>買い：同じ場の直近6本（30分）の高値からx%下落したら、次の5分足の始値で買う。売り：買値からy%上昇したら利確。損切り0.8%、最大25分、1日3回まで、往復コスト0.10%。</p>
+<p class="sub">5分足の内部の値動きは不明なため、同一足で利確と損切りがともに成立した場合は損切りを優先します。欠損足は補いません。</p></section>
+<section><h2>古い期間で学習 → 新しい期間で検証</h2>
+<div class="grid">
+<div class="metric"><small>最良x</small><strong id="x">—</strong></div>
+<div class="metric"><small>最良y</small><strong id="y">—</strong></div>
+<div class="metric"><small>学習損益</small><strong id="trainProfit">—</strong></div>
+<div class="metric"><small>未使用期間の損益</small><strong id="testProfit">—</strong></div></div>
+<p id="holdoutMessage" class="warn">未使用期間の成績を確認しています…</p></section>
+<section><h2>ウォークフォワード：10日間でx・y選択 → 次の3日間を検証</h2>
+<p id="walkStatus" class="warn">集計中…</p>
+<div class="scroll"><table><thead><tr><th>検証した3日間</th><th>x</th><th>y</th><th>損益合計</th><th>取引数</th><th>勝率</th></tr></thead><tbody id="walkRows"></tbody></table></div></section>
+<section><h2>学習期間の最適化上位10組</h2><div class="scroll"><table><thead><tr><th>順位</th><th>x</th><th>y</th><th>学習得点</th><th>学習損益</th><th>取引数</th></tr></thead><tbody id="topRows"></tbody></table></div></section>
+<section><h2>コスト感度（選択したx・yを固定）</h2><div class="scroll"><table><thead><tr><th>往復コスト</th><th>未使用期間損益</th><th>取引数</th></tr></thead><tbody id="costRows"></tbody></table></div></section>
+<p class="sub">※成績は各取引の騰落率の単純合計で、資産運用利回りではありません。未使用期間も過去データです。将来の利益を保証しません。</p>
+</main></body></html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>時間足別・戦略比較 | 太陽誘電6976</title>
+<style>
+:root{--line:#d8e1ec;--ink:#1e293b;--sub:#64748b;--blue:#245bc7;--green:#087e62;--red:#ae3349}
+*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:13px/1.65 system-ui,"Noto Sans JP",sans-serif}
+main{max-width:1330px;padding:13px 14px 30px;margin:auto}h1{margin:4px 0;font-size:21px}h2{font-size:16px;margin:0 0 10px}
+p{margin:6px 0 10px}.sub{color:var(--sub)}.mini{font-size:11px}
+section{border:1px solid var(--line);border-radius:8px;padding:16px;margin:12px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:end}
+fieldset{border:0;padding:0;margin:0}label{font-weight:600}
+select,input[type=number]{border:1px solid #b7c7d8;border-radius:5px;padding:9px 10px;font:inherit;background:white}
+select{min-width:165px}input[type=number]{width:95px}
+button{border:1px solid var(--blue);color:white;background:var(--blue);font:inherit;font-weight:700;padding:9px 16px;border-radius:5px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 7px;margin-top:5px}
+.checks label{display:flex;align-items:flex-start;gap:6px;border:1px solid #e0e7f0;border-radius:4px;padding:6px 7px;cursor:pointer;font-weight:500;font-size:11px;line-height:1.35;min-width:0}
+.checks label:hover{background:#f6f9ff}.checks input{accent-color:var(--blue);margin:2px 0 0;flex:0 0 auto}.checks label span{min-width:0}.checks label span span{font-size:10px!important;line-height:1.25;color:#64748b}
+.message{background:#f1f5fc;border:1px solid #d9e5f5;border-radius:5px;padding:12px;margin:9px 0}
+.warn{background:#fff7eb;border-color:#f0dfc7;color:#78521f}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:10px 0}
+.metric{border:1px solid #e4eaf3;border-radius:6px;padding:10px}.metric small{color:var(--sub);font-size:11px;display:block}
+.metric strong{font-size:18px;font-variant-numeric:tabular-nums}
+.scroller{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:1040px;font-variant-numeric:tabular-nums}
+th{background:#f4f7fb;color:#50607a;font-size:11px;padding:9px 8px;text-align:right}
+td{border-bottom:1px solid #e8eef5;text-align:right;padding:10px 8px}
+td:first-child,th:first-child{text-align:left}
+.pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}
+@media(max-width:700px){main{padding:10px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}section{padding:12px}h1{font-size:19px}}
+.strategy-dual{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.strategy-dual .checks{grid-template-columns:repeat(2,minmax(0,1fr))}
+.strategy-dual h3{font-size:13px;margin:0 0 4px}
+tr.combined-result{background:#eff6ff}
+@media(max-width:800px){.strategy-dual{grid-template-columns:1fr}}
+/* Compact 2-column tile grid: title visible, strategy explanation on hover. */
+.strategy-dual{gap:8px}
+.strategy-dual .checks{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 5px;margin-top:3px}
+.strategy-dual .checks label{min-height:25px;align-items:center;padding:3px 5px;gap:5px;line-height:1.2;font-size:10.5px;border-radius:3px}
+.strategy-dual .checks label .strategy-title{font-size:10.5px;line-height:1.2;overflow-wrap:anywhere}
+.strategy-dual .checks input{width:14px;height:14px;margin:0;flex:0 0 14px}
+.strategy-dual h3{margin:0 0 3px}
+section{padding:12px;margin:9px 0}
+section:has(.strategy-dual) > p{margin:4px 0 7px}
+section:has(.strategy-dual) > details{margin-top:6px}
+
+
+.execution-check{display:inline-flex;align-items:center;gap:6px;border:1px solid #d3dfec;padding:7px 9px;border-radius:4px;min-height:37px;font-size:12px;cursor:pointer}
+.execution-check input{accent-color:var(--blue);width:15px;height:15px;margin:0;flex:0 0 auto}
+</style>
+<script src="./strategy-engine.js?v=4" defer></script>
+<script src="./strategy-lab.js?v=4" defer></script>
+</head><body><main>
+<h1>太陽誘電｜売買戦略を選んで比較</h1>
+<p class="sub">時間足と戦略を自由に選択し、実際に取得したOHLCVだけで検証します。最大3回/日、往復コスト込みです。</p>
+<section>
+<h2>時間足と売買条件</h2>
+<div class="controls">
+<label for="interval">時間足<select id="interval">
+<option value="1m">1分足（過去約7暦日）</option>
+<option value="5m" selected>5分足（過去約60暦日）</option>
+<option value="15m">15分足（過去約60暦日）</option>
+<option value="1h">1時間足（過去約2年）</option>
+<option value="1d">日足（長期）</option></select></label>
+<label for="cost">往復売買コスト（%）<input id="cost" type="number" min="0" max="2" step="0.01" value="0.10"></label>
+<label class="execution-check"><input id="allowShort" type="checkbox" checked>空売り（新規売り建て）を許可</label>
+<label class="execution-check"><input id="holdOvernight" type="checkbox" checked>前場・後場／翌日への持ち越しを許可</label>
+<button type="button" id="run" disabled>選択した戦略を検証</button>
+</div>
+<p class="mini sub">MA25は選択した時間足の終値25本の単純平均。空売りを許可すると、売り条件で新規売り建てし、買い条件で買い戻します。持ち越しを許可すると場末で強制決済せず、翌日のギャップも損益に反映します。保有上限・損切りは引き続き適用します。</p>
+</section>
+<section>
+<h2>売買条件を選ぶ</h2>
+<p class="sub">買い・売りをそれぞれチェック。<strong>複数選択はすべてAND条件</strong>です。</p>
+<div class="strategy-dual">
+<div>
+<h3>買い条件 <span class="sub mini">（買い建て／空売りの買い戻し）</span></h3>
+<div class="checks" id="buyChecks">読み込み中…</div>
+</div>
+<div>
+<h3>売り条件 <span class="sub mini">（買い建て決済／新規空売り）</span></h3>
+<div class="checks" id="sellChecks">読み込み中…</div>
+</div>
+</div>
+<details class="mini sub"><summary>売買条件と安全決済の詳細</summary>
+<p>例：買い「25MA下」AND「RSI30未満」、売り「25MA上」AND「RSI55超」。同じ足で全条件を満たす必要があります。空売り中は買い条件で買い戻します。損切りと最大保有時間は強制決済として優先されます。持ち越しを許可しない場合は前場・後場の場末にも決済します。</p>
+<p>「直近高値−1%買い・+1%利確」の利確は買い建てポジション専用です。新規空売りには使用しません。空売りの損切りは建値から上昇した場合です。</p></details>
+</section>
+<section>
+<h2>データ状況</h2>
+<div class="message" id="status">実際の株価データを取得しています…</div>
+<div class="metrics">
+<div class="metric"><small>使用時間足</small><strong id="selectedInterval">5分足</strong></div>
+<div class="metric"><small>取得済み足数</small><strong id="barCount">—</strong></div>
+<div class="metric"><small>取引日数</small><strong id="dayCount">—</strong></div>
+<div class="metric"><small>対象期間</small><strong id="dateRange" style="font-size:12px">—</strong></div>
+</div>
+</section>
+<section>
+<h2>選択した戦略の成績</h2>
+<p class="mini sub">チェックした買い・売り条件の<strong>組み合わせ1本</strong>を検証します。過去データ全期間と後半30%の結果を表示します。パラメータの自動最適化は行っていません。</p>
+<div class="scroller"><table><thead><tr>
+<th>売買条件</th><th>全期間の売買数</th><th>買い建て／空売り</th><th>翌日持ち越し数</th><th>全期間勝率</th><th>全期間損益合計</th><th>全期間平均損益</th><th>最大DD</th><th>後半30%の売買数</th><th>後半30%損益合計</th><th>後半30%勝率</th>
+</tr></thead><tbody id="resultRows"><tr><td colspan="11">検証実行待ち</td></tr></tbody></table></div>
+<p class="mini sub">各損益は取引ごとの騰落率の単純合計であり、口座利回りではありません。終値による条件は確定足で判定し、次足始値で発注します。利確・損切り・時間決済が優先される場合があります。ANDで取引件数が少ない場合は優位性を評価できません。</p>
+<div id="comboSummary" class="message">選択した買い・売りの組み合わせを検証します。</div>
+<h2 style="margin-top:13px">売買履歴（直近20件）</h2>
+<div class="scroller"><table style="min-width:850px"><thead><tr><th>建区分</th><th>建日付</th><th>建時刻</th><th>建値</th><th>決済日・時刻</th><th>決済値</th><th>決済理由</th><th>費用控除後損益</th></tr></thead><tbody id="comboTrades"><tr><td colspan="8">未検証</td></tr></tbody></table></div>
+</section>
+<section>
+<h2>共通の約定・リスク条件</h2>
+<p>シグナルは確定足の終値で判定し、次の観測足の始値で買い・売りを実行。OHLCから足内部の順序が不明な場合は損切りを優先。損切り幅は1分・5分足0.8%、15分足1.1%、1時間足2%、日足5%。</p>
+<p>持ち越しを無効にすると、すべての足で場末（1分・5分・15分足は前後場ごと）に決済します。有効にすると1分・5分・15分足の保有上限はそれぞれ360本・72本・24本へ拡張し、1時間・日足は18本・15本です。1日あたりの新規買い建て・売り建ては合計最大3回。空売りの貸株料・逆日歩・信用金利、配当調整、実際の約定難易度は別途加味する必要があります。</p>
+</section>
+</main></body></html>
