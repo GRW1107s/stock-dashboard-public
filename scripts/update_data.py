@@ -3,6 +3,7 @@
 The owner confirmed use of the public stock-marketdata.com tables on
 2026-11-07; set ALLOW_TSE_THIRD_PARTY_DATA=false to disable ingestion.
 """
+import base64
 import bisect
 import datetime as dt
 import json
@@ -10,6 +11,7 @@ import math
 import os
 import pathlib
 import re
+import struct
 import time
 import urllib.request
 import urllib.parse
@@ -388,6 +390,107 @@ def prepare_tse(previous, volume, indices):
 
 NIKKEI_VI_CSV = 'https://indexes.nikkei.co.jp/nkave/historical/nikkei_stock_average_vi_daily_jp.csv'
 
+CHART_BASE = 'https://stock-marketdata.com/time-series/charts/'
+INDEX_CHARTS = {'prime': 'japan-index-prime-market-index.html',
+                'standard': 'japan-index-standard-market-index.html',
+                'growth': 'japan-index-growth-market-index.html'}
+VOLUME_CHARTS = {'prime': 'japan-indicator-trading-volume-prime-market.html',
+                 'standard': 'japan-indicator-trading-volume-standard-market.html',
+                 'growth': 'japan-indicator-trading-volume-growth-market.html'}
+
+
+def _plotly_traces(html):
+    """All traces from every Plotly newPlot figure embedded in a page."""
+    traces = []
+    for match in re.finditer(r'newPlot\(', html):
+        start = html.find('[', match.start())
+        if start < 0:
+            continue
+        depth = 0
+        j = start
+        in_str = False
+        esc = False
+        while j < len(html):
+            c = html[j]
+            if in_str:
+                if esc:
+                    esc = False
+                elif c == '\\':
+                    esc = True
+                elif c == '"':
+                    in_str = False
+            elif c == '"':
+                in_str = True
+            elif c == '[':
+                depth += 1
+            elif c == ']':
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        try:
+            traces.extend(json.loads(html[start:j + 1]))
+        except Exception:
+            continue
+    return traces
+
+
+def _trace_values(trace):
+    y = trace.get('y')
+    if isinstance(y, dict) and 'bdata' in y:
+        raw = base64.b64decode(y['bdata'])
+        size, code = {'f8': (8, 'd'), 'f4': (4, 'f'),
+                      'i4': (4, 'i'), 'i8': (8, 'q')}.get(y.get('dtype'), (8, 'd'))
+        return list(struct.unpack('<%d%s' % (len(raw) // size, code), raw))
+    if isinstance(y, list):
+        return y
+    return []
+
+
+def chart_history(url, name_part):
+    """{date: value} for the named trace on a stock-marketdata chart page."""
+    for trace in _plotly_traces(fetch(url)):
+        if name_part not in str(trace.get('name') or ''):
+            continue
+        xs = trace.get('x') or []
+        ys = _trace_values(trace)
+        if len(xs) >= 100 and len(xs) == len(ys):
+            return {str(x)[:10]: numeric(y) for x, y in zip(xs, ys)
+                    if numeric(y) is not None}
+    return {}
+
+
+def fetch_tse_index_history():
+    """Full daily closes of the three market indices since 2022-04-01."""
+    out = {}
+    for key, page in INDEX_CHARTS.items():
+        for day, close in chart_history(CHART_BASE + page, '市場指数').items():
+            out.setdefault(day, {})[key] = {'date': day, 'close': close}
+    if len(out) < 100:
+        raise ValueError(f'TSE index history insufficient: {len(out)}')
+    print(f'TSE INDEX HISTORY (chart): {len(out)} sessions')
+    return out
+
+
+def fetch_tse_volume_history():
+    """Full daily trading volume (万株) per market since 2022, with % change."""
+    out = {}
+    for key, page in VOLUME_CHARTS.items():
+        series = chart_history(CHART_BASE + page, '売買高')
+        days = sorted(series)
+        for i, day in enumerate(days):
+            if not i:
+                continue
+            prev = series[days[i - 1]]
+            if prev:
+                out.setdefault(day, {})[key] = {
+                    'shares_10000': int(series[day]),
+                    'volume': round((series[day] / prev - 1) * 100, 6)}
+    if len(out) < 100:
+        raise ValueError(f'TSE volume history insufficient: {len(out)}')
+    print(f'TSE VOLUME HISTORY (chart): {len(out)} sessions')
+    return out
+
 
 def fetch_nikkei_vi():
     """Nikkei 225 VI daily closes from Nikkei Indexes' official CSV.
@@ -462,6 +565,24 @@ def main():
             indices = fetch_tse_indices()
         except Exception as exc:
             print('WARNING TSE index ingestion failed:', repr(exc))
+        # Backfill the full history (from 2022-04) underneath the recent
+        # table values, which stay authoritative on overlapping dates.
+        try:
+            for day, records in fetch_tse_index_history().items():
+                slot = indices.setdefault(day, {})
+                for key, record in records.items():
+                    slot.setdefault(key, record)
+            print(f'TSE INDEX TOTAL: {len(indices)} sessions')
+        except Exception as exc:
+            print('WARNING TSE index backfill failed:', repr(exc))
+        try:
+            for day, records in fetch_tse_volume_history().items():
+                slot = volume.setdefault(day, {})
+                for key, record in records.items():
+                    slot.setdefault(key, record)
+            print(f'TSE VOLUME TOTAL: {len(volume)} sessions')
+        except Exception as exc:
+            print('WARNING TSE volume backfill failed:', repr(exc))
     else:
         print('TSE third-party ingestion disabled via ALLOW_TSE_THIRD_PARTY_DATA=false')
     tse_rows, snapshots = prepare_tse(previous, volume, indices)
