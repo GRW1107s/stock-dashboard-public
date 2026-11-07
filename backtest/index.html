@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>株価戦略研究所 | 太陽誘電 1分足</title>
+  <meta name="description" content="太陽誘電の1分足を未来参照なしで検証する研究環境">
+  <style>
+  :root{color-scheme:light;--bg:#f6f8fb;--ink:#1e293b;--sub:#64748b;--line:#dce4ee;--blue:#245bc7;--red:#ad314a;--green:#057b64}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.6 system-ui,-apple-system,"Noto Sans JP",sans-serif}
+  main{max-width:1330px;margin:0 auto;padding:24px 18px 45px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.03em}h2{font-size:17px;margin:0 0 9px}h3{font-size:14px;margin:0 0 6px}
+  .eyebrow{font-weight:700;color:var(--blue);letter-spacing:.06em;font-size:11px}.sub{color:var(--sub)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+  .tag{font-size:11px;background:#e7efff;color:#244e94;border:1px solid #cbdcff;padding:6px 9px;border-radius:5px}
+  .card{background:white;border:1px solid var(--line);border-radius:10px;padding:18px;margin:12px 0;box-shadow:0 1px 3px #1e293b08}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .metric{background:white;border:1px solid var(--line);border-radius:9px;padding:14px}
+  .metric .key{font-size:11px;color:var(--sub)}.metric .value{display:block;font-weight:750;font-size:22px;margin:4px 0 0;font-variant-numeric:tabular-nums}
+  .metric .note{font-size:11px;color:var(--sub)}.controls{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .control{display:flex;flex-direction:column;gap:5px;min-width:150px}.control label{font-size:11px;color:#516279;font-weight:700}
+  input[type=number],select,input[type=file]{width:100%;font:inherit;padding:9px 11px;border:1px solid #bfcddd;border-radius:6px;background:white}
+  input[type=file]{max-width:400px}button{border:1px solid #c4d1e0;background:white;color:var(--ink);font:inherit;font-weight:650;border-radius:6px;padding:9px 14px;cursor:pointer}
+  button.primary{background:var(--blue);border-color:var(--blue);color:white}button:disabled{opacity:.4;cursor:not-allowed}
+  .message{padding:12px 14px;border-radius:7px;background:#f1f5fb;border:1px solid #dce6f3;line-height:1.7}
+  .warn{background:#fff7ec;border-color:#f1ddc0;color:#80572d}.ok{background:#eff9f5;border-color:#c6e5db;color:#086b54}
+  .scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:860px;font-variant-numeric:tabular-nums}
+  th,td{padding:10px 8px;border-bottom:1px solid #e7edf3;text-align:right;white-space:nowrap}
+  th{font-size:11px;color:#55647a;background:#f4f7fa;position:sticky;top:0}
+  th:first-child,td:first-child{text-align:left}td small{display:block;color:var(--sub)}tr.best{background:#edf5ff}tbody tr:hover{background:#f8fbff}
+  .pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}
+  .mono{font-variant-numeric:tabular-nums}.mini{font-size:11px}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  svg.chart{display:block;max-width:100%;width:100%;height:auto;border:1px solid #e6ecf3;background:#fff;border-radius:6px}
+  .legend{display:flex;gap:15px;flex-wrap:wrap;color:var(--sub);font-size:11px;margin-top:7px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}.dot.buy{background:#157659}.dot.sell{background:#b63851}
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.step{font-size:11px;background:#f1f5fa;border:1px solid #dbe4ef;border-radius:5px;padding:5px 9px}
+  footer{font-size:11px;color:var(--sub);margin-top:18px}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}}
+  @media(max-width:570px){main{padding:16px 9px 35px}.card{padding:13px}.grid{gap:7px}h1{font-size:22px}.metric{padding:10px}.metric .value{font-size:18px}}
+  </style>
+  <script src="./app.js?v=3" defer></script>
+<style>main > nav {display:none!important} body{background:#fff!important}</style></head>
+<body>
+<main>
+  <nav style="display:flex;margin:0 0 18px;border:1px solid #cbd7e8;max-width:700px;overflow:hidden">
+    <a href="./index.html" style="flex:1;padding:11px;text-align:center;background:#2359bb;color:white;font-weight:700;text-decoration:none;border-right:1px solid #cbd7e8">固定ルール検証</a>
+    <a href="./episode.html" style="flex:1;padding:11px;text-align:center;background:white;color:#345274;font-weight:700;text-decoration:none">x/y反復学習</a>
+      <a href="./walkforward.html" style="flex:1;padding:11px;text-align:center;background:white;color:#345274;font-weight:700;text-decoration:none">逐次学習・初見検証</a>
+    <a href="./five-minute.html" style="flex:1;padding:11px;text-align:center;background:white;color:#345274;font-weight:700;text-decoration:none">5分足</a>
+  </nav>
+  <header>
+    <div><div class="eyebrow">STOCK STRATEGY LAB / 6976.T</div><h1>太陽誘電｜1分足・売買戦略研究</h1><div class="sub">取得済みの1分足で暫定検証。20取引日に満たなくても未来の足を見ずに売買を再生</div></div>
+    <div class="tag">独立研究環境 · 価格・出来高のみ</div>
+  </header>
+  <section class="card">
+    <h2>1分足データ</h2>
+    <div id="loadMessage" class="message">保存済み1分足を読み込んでいます…</div>
+    <div class="steps"><span class="step">1. 確定済み1分足だけを蓄積</span><span class="step">2. 1〜20取引日のデータを使用</span><span class="step">3. 古い日だけで条件選択</span><span class="step">4. 新しい日で期間外検証（2日以上）</span></div>
+    <div class="controls">
+      <div class="control" style="flex:1;min-width:250px"><label for="csvInput">過去の1分足CSVを読み込む（J-Quants・TradingView等）</label><input id="csvInput" type="file" accept=".csv,text/csv"></div>
+      <div class="control"><label for="roundCost">往復売買コスト（%）</label><input id="roundCost" type="number" min="0" max="2" step="0.01" value="0.10"></div>
+      <button id="startBtn" class="primary" disabled>取引日数を確認中</button>
+    </div>
+    <div class="sub mini" style="margin-top:8px">CSV形式：time,open,high,low,close,volume または J-Quants形式 Date,Time,Code,O,H,L,C,Vo。時刻は日本時間またはタイムゾーン付きISO、Unix秒・ミリ秒。自動取得にはYahoo Financeの非公式APIを使用（1分足の遡及範囲に制約あり）。</div>
+  </section>
+  <div class="grid">
+    <div class="metric"><div class="key">有効な1分足の取引日</div><span class="value" id="dayCount">—</span><span class="note" id="dayRange">1日分から暫定検証可</span></div>
+    <div class="metric"><div class="key">実データの1分足</div><span class="value" id="barCount">—</span><span class="note">未来の足は売買判断に渡さない</span></div>
+    <div class="metric"><div class="key">戦略候補</div><span class="value" id="candidateCount">—</span><span class="note">過去の学習期間だけで条件を選択</span></div>
+    <div class="metric"><div class="key">検証状況</div><span class="value" id="testStatus">未実行</span><span class="note" id="testNote">未確認の勝率は表示しない</span></div>
+  </div>
+  <section class="card">
+    <h2>戦略別の比較（1〜20取引日・短期は暫定）</h2>
+    <div id="resultMessage" class="message">1日分から学習期間内の売買を再現できます。2日以上なら、古い期間で選んだ条件を新しい期間で期間外検証します。</div>
+    <div class="scroll" style="margin-top:10px"><table><thead><tr><th>検証戦略</th><th><span id="trainDaysColumn">学習期間</span><br>売買数</th><th><span id="trainAvgColumn">学習期間</span><br>平均損益</th><th><span id="testTradesColumn">検証期間</span><br>売買数</th><th><span id="testWinColumn">検証期間</span><br>勝率</th><th><span id="testAvgColumn">検証期間</span><br>平均損益</th><th><span id="testTotalColumn">検証期間</span><br>合計損益</th><th>最大DD</th></tr></thead><tbody id="resultsRows"><tr><td colspan="8" style="text-align:left">検証待ち</td></tr></tbody></table></div>
+    <div class="sub mini" style="margin-top:9px">条件は古い学習期間だけで選び、新しい検証期間では変更しません。1日しかない場合は同一期間内の参考結果であり、未来期間での検証ではありません。欠損の多い取引日は部分データと明示し、取引回数が少ない戦略は判定保留にします。損益は1取引あたり株価比率で、複利・資金配分は反映しません。</div>
+  </section>
+  <section class="two">
+    <div class="card"><h2 id="equityTitle">検証期間の累積損益</h2><svg class="chart" id="equityChart" viewBox="0 0 640 255" role="img" aria-label="損益曲線"><text x="20" y="35" fill="#64748b">検証待ち</text></svg><p class="mini sub">戦略を切り替えると、評価対象日の実際の取引順で集計します。単位は1単位の固定ポジション当たりの%です。</p></div>
+    <div class="card"><h2>当日の値動きと売買位置</h2><div class="controls" style="margin-bottom:9px"><div class="control"><label for="chartDay">表示する取引日</label><select id="chartDay" disabled><option>データなし</option></select></div><div class="control"><label for="chartStrategy">売買ルール</label><select id="chartStrategy" disabled><option>検証待ち</option></select></div></div><svg class="chart" id="priceChart" viewBox="0 0 640 255" role="img" aria-label="1分足の終値と売買位置"><text x="20" y="35" fill="#64748b">検証待ち</text></svg><div class="legend"><span><span class="dot buy"></span>買い</span><span><span class="dot sell"></span>売り</span><span>線：1分足終値</span></div></div>
+  </section>
+  <section class="card">
+    <div class="controls" style="justify-content:space-between;align-items:center"><h2 id="tradeTitle">取引明細（検証期間）</h2><button id="exportBtn" disabled>取引履歴をCSVで保存</button></div>
+    <div class="scroll"><table><thead><tr><th>取引日</th><th>戦略</th><th>買い時刻</th><th>買値</th><th>売り時刻</th><th>売値</th><th>売却理由</th><th>損益（費用控除後）</th></tr></thead><tbody id="tradeRows"><tr><td colspan="8" style="text-align:left">取引履歴なし</td></tr></tbody></table></div>
+  </section>
+  <section class="card">
+    <h2>検証上のルール</h2>
+    <p>売買シグナルの判定関数には、その時点までの確定済み1分足だけを入力します。シグナルの次足始値で買い、エントリー後に置いた逆指値・指値で売るか、指定保有時間後の次足始値で売却します。1本の足で利確と損切りの両方に届いた場合は、保守的に損切りを先とみなします。</p>
+    <p>前場・後場の間や翌日まで持ち越さず、1回の売買が完結するまで次の買いは実施しません。スプレッド・約定スリッページ・手数料の合計を往復コストとして控除します。株価分割やデータ欠損、約定量などは追加検証が必要です。</p>
+    <p class="sub mini">20日なら訓練10日・検証10日。2〜19日なら古い半分（奇数は学習期間を1日多く）と新しい残りに分けます。1日しかない場合は同じ日の再現結果のみ表示します。より頑健な結論には、複数期間のウォークフォワード、同時刻ランダム売買との比較、異なる相場環境での再検証が必要です。</p>
+  </section>
+  <footer>研究用シミュレーションです。損益の保証、売買推奨ではありません。データ欠損・過剰最適化・流動性による再現性の限界があります。</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>米国半導体投資｜SOXXと米国株</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f6f8fb;color:#182437;font:12px/1.6 Arial,"Noto Sans JP",sans-serif}
+main{max-width:1700px;margin:15px auto;padding:0 12px 45px}h1{font-size:19px;margin:0 0 4px}h2{font-size:16px;margin:0 0 8px}.sub,.note{color:#64748b}.sub{margin:0 0 12px}
+.page-tabs{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 13px;border-bottom:2px solid #dbe3ed}.page-tabs a{display:inline-block;padding:10px 18px;text-decoration:none;border:1px solid #dbe3ed;border-bottom:0;border-radius:7px 7px 0 0;background:#fff;color:#475569;font-weight:700;font-size:12px}.page-tabs a[aria-current="page"]{background:#1e40af;border-color:#1e40af;color:#fff}.page-tabs a:hover:not([aria-current="page"]){background:#eef2ff;color:#1e40af}
+.panel{background:#fff;border:1px solid #e1e7ef;border-radius:8px;padding:12px;margin:10px 0}
+.guide{line-height:1.8;color:#475569;font-size:11px}.legend{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:8px 0;color:#64748b;font-size:11px}
+.ico{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border-radius:50%;line-height:1}.buy{background:#dcfce7;color:#15803d}.sell{background:#fee2e2;color:#b91c1c}.dd{background:#dc2626;color:#fff}.ftd{background:#dcfce7;color:#15803d;font-size:9px;border-radius:3px;padding:2px 3px;width:auto}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:12px 0}.tools label{font-size:11px;font-weight:700;color:#475569}.tools select,.pickers select{display:block;width:100%;margin-top:4px;background:#fff;border:1px solid #cbd5e1;border-radius:5px;color:#182437;font-size:11px;padding:6px 5px}
+.tools label{min-width:200px}.actions{display:flex;gap:5px}.actions button{padding:7px 10px;font-size:11px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#475569;cursor:pointer}.actions button.active{background:#1e40af;color:#fff;border-color:#1e40af}
+.pickers{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:10px 0}.pickers label{min-width:0;font-size:10px;color:#64748b;font-weight:700}
+.table-scroll{overflow:auto;max-height:650px;border:1px solid #e1e7ef;border-radius:7px}
+.matrix{border-collapse:separate;border-spacing:0;min-width:1250px;width:100%;table-layout:fixed;font-variant-numeric:tabular-nums}
+.matrix col.date{width:80px}.matrix col.price{width:auto}.matrix col.signal{width:29px}
+.matrix th,.matrix td{padding:5px 2px;text-align:center;vertical-align:middle;white-space:nowrap;border-right:1px solid #e8edf3;border-bottom:1px solid #e8edf3}
+.matrix thead th{background:#eaf0f6;color:#334155;position:sticky;z-index:3}
+.matrix thead tr:first-child th{top:0;height:31px;font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.matrix thead tr:nth-child(2) th{top:31px;height:26px;font-size:9px}
+.matrix .datecell{position:sticky;left:0;background:#f7f9fc;font-size:10px;font-weight:700;z-index:2}
+.matrix thead .datecell{z-index:5;top:0}
+.matrix tbody tr:nth-child(even) td{background:#fafbfd}.matrix tbody tr:nth-child(even) td.datecell{background:#f0f4f9}
+.matrix tbody tr:hover td{background:#eef5ff}.matrix tbody tr:hover td.datecell{background:#eef5ff}
+.change{font-size:12px;font-weight:700}.vol{font-size:9px;color:#64748b}
+.z-score{font-size:9px;font-weight:700;color:#475569;white-space:nowrap;letter-spacing:-.2px}
+.soxx-cell .change{font-size:11px}
+.matrix col.soxx-price{width:158px}
+.pos{color:#15803d}.neg{color:#dc2626}.missing{color:#94a3b8}
+.judge .ico{margin:auto}.judge{padding:3px 0!important}
+.note{font-size:11px;line-height:1.8;margin:9px 0}
+@media(max-width:1200px){.pickers{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:650px){.pickers{grid-template-columns:repeat(2,minmax(0,1fr))}.page-tabs a{flex:1;text-align:center;padding:9px 5px;font-size:11px}main{padding:0 7px}}
+
+/* SOXX daily move and one Yahoo Finance Japanese RSS summary per US trading day. */
+.catalyst-bar{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.catalyst-bar h2{margin:0;font-size:16px}
+.catalyst-control{display:flex;gap:5px;align-items:center}
+.catalyst-control button{cursor:pointer;border:1px solid #cbd5e1;background:#fff;border-radius:5px;color:#475569;padding:5px 9px;font-size:11px}
+.catalyst-control button.active{color:white;background:#1e40af;border-color:#1e40af}
+.catalyst-scroll{overflow:auto;max-height:640px;border:1px solid #e2e8f0;border-radius:6px;margin-top:9px}
+.catalyst-table{width:100%;min-width:700px;border-collapse:separate;border-spacing:0;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums}
+.catalyst-table th,.catalyst-table td{padding:9px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+.catalyst-table th{background:#eaf0f6;color:#334155;position:sticky;top:0;z-index:2;text-align:left;white-space:nowrap}
+.catalyst-table td:first-child,.catalyst-table th:first-child{position:sticky;left:0;width:94px;min-width:94px;background:#fff;z-index:1;white-space:nowrap}
+.catalyst-table th:first-child{background:#eaf0f6;z-index:3}
+.catalyst-table tbody tr:nth-child(even) td{background:#fafbfd}
+.catalyst-table tbody tr:nth-child(even) td:first-child{background:#fafbfd}
+.catalyst-table .numeric{width:175px;min-width:175px;white-space:nowrap}
+.catalyst-table .soxx-cell{min-width:175px;white-space:nowrap;text-align:left}
+.catalyst-table .catalyst-return{font-size:14px;font-weight:700;display:block}
+.catalyst-table .catalyst-sigma{font-size:10px;color:#64748b}
+.catalyst-table .material{min-width:300px;overflow-wrap:anywhere}
+.catalyst-table .material-summary{font-size:11px;color:#182437}
+.catalyst-table .material-link{display:inline-block;margin-top:4px;color:#1d4ed8;text-decoration:none;font-size:11px}
+.catalyst-table .material-link:hover{text-decoration:underline}
+.catalyst-table .material-source{font-size:10px;color:#64748b}
+.catalyst-table .no-material{color:#94a3b8}
+.catalyst-warning{font-size:11px;color:#64748b;margin:8px 0 0}
+@media(max-width:600px){.catalyst-table{min-width:680px}.catalyst-table th,.catalyst-table td{padding:7px 6px}}
+.catalyst-day-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}}
+
+/* Independent study: average forward close-to-close cumulative SOXX returns. */
+.sigma-study-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sigma-study-head h2{margin:0}.sigma-study-picker{display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:11px;color:#475569;font-weight:700}.sigma-study-picker select{font-size:11px;color:#182437;padding:6px;border:1px solid #cbd5e1;background:#fff;border-radius:5px;max-width:240px}
+.sigma-study-legend{display:flex;gap:15px;flex-wrap:wrap;align-items:center;font-size:11px;color:#475569;margin:8px 0}
+.sigma-study-legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.sigma-study-chart-wrap{border:1px solid #e2e8f0;border-radius:6px;overflow-x:auto;background:#fff;padding:8px 6px}
+.sigma-study-chart{width:100%;min-width:650px;height:auto;display:block}
+.sigma-study-summary{color:#475569;font-size:11px;margin:8px 0;line-height:1.7}
+.sigma-study-scroll{overflow:auto;max-height:330px;border:1px solid #e2e8f0;border-radius:6px;margin-top:10px}
+.sigma-study-table{width:100%;min-width:520px;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+.sigma-study-table th,.sigma-study-table td{padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right}
+.sigma-study-table th:first-child,.sigma-study-table td:first-child{text-align:left}
+.sigma-study-table th{position:sticky;top:0;background:#eaf0f6;color:#334155}
+.sigma-study-table tbody tr:nth-child(even){background:#fafbfd}
+.sigma-study-table .insufficient{color:#94a3b8}
+.sigma-all-block{margin-top:18px;padding-top:13px;border-top:1px solid #dbe3ed}
+.sigma-all-block h3{margin:0;font-size:14px;color:#182437}
+.sigma-all-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:10px 0}
+.sigma-all-controls label{font-size:11px;color:#475569;font-weight:700}
+.sigma-all-controls select{display:block;margin-top:4px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#182437;font-size:12px;padding:7px;min-width:165px}
+.sigma-all-scroll{max-height:460px;overflow:auto}
+.sigma-all-table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;table-layout:auto}
+.sigma-all-table th,.sigma-all-table td{min-width:81px;white-space:nowrap;text-align:center;padding:7px 9px;border-right:1px solid #edf1f5}
+.sigma-all-table thead th{position:sticky;top:0;z-index:3;background:#eaf0f6}
+.sigma-all-table th:first-child,.sigma-all-table td:first-child{position:sticky;left:0;width:146px;min-width:146px;max-width:146px;text-align:left;z-index:2;background:#fff}
+.sigma-all-table th:nth-child(2),.sigma-all-table td:nth-child(2){position:sticky;left:146px;width:76px;min-width:76px;max-width:76px;z-index:2;background:#fff;border-right:2px solid #cbd5e1;box-shadow:3px 0 5px -4px #64748b}
+.sigma-all-table thead th:first-child,.sigma-all-table thead th:nth-child(2){z-index:5;background:#eaf0f6}
+.sigma-all-table tbody tr:nth-child(even) td:first-child,.sigma-all-table tbody tr:nth-child(even) td:nth-child(2){background:#fafbfd}
+.sigma-all-table .avg{font-weight:700;font-size:11px}
+.sigma-all-table .subtle{color:#94a3b8}
+
+/* Same-date SOXX premarket versus regular-session study. */
+.pre-study-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.pre-study-bar h2{margin:0}
+.pre-study-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pre-study-controls label{color:#475569;font-size:11px;font-weight:700}
+.pre-study-controls select{background:#fff;color:#182437;border:1px solid #cbd5e1;border-radius:5px;font-size:11px;padding:6px;max-width:240px}
+.pre-study-kpis{display:flex;gap:20px;flex-wrap:wrap;margin:12px 0}
+.pre-study-kpi{flex:1;min-width:145px;border-top:1px solid #e2e8f0;padding:8px 2px}
+.pre-study-kpi strong{display:block;font-size:20px;font-variant-numeric:tabular-nums;color:#182437}
+.pre-study-kpi small{font-size:11px;color:#64748b}
+.pre-study-figures{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px}
+.pre-study-plot{min-width:0}
+.pre-study-plot h3{font-size:12px;margin:0 0 6px;color:#334155}
+.pre-study-plot-scroll{overflow:auto;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px}
+.pre-study-svg{width:100%;min-width:460px;height:auto;display:block}
+.pre-study-chart-note{color:#64748b;font-size:10px;margin-top:5px}
+.pre-study-scroll{overflow:auto;max-height:420px;border:1px solid #e2e8f0;border-radius:6px}
+.pre-study-table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-size:11px;font-variant-numeric:tabular-nums}
+.pre-study-table th,.pre-study-table td{padding:6px 9px;white-space:nowrap;text-align:right;border-bottom:1px solid #e2e8f0}
+.pre-study-table th{background:#eaf0f6;position:sticky;top:0;z-index:2;color:#334155}
+.pre-study-table th:first-child,.pre-study-table td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1}
+.pre-study-table th:first-child{background:#eaf0f6;z-index:3}
+.pre-study-table tbody tr:nth-child(even) td{background:#fafbfd}
+.pre-study-table tbody tr:nth-child(even) td:first-child{background:#fafbfd}
+.pre-study-table .pos{font-weight:700}.pre-study-table .neg{font-weight:700}
+@media(max-width:880px){.pre-study-figures{grid-template-columns:1fr}.pre-study-plot-scroll{overflow-x:auto}}
+.pre-scatter-filters{border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;padding:9px;margin:7px 0}
+.pre-scatter-filters-title{font-size:11px;font-weight:700;color:#475569;margin-bottom:7px}
+.pre-scatter-band-list{display:flex;gap:6px;flex-wrap:wrap}
+.pre-scatter-band{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#475569;font-size:11px;cursor:pointer;white-space:nowrap}
+.pre-scatter-band:has(input:checked){background:#e8f0ff;border-color:#2563eb;color:#1e40af}
+.pre-scatter-band input{margin:0;accent-color:#2563eb}
+.pre-scatter-band .pre-band-count{font-size:10px;color:#64748b}
+.pre-scatter-filter-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pre-scatter-filter-actions button{font-size:10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#475569;padding:4px 8px;cursor:pointer}
+.pre-scatter-filter-actions .pre-scatter-summary{font-size:10px;color:#64748b}
+
+/* Premarket clock-time study: mean normalized level plus exact daily extreme 5m bar bins. */
+.pre-time-section{margin:18px 0 14px;border-top:1px solid #dbe3ed;padding-top:13px}
+.pre-time-section h3{font-size:14px;margin:0 0 5px;color:#182437}
+.pre-time-kpis{display:flex;gap:15px;flex-wrap:wrap;margin:10px 0}
+.pre-time-kpi{flex:1;min-width:185px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px}
+.pre-time-kpi small{font-size:10px;color:#64748b;display:block}
+.pre-time-kpi strong{font-size:18px;line-height:1.7;font-variant-numeric:tabular-nums}
+.pre-time-kpi .pre-time-count{font-size:10px;color:#64748b}
+.pre-time-figures{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pre-time-figure h4{font-size:12px;font-weight:700;margin:0 0 7px;color:#334155}
+.pre-time-plot{overflow-x:auto;border:1px solid #e2e8f0;border-radius:6px;padding:5px}
+.pre-time-svg{width:100%;min-width:870px;height:auto;display:block}
+.pre-time-legend{font-size:11px;color:#475569;margin:4px 0 6px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.pre-time-legend i{width:11px;height:11px;display:inline-block;margin-right:4px;border-radius:2px;vertical-align:middle}
+.pre-time-table-wrap{margin-top:10px;max-height:340px;overflow:auto;border:1px solid #e2e8f0;border-radius:6px}
+.pre-time-table{border-collapse:separate;border-spacing:0;width:100%;min-width:590px;font-size:11px;font-variant-numeric:tabular-nums}
+.pre-time-table th,.pre-time-table td{padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right}
+.pre-time-table th:first-child,.pre-time-table td:first-child{text-align:left}
+.pre-time-table th{position:sticky;top:0;background:#eaf0f6;color:#334155}
+.pre-time-table tbody tr:nth-child(even){background:#fafbfd}
+@media(max-width:1040px){.pre-time-figures{grid-template-columns:1fr}}
+.pre-time-basis{font-size:11px;font-weight:700;color:#475569;display:flex;align-items:center;gap:8px}
+.pre-time-basis select{background:#fff;color:#182437;border:1px solid #cbd5e1;border-radius:5px;font-size:11px;padding:6px}
+
+/* Unified square, contiguous navigation tabs across all dashboard pages. */
+.page-tabs{
+  display:flex;
+  flex-wrap:nowrap;
+  gap:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  max-width:100%;
+  border-bottom:1px solid #dbe3ed;
+  padding-bottom:0;
+  -webkit-overflow-scrolling:touch;
+}
+.page-tabs a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-height:38px;
+  margin-left:-1px;
+  padding:9px 14px;
+  white-space:nowrap;
+  border:1px solid #dbe3ed;
+  border-radius:0;
+  text-align:center;
+}
+.page-tabs a:first-child{margin-left:0}
+.page-tabs a[aria-current="page"]{position:relative;z-index:1}
+
+
+.moomoo-panel{margin-top:10px}
+.moomoo-panel .moomoo-table-wrap{max-height:440px;overflow:auto;border:1px solid #e2e8f0;border-radius:6px}
+.moomoo-panel table{min-width:750px;width:100%;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+.moomoo-panel th,.moomoo-panel td{border-bottom:1px solid #e8edf3;padding:7px 9px;text-align:right;white-space:nowrap;font-size:11px}
+.moomoo-panel th{position:sticky;top:0;background:#eaf0f6;color:#334155;z-index:1}
+.moomoo-panel th:first-child,.moomoo-panel td:first-child{text-align:left;font-weight:700}
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261103o" defer></script></head><body><main>
+<nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html" aria-current="page">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+<h1>米国半導体投資｜SOXX・米国関連株</h1>
+<p class="sub">日次株価騰落率（出来高前日比％）・判定｜SOXXには20取引日基準の標準偏差も表示</p>
+<section class="panel moomoo-panel" id="moomooPanel">
+<h2>moomoo API｜米国株テクニカル指標</h2>
+<p class="note" id="moomoo-status">moomoo APIの指標を読み込み中...</p>
+<div class="moomoo-table-wrap"><table aria-label="moomoo APIによる米国株テクニカル指標">
+<thead><tr><th>銘柄</th><th>米国取引日</th><th>騰落率</th><th>出来高前日比</th><th>対SOXX RS63</th><th>20MA</th><th>50MA</th><th>200MA</th></tr></thead>
+<tbody id="moomoo-table"><tr><td colspan="8">初回データ取得待ち...</td></tr></tbody></table></div>
+<p class="note">対SOXX RS63は直近63共通取引日の個別株リターンとSOXXリターンの差（％ポイント）です。20/50/200MAは終値が単純移動平均以上なら○、下回れば×。株価・出来高の生データはこの欄に掲載しません。既存の日次分析は従来のデータソースを維持します。</p>
+</section>
+<section class="panel" id="catalystPanel">
+<div class="catalyst-bar"><h2>SOXXの騰落・相場の振り返り（Yahoo Finance）</h2>
+<div class="catalyst-control"><button type="button" id="news10" class="active">直近10日</button><button type="button" id="news25">25日</button></div></div>
+<p class="catalyst-warning">Yahoo Financeの<b>引け後の市場振り返り記事</b>を優先し、なければ決算・需要・規制など具体的な半導体関連ニュースを各取引日に最大1件表示します。米東部時間16:00〜22:00の引け後総括はその取引日に対応。日本語は記事の見出し・概要の機械翻訳です。記事が説明する背景はメディアの見解であり、SOXXの値動きとの因果関係を保証しません。閲覧数によるランキングではありません。古い記事は取得できない場合があります。</p>
+<p class="note" id="newsStatus">Yahoo Financeのニュースを読み込み中...</p>
+<div class="catalyst-scroll"><table class="catalyst-table"><thead><tr><th>米国日付</th><th>SOXX 騰落率（出来高前日比）</th><th>市場の振り返り・材料（日本語・最大1記事）</th></tr></thead>
+<tbody id="catalystTableBody"><tr><td colspan="3">SOXXの日足データを読み込み中...</td></tr></tbody></table></div>
+</section>
+<section class="panel"><div class="guide">米国時間の同じ取引日におけるSOXX ETFと個別株を比較します。SOXX列にはETF自体の株価騰落率・出来高前日比・標準偏差からの乖離・判定を表示します。NBIS・LITE・AAOIは半導体そのものに限らないAIインフラ／光通信関連銘柄です。SKHYなど上場間もない銘柄は短い履歴のみ表示します。データは米国引け後に確定します。</div>
+<div class="legend"><span><i class="ico buy">✓</i> 買い集め</span><span><i class="ico sell">×</i> 売り抜け</span><span><i class="ico dd">1</i> 有効DD件数</span><span><i class="ico ftd">FTD</i> 反発確認</span><span>— 通常・未判定</span></div>
+<p class="note">SOXXの±σは、当日を除く直前20取引日を基準にした偏差値（zスコア）です。株価は前日比％、出来高は売買株数の平均と標準偏差を使用。±2σは直近20日平均から標準偏差2個分の差を示します。基準日数が不足、または標準偏差が0なら「—」です。</p>
+<p class="note">他ページと同じ簡易判定：上昇＋出来高増加は買い集め、-0.20%以下＋出来高増加は売り抜け、反発試行4日目以降の+1.25%以上＋出来高増加をFTDとします。有効DDは25取引日経過または発生日終値から5%以上の上昇で失効。IBD公式判定の完全再現ではなく、独立した25取引日の判定履歴は表示しません。</p>
+
+<div class="tools"><label>表示する銘柄<select id="view"><option value="seven">SOXX＋指定7銘柄</option><option value="all">SOXX＋全15銘柄</option></select></label><div class="actions"><button type="button" id="d25" class="active">25取引日</button><button type="button" id="d50">50取引日</button></div></div>
+<div id="pickers" class="pickers"></div>
+<div class="table-scroll" tabindex="0" aria-label="米国SOXXと株式の日次一覧。横スクロールできます">
+<table class="matrix" id="matrix"><colgroup id="cols"></colgroup><thead id="thead"><tr><th>米国日付</th><th colspan="2">SOXX</th><th colspan="14">米国株</th></tr></thead><tbody id="tbody"><tr><td colspan="17">日足データの読み込み中...</td></tr></tbody></table>
+</div><div class="note" id="status">データの読み込み中...</div></section>
+
+<section class="panel" id="sigmaDropPanel">
+<div class="sigma-study-head"><h2 id="sigmaStudyTitle">SOXX下落σ別｜翌1〜3取引日 SOXX 平均日次リターン</h2><label class="sigma-study-picker" for="sigmaStudyTicker">分析する銘柄 <select id="sigmaStudyTicker"><option value="SOXX">SOXX｜ETF</option></select></label></div>
+<p class="note"><b>SOXX</b>の当日騰落率が<b>マイナス</b>、かつSOXXの直前20取引日の騰落率分布に対する偏差が<b>−1.00〜−1.28σ、−1.28〜−1.64σ、−1.64〜−2.05σ、−2.05〜−2.33σ、−2.33σ以下</b>の5区間に入った日を比較します。区切りは正規分布の下位10%・5%・2%・1%に相当するσ値（内部計算では丸めない値）です。各区間は重複しません。翌1〜3取引日の平均日次リターンはプルダウンで選んだ銘柄について計算します。リターンは累積ではなく各取引日の前日比を独立に平均します（翌1日：当日終値→翌日終値、翌2日：翌日終値→翌々日終値、翌3日：翌々日終値→3日後終値）。</p>
+<div class="sigma-study-legend" aria-label="棒グラフの色分け"><span><i style="background:#2563eb"></i>翌1取引日</span><span><i style="background:#059669"></i>翌2取引日</span><span><i style="background:#dc2626"></i>翌3取引日</span></div>
+<div class="sigma-study-chart-wrap"><svg id="sigmaDropChart" class="sigma-study-chart" viewBox="0 0 940 355" role="img" aria-label="SOXX下落標準偏差の区間別に翌1・2・3取引日それぞれの平均前日比リターンを並べた棒グラフ"></svg></div>
+<div id="sigmaDropStatus" class="sigma-study-summary">過去のSOXX終値データを集計中...</div>
+<div class="sigma-study-scroll"><table class="sigma-study-table">
+<thead><tr><th>SOXXの下落条件</th><th>対象件数</th><th>翌1日</th><th>翌2日</th><th>翌3日</th></tr></thead>
+<tbody id="sigmaDropRows"><tr><td colspan="5">計算中...</td></tr></tbody></table></div>
+<p class="note">正規分布を仮定した下位割合の目安は、各区間で15.87〜10%、10〜5%、5〜2%、2〜1%、1%以下です。実際のSOXXの件数がその割合になるとは限りません。直前20取引日には当日を含めず、翌3取引日まで価格が確定した日だけを全期間で集計します。同じ急落相場の連続日もそれぞれ1件として数えるため、サンプル間は独立ではありません。翌1〜3日のリターンは各日の前日比であり、累積リターンではありません。該当0件は「—」、少数件数の平均は不安定です。過去の平均は将来の収益を保証しません。</p>
+<div class="sigma-all-block" id="sigmaAllBlock">
+<div class="sigma-study-head">
+<h3 id="sigmaAllTitle">SOXX下落σ別｜翌1取引日 全銘柄の平均日次リターン</h3>
+<div class="sigma-all-controls">
+<label for="sigmaAllHorizon">翌何取引日か
+<select id="sigmaAllHorizon"><option value="1">翌1取引日</option><option value="2">翌2取引日</option><option value="3">翌3取引日</option></select></label>
+</div></div>
+<p class="sigma-study-summary" id="sigmaAllStatus" aria-live="polite">集計中...</p>
+<div class="sigma-study-scroll sigma-all-scroll"><table class="sigma-study-table sigma-all-table">
+<thead><tr id="sigmaAllHead"><th scope="col">SOXX下落σ</th><th scope="col">件数</th><th scope="col">SOXX</th></tr></thead>
+<tbody id="sigmaAllRows"><tr><td colspan="3">集計中...</td></tr></tbody></table></div>
+<p class="note">行はSOXXの下落σを正規分布の下位10%・5%・2%・1%を境界にした重複のない5区間で分類（最終行は−2.33σ以下）。表示するσ値は小数第2位に丸め、判定には正確な境界値を使います。列は各銘柄で、選択した翌1・2・3取引日<b>単独の前日比平均騰落率</b>を表示します（累積ではありません）。「SOXX下落σ」と「件数」は横スクロールしても左側に固定表示されます。「件数」はSOXXの基準イベント数です。銘柄ごとの欠損日によって集計件数が異なる場合は、各数値の件数を参照してください。翌3取引日まで終値が揃ったイベントだけを集計します。</p>
+</div>
+</section>
+
+<section class="panel" id="premarketStudyPanel">
+<div class="pre-study-bar"><h2 id="preStudyTitle">SOXX｜プレマーケットと通常取引の相関分析</h2>
+<div class="pre-study-controls">
+<label for="preStudySymbol">分析する銘柄
+<select id="preStudySymbol">
+<option value="SOXX">SOXX｜半導体ETF</option>
+<option value="LLY">LLY｜イーライリリー</option>
+<option value="NVDA">NVDA｜エヌビディア</option>
+<option value="AMD">AMD｜AMD</option>
+<option value="AVGO">AVGO｜ブロードコム</option>
+<option value="MU">MU｜マイクロン</option>
+<option value="TSM">TSM｜TSMC ADR</option>
+<option value="INTC">INTC｜インテル</option>
+<option value="MSFT">MSFT｜マイクロソフト</option>
+<option value="GOOGL">GOOGL｜アルファベット</option>
+<option value="AAPL">AAPL｜アップル</option>
+<option value="META">META｜メタ</option>
+<option value="TSLA">TSLA｜テスラ</option>
+<option value="QQQ">QQQ｜NASDAQ100 ETF</option>
+<option value="SPY">SPY｜S&amp;P500 ETF</option>
+<option value="NBIS">NBIS｜ネビウス</option>
+<option value="AAOI">AAOI｜アプライド・オプトエレクトロニクス</option>
+<option value="LITE">LITE｜ルメンタム</option>
+</select></label>
+<label for="preStudyX">プレマ側の指標
+<select id="preStudyX">
+<option value="pre_end_pct">プレマ最終値（前日終値比）</option>
+<option value="pre_start_pct">プレマ開始値（前日終値比）</option>
+<option value="pre_high_pct">プレマ高値（前日終値比）</option>
+<option value="pre_low_pct">プレマ安値（前日終値比）</option>
+</select></label>
+<label for="preStudySpan">分析期間
+<select id="preStudySpan"><option value="all">全取得日</option><option value="20">直近20取引日</option><option value="60">直近60取引日</option></select></label>
+</div></div>
+<p class="note">同じ米国取引日を対応付けます。プレマは<b>日本時間17:00〜22:30（米東部夏時間04:00〜09:30）／18:00〜23:30（米東部冬時間04:00〜09:30）</b>の5分足を観測。通常取引は日本時間22:30〜翌05:00（米東部09:30〜16:00、夏時間）／23:30〜翌06:00（同、冬時間）の<b>始値→終値の騰落率</b>です。プレマーケットの価格指標は<b>すべて前営業日の通常取引終値を0%</b>とした騰落率です（moomooのプレマ表示と同じ基準）。散布図では横軸がプレマ価格の前日終値比、縦軸が通常取引の始値→終値騰落率。条件に合う観測日だけを表示し、データ未取得日は除外します。</p>
+<div class="pre-study-kpis">
+<div class="pre-study-kpi"><small>有効な取引日数</small><strong id="preStudyCount">—</strong><small id="preStudyDates">取得データを確認中</small></div>
+<div class="pre-study-kpi"><small>プレマ指標と通常取引の相関（Pearson r）</small><strong id="preStudyCorrelation">—</strong><small id="preStudyCorrelationNote">有効な日次データから計算</small></div>
+<div class="pre-study-kpi"><small>通常取引の平均騰落率</small><strong id="preStudyRegularAverage">—</strong><small id="preStudyWinRate">上昇した取引日の割合 —</small></div>
+</div>
+<div class="pre-study-figures">
+<div class="pre-study-plot"><h3 id="preStudyScatterTitle">散布図：プレマ最終値（前日終値比） × 通常取引の騰落率</h3>
+<div class="pre-scatter-filters" role="group" aria-label="散布図に表示するSOXX通常取引の騰落率帯">
+<div class="pre-scatter-filters-title" id="preScatterSymbolTitle">SOXXの通常取引（始値→終値）：表示する騰落率帯</div>
+<div class="pre-scatter-band-list">
+<label class="pre-scatter-band"><input type="checkbox" data-pre-scatter-band="up2" checked>＋2%以上 <span class="pre-band-count" data-pre-band-count="up2"></span></label>
+<label class="pre-scatter-band"><input type="checkbox" data-pre-scatter-band="up1" checked>＋1〜＋2% <span class="pre-band-count" data-pre-band-count="up1"></span></label>
+<label class="pre-scatter-band"><input type="checkbox" data-pre-scatter-band="up0" checked>0〜＋1% <span class="pre-band-count" data-pre-band-count="up0"></span></label>
+<label class="pre-scatter-band"><input type="checkbox" data-pre-scatter-band="down0" checked>−1〜0% <span class="pre-band-count" data-pre-band-count="down0"></span></label>
+<label class="pre-scatter-band"><input type="checkbox" data-pre-scatter-band="down1" checked>−2〜−1% <span class="pre-band-count" data-pre-band-count="down1"></span></label>
+<label class="pre-scatter-band"><input type="checkbox" data-pre-scatter-band="down2" checked>−2%以下 <span class="pre-band-count" data-pre-band-count="down2"></span></label>
+</div>
+<div class="pre-scatter-filter-actions">
+<button type="button" id="preScatterAll">すべて表示</button>
+<button type="button" id="preScatterNone">すべて非表示</button>
+<span id="preScatterSummary" class="pre-scatter-summary" aria-live="polite">散布図データを確認中</span>
+</div></div>
+<div class="pre-study-plot-scroll"><svg id="preStudyScatter" class="pre-study-svg" viewBox="0 0 760 385" role="img" aria-label="プレマーケット指標と当日通常取引の騰落率の相関散布図"></svg></div>
+<p class="pre-study-chart-note">1点＝米国市場の1取引日。緑＝通常取引で上昇、赤＝下落。青線＝表示中の点から計算した単回帰直線。騰落率帯は重複なし。上部のKPI・右側の棒グラフ・時刻別分析にはフィルターを適用しません。</p>
+</div>
+<div class="pre-study-plot"><h3>プレマ安値（前日終値比）別｜通常取引の平均騰落率</h3>
+<div class="pre-study-plot-scroll"><svg id="preStudyBuckets" class="pre-study-svg" viewBox="0 0 580 385" role="img" aria-label="プレマーケットの前日終値比安値の区間別に通常取引の平均騰落率を比較する棒グラフ"></svg></div>
+<p class="pre-study-chart-note">区間別の件数を各棒の下に表示。安値は前営業日の終値比のためプラスにもなります。棒は通常取引の平均騰落率。</p>
+</div>
+</div>
+
+<div class="pre-time-section" id="preTimeStudyPanel">
+<div class="pre-study-bar"><h3>プレマーケット｜何時頃に高値・安値が出やすいか</h3>
+<label class="pre-time-basis" for="preTimeBasis">高値・安値の判定方法
+<select id="preTimeBasis">
+<option value="close">5分足の終値（通常）</option>
+<option value="wick">5分足の高値・安値（ヒゲ含む）</option>
+</select></label></div>
+<p class="note">日本時間17:00〜22:30（米東部夏時間04:00〜09:30）／18:00〜23:30（米東部冬時間04:00〜09:30）を30分刻みで集計。米国市場の時間帯で比較し、日本時間は取引日ごとに換算して表示します。<b>平均価格推移</b>は各日の<b>前営業日の通常取引終値を0%</b>とした騰落率で、日付ごとに平均してから時間帯別に平均します。高値・安値の出現時刻は原則として<b>5分足終値の最高・最低</b>で判定し、ヒゲを含む高値・安値に切り替えて比較できます。</p>
+<div class="pre-time-kpis">
+<div class="pre-time-kpi"><small>プレマ高値が最も多い時間帯（日本時間／米東部）</small><strong id="preTimeHighTime">—</strong><div class="pre-time-count" id="preTimeHighCount">集計待ち</div></div>
+<div class="pre-time-kpi"><small>プレマ安値が最も多い時間帯（日本時間／米東部）</small><strong id="preTimeLowTime">—</strong><div class="pre-time-count" id="preTimeLowCount">集計待ち</div></div>
+<div class="pre-time-kpi"><small>時間帯集計に使えた日数</small><strong id="preTimeValidDays">—</strong><div class="pre-time-count" id="preTimeSpanNote">上の分析期間と連動</div></div>
+</div>
+<div class="pre-time-figures">
+<div class="pre-time-figure">
+<h4>時刻別の平均騰落率（前営業日終値＝0%）</h4>
+<p class="pre-study-chart-note">当日立会の始値→終値がプラスの日とマイナスの日に分け、プレマーケットの時間帯別平均を集計します。横軸は同じ米東部時間、<b>2つのグラフの縦軸は同一尺度</b>です。</p>
+<div class="pre-time-figure" style="margin:9px 0 13px">
+<h4 id="preTimeUpTitle">立会上昇日（始値→終値 ＋）</h4>
+<div class="pre-time-plot"><svg id="preTimeAverageUp" class="pre-time-svg" viewBox="0 0 940 250" role="img" aria-label="立会上昇日のプレマーケット時間帯別平均騰落率"></svg></div>
+</div>
+<div class="pre-time-figure" style="margin:9px 0 6px">
+<h4 id="preTimeDownTitle">立会下落日（始値→終値 −）</h4>
+<div class="pre-time-plot"><svg id="preTimeAverageDown" class="pre-time-svg" viewBox="0 0 940 250" role="img" aria-label="立会下落日のプレマーケット時間帯別平均騰落率"></svg></div>
+</div>
+<p class="pre-study-chart-note">各点は前営業日終値比の平均騰落率（%）。緑＝前の時間帯より上昇、赤＝下落。▲▼は前時間帯からの変化幅（ポイント）。縦軸は変化を見やすく拡大し、0%始まりとは限りません。<b>立会の上昇・下落は事後的な分類であり、プレマだけで当日の騰落を予測できることを示しません。</b></p>
+</div>
+<div class="pre-time-figure">
+<h4 id="preTimeExtremesTitle">各日の最高・最低の5分足終値が現れた時間帯</h4>
+<div class="pre-time-legend"><span><i style="background:#2563eb"></i>最高値が出た日</span><span><i style="background:#dc2626"></i>最安値が出た日</span></div>
+<div class="pre-time-plot"><svg id="preTimeExtremes" class="pre-time-svg" viewBox="0 0 940 250" role="img" aria-label="日本時間を先に米東部時間を括弧内に併記した高値・安値出現頻度の棒グラフ"></svg></div>
+<p class="pre-study-chart-note">割合の分母は5分足が十分そろった対象日。同値がある場合は最初の足を採用します。</p>
+</div>
+</div>
+<p id="preTimeStatus" class="note">プレマーケット5分足の時刻別データを集計中...</p>
+<div class="pre-time-table-wrap"><table class="pre-time-table"><thead><tr><th>日本時間（米東部時間）</th><th>立会上昇日：平均騰落率／観測日数</th><th>立会下落日：平均騰落率／観測日数</th><th>高値になった日（全対象）</th><th>安値になった日（全対象）</th></tr></thead>
+<tbody id="preTimeRows"><tr><td colspan="5">データの取得待ち</td></tr></tbody></table></div>
+<p class="note">時間帯の分布は、プレマ開始から5分以内に観測が始まり、終了10分前以降まで5分足があり、合計48本以上を取得できた日だけを対象にします。終値ベースは5分ごとの最終価格、ヒゲを含む高安ベースは5分間の最高・最低価格を使用します。<b>正確な約定時刻は特定できません</b>。プレマ開始・終了の時間帯は、単に観測期間の両端であるため高安が集中する場合があります。プレマの約定量は確認できておらず、時刻別の偏りは価格フィードの欠損や流動性の影響を受けます。夏時間と冬時間が混在する場合、同じ米東部時間に対応する日本時間を併記します。過去の傾向は将来の値動きを保証しません。</p>
+</div>
+
+<p class="note" id="preStudyStatus">選択銘柄のプレマ5分足を確認中...</p>
+<div class="pre-study-scroll"><table class="pre-study-table"><thead><tr>
+<th>米国日付</th><th>プレマ開始（前日終値比）</th><th>プレマ高値（前日終値比）</th><th>プレマ安値（前日終値比）</th><th>プレマ最終（前日終値比）</th><th>通常取引 始値→終値</th><th>寄付ギャップ</th><th>プレマ観測開始〜最終（日本／米東部）</th>
+</tr></thead><tbody id="preStudyRows"><tr><td colspan="8">プレマデータの取得待ち</td></tr></tbody></table></div>
+<p class="note">プレマの開始・高値・安値・最終値と時刻別平均は、すべて前営業日の通常取引終値からの変化率です。高値・安値は観測された5分足の高値・安値（ヒゲ含む）を使用し、同じ足の中で時系列順と仮定しません。時間外は出来高が薄く未約定区間もあるため、特にプレマ開始から観測できなかった日は参考値です。Yahoo Financeの時間外出来高が0として返るため、各足の約定件数は検証できていません。Yahoo Financeの非公式な5分足は過去約60日分が取得上限の目安で、取得後のサマリーを日次保存して蓄積します。相関は因果関係や将来の優位性を示すものではありません。</p>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const DEFAULT=["MU","SNDK","SKHY","NBIS","LITE","AEHR","AAOI"];
+const FALLBACK={"MU":"Micron","SNDK":"Sandisk","SKHY":"SK hynix","NBIS":"Nebius","LITE":"Lumentum","AEHR":"Aehr Test Systems","AAOI":"Applied Optoelectronics","TSM":"TSMC","NVDA":"NVIDIA","AMD":"AMD","AVGO":"Broadcom","COHR":"Coherent","CRDO":"Credo Technology","MRVL":"Marvell","AMAT":"Applied Materials"};
+let stockNames=FALLBACK,days=25,data=null;
+function fmt(v){return typeof v==="number"&&Number.isFinite(v)?(v>0?"+":"")+v.toFixed(2)+"%":"—"}
+function cls(v){return v>0?"pos":v<0?"neg":""}
+function vchange(a,b){return typeof a==="number"&&typeof b==="number"&&Number.isFinite(a)&&Number.isFinite(b)&&a>=0&&b>0?(a/b-1)*100:null}
+function classify(prices,volProxy){
+ const ds=Object.keys(prices||{}).sort(),out={};let state="normal",baseLow=null,attempt=0,active=[];
+ for(let i=0;i<ds.length;i++){
+  const d=ds[i],now=prices[d],prev=i?prices[ds[i-1]]:null;
+  if(!now||!(now[3]>0))continue;
+  const change=prev&&prev[3]>0?100*(now[3]/prev[3]-1):null;
+  const v=volProxy?volProxy[d]:now[4],pv=prev?(volProxy?volProxy[ds[i-1]]:prev[4]):null;
+  const vol=vchange(v,pv);
+  let judge=change!==null&&vol!==null&&vol>0?(change>0?"buy":change<=-.2?"sell":null):null;
+  const highClose=i>0?Math.max(...ds.slice(Math.max(0,i-60),i).map(x=>prices[x][3])):null;
+  if(now[2]>0&&highClose!==null){
+   if((state==="normal"||state==="confirmed")&&now[3]<=highClose*.95){state="correction";baseLow=now[2];attempt=0}
+   else if(state==="correction"){if(change!==null&&change>0&&prev&&prev[2]>0){state="attempt";baseLow=prev[2];attempt=1}}
+   else if(state==="attempt"){
+    if(now[2]<baseLow){state="correction";baseLow=now[2];attempt=0}
+    else{attempt++;if(attempt>=4&&change>=1.25&&vol!==null&&vol>0){judge="ftd";state="confirmed"}}
+   }
+  }
+  active=active.filter(x=>i-x.i<25&&now[3]<x.close*1.05);
+  let dd_number=null;
+  if(judge==="sell"){active.push({i,close:now[3]});dd_number=active.length}
+  out[d]={change,volumeChange:vol,judge,dd_number,dd_count:active.length};
+ }
+ return out;
+}
+function mark(v){
+ let content='<span class="missing">—</span>',title="通常・未判定";
+ if(v?.judge==="ftd"){content='<span class="ico ftd">FTD</span>';title="反発確認（簡易FTD）"}
+ else if(v?.judge==="sell"){content=v.dd_number?'<span class="ico dd">'+v.dd_number+'</span>':'<span class="ico sell">×</span>';title="売り抜け / 有効DD "+v.dd_count+"件"}
+ else if(v?.judge==="buy"){content='<span class="ico buy">✓</span>';title="買い集め"}
+ return '<td class="judge" title="'+title+'">'+content+'</td>';
+}
+function cell(x,tooltip){
+ if(!x||typeof x.change!=="number")return '<td><span class="missing">—</span></td>';
+ return '<td title="'+tooltip+'"><div class="change '+cls(x.change)+'">'+fmt(x.change)+'</div><div class="vol">（'+fmt(x.volumeChange)+'）</div></td>';
+}
+
+/* SOXX: each session compared with the PRIOR twenty US trading sessions.
+   Close-to-close returns use their own 20-day return distribution; volume is
+   compared with 20 historical daily share counts, not volume-change percent. */
+function sigmaScore(value, history){
+ if(typeof value!=="number"||!Number.isFinite(value)||history.length!==20||
+    history.some(x=>typeof x!=="number"||!Number.isFinite(x)))return null;
+ const mean=history.reduce((a,b)=>a+b,0)/20;
+ const variance=history.reduce((a,b)=>a+(b-mean)**2,0)/19;
+ const stdev=Math.sqrt(variance);
+ return stdev>1e-12?(value-mean)/stdev:null;
+}
+function soxxSigmaSeries(prices){
+ const ds=Object.keys(prices||{}).sort(),out={};
+ const returns=ds.map((d,i)=>{
+  const bar=prices[d],prev=i>0?prices[ds[i-1]]:null;
+  return bar?.[3]>0&&prev?.[3]>0?100*(bar[3]/prev[3]-1):null;
+ });
+ const volume=ds.map(d=>prices[d]?.[4]);
+ for(let i=0;i<ds.length;i++){
+  const historyRet=returns.slice(i-20,i);
+  const historyVol=volume.slice(i-20,i);
+  out[ds[i]]={
+   priceZ:i>=21?sigmaScore(returns[i],historyRet):null,
+   volumeZ:i>=20?sigmaScore(volume[i],historyVol):null
+  };
+ }
+ return out;
+}
+function fmtSigma(v){return typeof v==="number"&&Number.isFinite(v)?(v>0?"+":"")+v.toFixed(2)+"σ":"—"}
+function soxxCell(x,z,date){
+ if(!x||typeof x.change!=="number"||!Number.isFinite(x.change))
+  return '<td class="soxx-cell"><span class="missing">—</span></td>';
+ const p=fmtSigma(z?.priceZ),v=fmtSigma(z?.volumeZ);
+ const title="SOXX "+date+"｜株価 "+fmt(x.change)+"（直近20日比 "+p+"）"+
+   "｜出来高前日比 "+fmt(x.volumeChange)+"（出来高水準の直近20日比 "+v+"）";
+ return '<td class="soxx-cell" title="'+title+'"><div class="change '+cls(x.change)+'">'+fmt(x.change)+
+  ' <span class="z-score">'+p+'</span></div><div class="vol">（'+fmt(x.volumeChange)+
+  ' <span class="z-score">'+v+'</span>）</div></td>';
+}
+
+/* RSS candidate is selected during collection; summaries only use Yahoo RSS
+   headline / short description, not article bodies. No causal inference. */
+let headlineData=null,newsDays=10,headlineError=null;
+function escapeNewsText(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function articleLink(url){try{const u=new URL(url);return u.protocol==="https:"?u.href:null}catch(e){return null}}
+function conciseJapanese(value){
+ const s=String(value||"").trim();
+ if(s.length<=155)return s;
+ const sentences=s.match(/[^。！？]+[。！？]?/g)||[];
+ let result="";
+ for(const phrase of sentences){
+  if((result+phrase).length>150)break;
+  result+=phrase;
+ }
+ return result.length>=20?result:s.slice(0,145)+"…";
+}
+function renderCatalysts(){
+ if(!data?.soxx||!Object.keys(data.soxx).length)return;
+ const prices=data.soxx,dates=Object.keys(prices).sort(),zs=soxxSigmaSeries(prices),soxx=classify(prices),daily=headlineData?.daily||{};
+ const earliestNews=(headlineData?.articles||[]).map(a=>String(a.published_at||"").slice(0,10)).filter(Boolean).sort()[0]||null;
+ $("catalystTableBody").innerHTML=dates.slice(-newsDays).reverse().map(day=>{
+  const i=dates.indexOf(day),bar=prices[day],prev=i?prices[dates[i-1]]:null;
+  const article=daily[day],url=article?articleLink(article.url):null;
+  const hasSource=article&&url&&["Yahoo Finance RSS","Yahoo Finance Search"].includes(article.source);
+  const summary=hasSource&&article.summary_ja?escapeNewsText(conciseJapanese(article.summary_ja)):null;
+  const time=hasSource&&article.published_at?new Date(article.published_at).toLocaleString("ja-JP",{
+    timeZone:"America/New_York",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false
+  }):"";
+  const material=hasSource?
+   '<div class="material-summary">'+(summary||'<span class="no-material">日本語要約未取得</span>')+'</div>'+
+   '<a class="material-link" href="'+escapeNewsText(url)+'" target="_blank" rel="noopener noreferrer">Yahoo Finance掲載記事を読む</a>'+
+   '<div class="material-source">'+escapeNewsText(article.review_type||"関連報道")+'｜Yahoo Finance｜米東部 '+escapeNewsText(time)+'</div>':
+   '<span class="no-material">'+(headlineError?"取得できず":earliestNews&&day<earliestNews?"過去記事の取得範囲外":"該当する解説・材料を未検出")+'</span>';
+  return '<tr><td>'+day.replaceAll("-","/")+'</td>'+
+   soxxCell(soxx[day],zs[day],day)+
+   '<td class="material">'+material+'</td></tr>';
+ }).join("");
+ for(const n of [10,25])$("news"+n).classList.toggle("active",newsDays===n);
+}
+async function loadHeadlines(){
+ try{
+  const response=await fetch("./soxx-news.json?t="+Date.now(),{cache:"no-store"});
+  if(!response.ok)throw Error("HTTP "+response.status);
+  const obj=await response.json();
+  if(!obj.daily||typeof obj.daily!=="object")throw Error("Yahoo Finance単独のニュースデータを更新中");
+  headlineData=obj;
+  const failed=Object.keys(obj.feed_errors||{});
+  const ok=Object.keys(obj.feed_counts||{});
+  headlineError=ok.length===0;
+  const stamp=obj.updated_at?new Date(obj.updated_at).toLocaleString("ja-JP",{timeZone:"Asia/Tokyo"}):"未取得";
+  $("newsStatus").textContent="Yahoo Finance 最終取得 "+stamp+"（日本時間）｜"+
+   (failed.length?"一部取得失敗: "+failed.join("、"):"取得成功")+
+   "｜日本語要約は見出し・概要の機械翻訳｜候補あり "+Object.keys(obj.daily).length+"取引日";
+ }catch(error){
+  headlineError=true;
+  $("newsStatus").textContent="Yahoo Financeニュースデータの取得待ち。SOXXの日足は引き続き表示しています。";
+ }
+ renderCatalysts();
+}
+function choose(){
+ $("pickers").innerHTML=DEFAULT.map((symbol,i)=>'<label>銘柄'+(i+1)+'<select id="pick'+i+'">'+Object.keys(stockNames).map(s=>'<option value="'+s+'"'+(s===symbol?' selected':'')+'>'+s+'｜'+stockNames[s]+'</option>').join("")+'</select></label>').join("");
+ DEFAULT.forEach((symbol,i)=>$("pick"+i).addEventListener("change",render));
+ $("view").addEventListener("change",render);
+ for(const n of [25,50])$("d"+n).addEventListener("click",()=>{days=n;render()});
+ for(const n of [10,25])$("news"+n).addEventListener("click",()=>{newsDays=n;renderCatalysts()});
+}
+function render(){
+ if(!data)return;
+ const all=$("view").value==="all";
+ $("pickers").style.display=all?"none":"grid";
+ for(const n of [25,50])$("d"+n).classList.toggle("active",days===n);
+ const selected=all?Object.keys(stockNames):Array.from(new Set(DEFAULT.map((s,i)=>$("pick"+i).value))).filter(s=>!!stockNames[s]);
+ const columns=[{key:"SOXX",name:"SOXX（ETF・20日σ）"},...selected.map(s=>({key:s,name:s}))];
+ const dateSet=new Set(Object.keys(data.soxx||{}));
+ for(const s of selected)for(const d of Object.keys(data.stocks?.[s]||{}))dateSet.add(d);
+ const dates=[...dateSet].sort().reverse().slice(0,days);
+ const soxx=classify(data.soxx||{}),soxxSigma=soxxSigmaSeries(data.soxx||{}),
+  stocks=Object.fromEntries(selected.map(s=>[s,classify(data.stocks?.[s]||{})]));
+ $("matrix").style.minWidth=Math.max(1260,80+columns.length*150)+"px";
+ $("cols").innerHTML='<col class="date">'+columns.map((x,i)=>'<col class="'+(i===0?'soxx-price':'price')+'"><col class="signal">').join("");
+ $("thead").innerHTML='<tr><th class="datecell" rowspan="2">米国日付</th>'+columns.map(x=>'<th colspan="2">'+x.name+'</th>').join("")+'</tr>'+
+ '<tr>'+columns.map((x,i)=>'<th>騰落率（'+(i===0?'量％ / ±σ':'出来高％')+'）</th><th>判定</th>').join("")+'</tr>';
+ $("tbody").innerHTML=dates.length?dates.map(d=>{
+  return '<tr><td class="datecell">'+d.replaceAll("-","/")+'</td>'+soxxCell(soxx[d],soxxSigma[d],d)+mark(soxx[d])+
+   selected.map(s=>cell(stocks[s]?.[d],s+" "+stockNames[s]+" "+d)+mark(stocks[s]?.[d])).join("")+'</tr>';
+ }).join(""):'<tr><td colspan="'+(1+2*columns.length)+'">確定した米国取引日のデータがありません。</td></tr>';
+ $("status").textContent="表示："+dates.length+"米国取引日 / "+(dates.at(-1)||"—")+"〜"+(dates[0]||"—")+
+ " ｜データ最終更新 "+(data.updated_at||"不明")+" (UTC)。SOXXはETF。SOXXの騰落率は過去20取引日の騰落率、出来高は過去20取引日の売買株数を基準とするzスコア（当日除外）。";
+}
+
+/* SOXX is always the signal; the selected ticker supplies forward daily returns.
+   Fixed standard-normal percentile cutoffs: 10%, 5%, 2%, 1%.
+   Bounds are NOT rounded when filtering; displayed sigma labels are rounded.
+   All bands are disjoint; the last band includes everything z <= -2.326347874.
+   The first band is -1.281551565 < z <= -1 (approx bottom 15.87% to 10%). */
+const SIGMA_CUTOFFS=[1,1.2815515655446004,1.6448536269514729,2.053748910631823,2.3263478740408408];
+const SIGMA_BINS=SIGMA_CUTOFFS.map((lower,i)=>{
+ const upper=SIGMA_CUTOFFS[i+1]??null;
+ return {lower,upper,label:"−"+lower.toFixed(2)+"σ"+(upper===null?"以下":"〜−"+upper.toFixed(2)+"σ")};
+});
+function sigmaDropStudy(soxxPrices,targetPrices){
+ const ds=Object.keys(soxxPrices||{}).sort();
+ const z=soxxSigmaSeries(soxxPrices);
+
+ const events=[];
+ for(let i=0;i+3<ds.length;i++){
+  if(i<21)continue; // At least 20 complete prior SOXX daily returns are required.
+  const close=soxxPrices[ds[i]]?.[3],prior=soxxPrices[ds[i-1]]?.[3];
+  const zscore=z[ds[i]]?.priceZ;
+  if(!(close>0&&prior>0)||!Number.isFinite(zscore)||zscore> -1||close>=prior)continue;
+  // Align the selected ticker with SOXX's US trading dates; skip incomplete cases.
+  const ahead=[0,1,2,3].map(h=>targetPrices?.[ds[i+h]]?.[3]);
+  if(!ahead.every(x=>Number.isFinite(x)&&x>0))continue;
+  // Daily returns are independent previous-close changes, not cumulative.
+  events.push({date:ds[i],z:zscore,forward:[0,1,2].map(h=>(ahead[h+1]/ahead[h]-1)*100)});
+ }
+ const rows=SIGMA_BINS.map(bin=>{
+  const selected=events.filter(e=>e.z<=-bin.lower&&(bin.upper===null||e.z> -bin.upper));
+  return {...bin,n:selected.length,avg:[0,1,2].map(h=>
+   selected.length?selected.reduce((sum,e)=>sum+e.forward[h],0)/selected.length:null)};
+ });
+ return {rows,events,first:ds[0]||null,last:ds.at(-1)||null,history:ds.length};
+}
+function sigmaStudySVG(rows){
+ const w=940,h=355,left=78,right=32,top=30,bottom=86;
+ const cw=w-left-right,ch=h-top-bottom;
+ const ys=rows.flatMap(r=>r.avg.filter(x=>x!==null&&Number.isFinite(x)));
+ const bound=Math.max(.5,...ys.map(y=>Math.abs(y)))*1.17;
+ const ymax=Math.ceil(bound*2)/2,ymin=-ymax;
+ const center=i=>left+cw*(i+.5)/rows.length;
+ const groupWidth=cw/rows.length;
+ const barWidth=Math.min(23,Math.max(11,groupWidth*.22));
+ const gap=Math.min(6,groupWidth*.06);
+ const py=v=>top+(ymax-v)/(ymax-ymin)*ch;
+ const baseline=py(0);
+ const fmtY=v=>(v>0?"+":"")+v.toFixed(2)+"%";
+ const esc=value=>String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+ const grid=Array.from({length:5},(_,i)=>{
+  const v=ymax-(2*ymax*i)/4,y=py(v).toFixed(2);
+  return '<line x1="'+left+'" y1="'+y+'" x2="'+(w-right)+'" y2="'+y+'" stroke="'+(Math.abs(v)<1e-9?"#64748b":"#e2e8f0")+'" stroke-width="'+(Math.abs(v)<1e-9?"1.5":"1")+'" stroke-dasharray="'+(Math.abs(v)<1e-9?"5 3":"none")+'"/>'+
+   '<text x="'+(left-10)+'" y="'+(+y+4)+'" text-anchor="end" fill="#64748b" font-size="12">'+fmtY(v)+'</text>';
+ }).join("");
+ const xticks=rows.map((r,i)=>
+  '<text x="'+center(i).toFixed(2)+'" y="'+(h-bottom+20)+'" text-anchor="middle" fill="#475569" font-size="11">−'+r.lower.toFixed(2)+'</text>'+
+  '<text x="'+center(i).toFixed(2)+'" y="'+(h-bottom+34)+'" text-anchor="middle" fill="#475569" font-size="11">'+(r.upper===null?"以下":"〜−"+r.upper.toFixed(2))+'</text>'+
+  '<text x="'+center(i).toFixed(2)+'" y="'+(h-bottom+50)+'" text-anchor="middle" fill="#94a3b8" font-size="10">n='+r.n+'</text>'
+ ).join("");
+ const colors=["#2563eb","#059669","#dc2626"];
+ const bars=rows.map((r,i)=>r.avg.map((value,k)=>{
+  if(value===null||!Number.isFinite(value))return "";
+  const x=center(i)+(k-1)*(barWidth+gap)-barWidth/2;
+  const valueY=py(value);
+  const y=Math.min(baseline,valueY);
+  const rectHeight=Math.max(.6,Math.abs(valueY-baseline));
+  return '<rect x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+barWidth.toFixed(2)+'" height="'+rectHeight.toFixed(2)+'" fill="'+colors[k]+'" rx="1.5">'+
+   '<title>'+esc(r.label+" / 翌"+(k+1)+"取引日 / 平均 "+fmtY(value)+" / "+r.n+"件")+'</title></rect>';
+ }).join("")).join("");
+ return '<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="#fff"/>'+
+  grid+'<line x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(h-bottom)+'" stroke="#94a3b8"/>'+
+  '<line x1="'+left+'" y1="'+(h-bottom)+'" x2="'+(w-right)+'" y2="'+(h-bottom)+'" stroke="#94a3b8"/>'+
+  bars+xticks+
+  '<text x="'+(w/2)+'" y="'+(h-8)+'" text-anchor="middle" font-size="12" fill="#475569">下落条件（正規分布の分位点による5区間、最終区間は−2.33σ以下）</text>'+
+  '<text x="'+left+'" y="15" font-size="12" fill="#475569">平均日次リターン</text>';
+}
+function renderSigmaDropStudy(){
+ if(!data)return;
+ const ticker=$("sigmaStudyTicker").value;
+ const prices=ticker==="SOXX"?data.soxx:data.stocks?.[ticker];
+ const name=ticker==="SOXX"?"SOXX（ETF）":ticker+"（"+(stockNames[ticker]||ticker)+"）";
+ $("sigmaStudyTitle").textContent="SOXX下落σ別｜翌1〜3取引日 "+ticker+" 平均日次リターン";
+ const result=sigmaDropStudy(data.soxx||{},prices||{});
+ const avgFmt=value=>value===null||!Number.isFinite(value)?'<span class="insufficient">—</span>':
+   '<span class="'+cls(value)+'">'+fmt(value)+'</span>';
+ $("sigmaDropChart").innerHTML=sigmaStudySVG(result.rows);
+ $("sigmaDropRows").innerHTML=result.rows.map(r=>
+  '<tr><td>'+r.label+'</td><td>'+r.n+'件'+(r.n>0&&r.n<5?' <span class="insufficient">（少数）</span>':'')+'</td>'+
+  r.avg.map(value=>'<td>'+avgFmt(value)+'</td>').join("")+'</tr>').join("");
+ const firstEligible=result.events[0]?.date;
+ const lastEligible=result.events.at(-1)?.date;
+ $("sigmaDropStatus").textContent="下落条件：SOXX終値 "+result.history+"取引日"+
+ (result.history?"（"+(result.first||"—")+"〜"+(result.last||"—")+"）":"（まだ過去データなし）")+
+ "｜選択銘柄："+name+"｜−1.00σ以下のSOXX下落・価格データ完備 "+result.events.length+"件（区間別に集計）"+
+ (firstEligible?"｜対象イベント "+firstEligible+"〜"+lastEligible:"")+
+ "。下落σはSOXXを基準に判定し、翌1〜3日の日次騰落率は選択銘柄の終値から計算。平均と件数は下の表に表示します。";
+}
+/* SOXX sigma bins are rows, all tracked tickers are columns; day offset is selected. */
+function renderSigmaAllTable(){
+ if(!data)return;
+ const day=Number($("sigmaAllHorizon").value);
+ const tickers=["SOXX",...Object.keys(data.stocks||{}).filter(t=>t!=="SOXX")];
+ const studies=Object.fromEntries(tickers.map(ticker=>{
+  const prices=ticker==="SOXX"?data.soxx:data.stocks[ticker];
+  return [ticker,sigmaDropStudy(data.soxx||{},prices||{})];
+ }));
+ $("sigmaAllTitle").textContent="SOXX下落σ別｜翌"+day+"取引日 全銘柄の平均日次リターン";
+ $("sigmaAllHead").innerHTML='<th scope="col">SOXX下落σ</th><th scope="col">件数</th>'+
+  tickers.map(ticker=>'<th scope="col">'+escapeNewsText(ticker)+'</th>').join("");
+ $("sigmaAllRows").innerHTML=SIGMA_BINS.map((bin,i)=>{
+  const sample=studies.SOXX.rows[i].n;
+  return '<tr><td>'+escapeNewsText(bin.label)+'</td><td>'+sample+'件</td>'+
+   tickers.map(ticker=>{
+    const row=studies[ticker].rows[i];
+    const avg=row.avg[day-1];
+    const value=Number.isFinite(avg)?fmt(avg):"—";
+    const tooltip=ticker+"｜"+bin.label+"｜翌"+day+"取引日｜"+
+     "平均 "+value+"｜対象 "+row.n+"件";
+    return '<td class="avg '+cls(avg)+'" title="'+escapeNewsText(tooltip)+'" aria-label="'+escapeNewsText(tooltip)+'">'+
+     value+(row.n>0&&row.n<5?' <span class="subtle">*</span>':'')+'</td>';
+   }).join("")+'</tr>';
+ }).join("");
+ const available=tickers.filter(t=>studies[t].rows.some(r=>r.n>0)).length;
+ $("sigmaAllStatus").textContent="SOXX下落σ別の"+SIGMA_BINS.length+"区間｜翌"+day+"取引日｜"+tickers.length+
+  "銘柄中 "+available+"銘柄に有効データ。横スクロールで全銘柄を表示。*は対象5件未満。";
+}
+function initSigmaAllTable(){
+ $("sigmaAllHorizon").addEventListener("change",renderSigmaAllTable);
+ renderSigmaAllTable();
+}
+
+function initSigmaStudyTicker(){
+ const choices=["SOXX",...Object.keys(data?.stocks||{}).filter(ticker=>Object.keys(data.stocks[ticker]||{}).length)];
+ const selector=$("sigmaStudyTicker");
+ const previous=selector.value;
+ selector.innerHTML=choices.map(ticker=>
+  '<option value="'+escapeNewsText(ticker)+'">'+escapeNewsText(ticker+(ticker==="SOXX"?"｜ETF":"｜"+(stockNames[ticker]||ticker)))+'</option>'
+ ).join("");
+ selector.value=choices.includes(previous)?previous:"SOXX";
+ selector.addEventListener("change",renderSigmaDropStudy);
+}
+
+/* SOXX premarket research: align PRE (ET 04:00-09:30) and SAME-DAY regular.
+   Never synthesize missing extended-hours bars or a correlation on n<3. */
+const preMetricLabels={
+ pre_end_pct:"プレマ最終値（前日終値比）",
+ pre_start_pct:"プレマ開始値（前日終値比）",
+ pre_high_pct:"プレマ高値（前日終値比）",
+ pre_low_pct:"プレマ安値（前日終値比）"
+};
+let preStudyData=null;
+let preUniverseData=null;
+let preStudyLoadToken=0;
+function preSelectedSymbol(){return $("preStudySymbol").value||"SOXX";}
+const PRE_SCATTER_BANDS=["up2","up1","up0","down0","down1","down2"];
+function preScatterBand(value){
+ if(value>=2)return "up2";
+ if(value>=1)return "up1";
+ if(value>=0)return "up0";
+ if(value> -1)return "down0";
+ if(value> -2)return "down1";
+ return "down2";
+}
+function preScatterSelection(){
+ return new Set([...document.querySelectorAll("[data-pre-scatter-band]:checked")]
+  .map(el=>el.dataset.preScatterBand));
+}
+function renderPreScatterFilter(rows,key){
+ const selected=preScatterSelection();
+ const counts=Object.fromEntries(PRE_SCATTER_BANDS.map(b=>[b,0]));
+ rows.forEach(([_,obj])=>counts[preScatterBand(obj.regular_return)]++);
+ document.querySelectorAll("[data-pre-band-count]").forEach(el=>{
+  const n=counts[el.dataset.preBandCount]||0;
+  el.textContent="("+n+"日)";
+ });
+ const visible=rows.filter(([_,obj])=>selected.has(preScatterBand(obj.regular_return)));
+ const stats=pearsonStats(visible,key);
+ const r=stats.r===null?"—":(stats.r>0?"+":"")+stats.r.toFixed(3);
+ $("preScatterSummary").textContent="表示 "+visible.length+" / "+rows.length+"日｜表示中の相関 r="+r+
+  (visible.length<3?"（相関は3日以上が必要）":"");
+ $("preStudyScatter").innerHTML=preStudyScatterSVG(visible,key,stats,
+  rows.length===0?"プレマの取得データがありません":"表示条件に該当するデータがありません");
+}
+function safePreNum(x){return typeof x==="number"&&Number.isFinite(x)?x:null}
+/* Rebase the archived 5m series and premarket price metrics to the prior
+   regular-session close. Older JSON archives are normalized on read rather
+   than discarded, so multi-month historical observations remain usable. */
+function preStudyRows(){
+ const entries=Object.entries(preStudyData?.days||{}).map(([date,obj])=>{
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!obj)return null;
+  const prev=safePreNum(obj.previous_close),first=safePreNum(obj.pre_first_open);
+  const last=safePreNum(obj.pre_last_close);
+  const high=safePreNum(obj.pre_high_relative),low=safePreNum(obj.pre_low_relative);
+  if(!(prev>0&&first>0&&last>0)||high===null||low===null||safePreNum(obj.regular_return)===null)return null;
+  const rebase=(percent)=>((first/prev)*(1+percent/100)-1)*100;
+  const vals={
+   pre_start_pct:(first/prev-1)*100,
+   pre_end_pct:(last/prev-1)*100,
+   pre_high_pct:rebase(high),
+   pre_low_pct:rebase(low)
+  };
+  const pre_5m_prev=Array.isArray(obj.pre_5m)?obj.pre_5m
+   .filter(p=>Array.isArray(p)&&p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1]))
+   .map(p=>[p[0],rebase(p[1])]):[];
+  if(!Object.values(vals).every(Number.isFinite))return null;
+  return [date,{...obj,...vals,pre_5m_prev}];
+ }).filter(Boolean).sort((a,b)=>a[0].localeCompare(b[0]));
+ const span=$("preStudySpan").value;
+ return span==="all"?entries:entries.slice(-Number(span));
+}
+function pearsonStats(rows,key){
+ const pairs=rows.map(([_,r])=>[safePreNum(r[key]),safePreNum(r.regular_return)])
+  .filter(([x,y])=>x!==null&&y!==null);
+ if(pairs.length<3)return {r:null,n:pairs.length,slope:null,intercept:null};
+ const n=pairs.length,mx=pairs.reduce((s,p)=>s+p[0],0)/n,my=pairs.reduce((s,p)=>s+p[1],0)/n;
+ const xx=pairs.reduce((s,p)=>s+(p[0]-mx)**2,0);
+ const yy=pairs.reduce((s,p)=>s+(p[1]-my)**2,0);
+ const xy=pairs.reduce((s,p)=>s+(p[0]-mx)*(p[1]-my),0);
+ if(xx<=1e-10||yy<=1e-10)return {r:null,n,slope:null,intercept:null};
+ const slope=xy/xx;
+ return {r:Math.max(-1,Math.min(1,xy/Math.sqrt(xx*yy))),n,slope,intercept:my-slope*mx};
+}
+function preSvgEscape(text){
+ return String(text).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+function prePlotDomain(values,minimumRange){
+ let low=Math.min(...values),high=Math.max(...values);
+ const middle=(low+high)/2;
+ const half=Math.max(minimumRange/2,(high-low)*.12+Math.max((high-low)/2,minimumRange*.16));
+ return [Math.min(low,middle-half,0),Math.max(high,middle+half,0)];
+}
+function preStudyScatterSVG(rows,key,stats,emptyLabel="プレマの取得データがありません"){
+ const w=760,h=385,l=74,r=20,t=26,b=61;
+ const pts=rows.map(([date,obj])=>({date,x:obj[key],y:obj.regular_return}));
+ if(!pts.length)return '<text x="380" y="195" text-anchor="middle" font-size="15" fill="#64748b">'+preSvgEscape(emptyLabel)+'</text>';
+ const [xmin,xmax]=prePlotDomain(pts.map(o=>o.x),.5);
+ const [ymin,ymax]=prePlotDomain(pts.map(o=>o.y),.5);
+ const sx=x=>l+(x-xmin)/(xmax-xmin)*(w-l-r);
+ const sy=y=>t+(ymax-y)/(ymax-ymin)*(h-t-b);
+ const grid=Array.from({length:5},(_,i)=>{
+  const x=xmin+(xmax-xmin)*i/4,y=ymin+(ymax-ymin)*i/4;
+  const xx=sx(x).toFixed(2),yy=sy(y).toFixed(2);
+  return '<line x1="'+xx+'" y1="'+t+'" x2="'+xx+'" y2="'+(h-b)+'" stroke="#eef2f7"/>'+
+   '<line x1="'+l+'" y1="'+yy+'" x2="'+(w-r)+'" y2="'+yy+'" stroke="#eef2f7"/>'+
+   '<text x="'+xx+'" y="'+(h-b+19)+'" text-anchor="middle" font-size="11" fill="#64748b">'+x.toFixed(1)+'%</text>'+
+   '<text x="'+(l-9)+'" y="'+(+yy+4)+'" text-anchor="end" font-size="11" fill="#64748b">'+y.toFixed(1)+'%</text>';
+ }).join("");
+ const axes='<line x1="'+sx(0).toFixed(2)+'" y1="'+t+'" x2="'+sx(0).toFixed(2)+'" y2="'+(h-b)+'" stroke="#94a3b8" stroke-dasharray="4 3"/>'+
+  '<line x1="'+l+'" y1="'+sy(0).toFixed(2)+'" x2="'+(w-r)+'" y2="'+sy(0).toFixed(2)+'" stroke="#94a3b8" stroke-dasharray="4 3"/>';
+ let regression="";
+ if(stats.slope!==null){
+  const yr0=stats.intercept+stats.slope*xmin,yr1=stats.intercept+stats.slope*xmax;
+  regression='<line x1="'+sx(xmin).toFixed(2)+'" y1="'+sy(yr0).toFixed(2)+'" x2="'+sx(xmax).toFixed(2)+'" y2="'+sy(yr1).toFixed(2)+'" stroke="#2563eb" stroke-width="2.2" opacity=".75"/>';
+ }
+ const markers=pts.map(p=>
+  '<circle cx="'+sx(p.x).toFixed(2)+'" cy="'+sy(p.y).toFixed(2)+'" r="5" fill="'+(p.y>=0?"#059669":"#dc2626")+'" fill-opacity=".82" stroke="#fff" stroke-width="1.1">'+
+  '<title>'+preSvgEscape(p.date+"｜"+preMetricLabels[key]+" "+p.x.toFixed(2)+"%｜立会 "+p.y.toFixed(2)+"%")+'</title></circle>'
+ ).join("");
+ return '<rect width="'+w+'" height="'+h+'" fill="#fff"/>'+grid+axes+regression+markers+
+  '<text x="'+w/2+'" y="'+(h-10)+'" text-anchor="middle" font-size="12" fill="#334155">'+preSvgEscape(preMetricLabels[key])+' (%)</text>'+
+  '<text x="'+l+'" y="15" font-size="12" fill="#334155">通常取引の騰落率 (%)</text>';
+}
+function preBuckets(rows){
+ // Mutually exclusive bins of premarket LOW versus previous regular close.
+ const bins=[
+  {label:"＜−3",min:-Infinity,max:-3},
+  {label:"−3〜−2",min:-3,max:-2},
+  {label:"−2〜−1",min:-2,max:-1},
+  {label:"−1〜0",min:-1,max:0},
+  {label:"0〜＋1",min:0,max:1},
+  {label:"＋1〜＋2",min:1,max:2},
+  {label:"＋2以上",min:2,max:Infinity}
+ ];
+ return bins.map(bin=>{
+  const xs=rows.filter(([_,o])=>Number.isFinite(o.pre_low_pct)&&
+   o.pre_low_pct>=bin.min&&o.pre_low_pct<bin.max);
+  return {label:bin.label,n:xs.length,avg:xs.length?xs.reduce((s,[_,o])=>s+o.regular_return,0)/xs.length:null};
+ });
+}
+function preBucketSVG(buckets){
+ const w=580,h=385,l=64,r=16,t=26,b=71;
+ const values=buckets.map(o=>o.avg).filter(x=>x!==null);
+ if(!values.length)return '<text x="290" y="195" text-anchor="middle" font-size="15" fill="#64748b">プレマの取得データがありません</text>';
+ const ymax=Math.max(.5,...values.map(x=>Math.abs(x)))*1.22;
+ const lim=Math.ceil(ymax*2)/2;
+ const sy=v=>t+(lim-v)/(2*lim)*(h-t-b);
+ const base=sy(0),plotWidth=w-l-r;
+ const grid=Array.from({length:5},(_,i)=>{
+  const y=lim-i*lim/2;
+  return '<line x1="'+l+'" y1="'+sy(y).toFixed(2)+'" x2="'+(w-r)+'" y2="'+sy(y).toFixed(2)+'" stroke="'+(i===2?"#94a3b8":"#e2e8f0")+'"/>'+
+    '<text x="'+(l-7)+'" y="'+(sy(y)+4).toFixed(2)+'" text-anchor="end" font-size="11" fill="#64748b">'+(y>=0?"+":"")+y.toFixed(1)+'%</text>';
+ }).join("");
+ const bars=buckets.map((o,i)=>{
+  const cx=l+(i+.5)*plotWidth/buckets.length;
+  const label='<text x="'+cx+'" y="'+(h-b+19)+'" text-anchor="middle" font-size="11" fill="#475569">'+o.label+'%</text>'+
+    '<text x="'+cx+'" y="'+(h-b+35)+'" text-anchor="middle" font-size="10" fill="#94a3b8">n='+o.n+'</text>';
+  if(o.avg===null)return label;
+  const y=sy(o.avg),barH=Math.max(.6,Math.abs(y-base)),topY=Math.min(y,base);
+  return '<rect x="'+(cx-25).toFixed(2)+'" y="'+topY.toFixed(2)+'" width="50" height="'+barH.toFixed(2)+'" fill="'+(o.avg>=0?"#059669":"#dc2626")+'" rx="2">'+
+   '<title>'+preSvgEscape("プレマ安値（前日終値比） "+o.label+"% / 立会平均 "+o.avg.toFixed(2)+"% / "+o.n+"取引日")+'</title></rect>'+label;
+ }).join("");
+ return '<rect width="'+w+'" height="'+h+'" fill="#fff"/>'+grid+bars+
+  '<text x="'+l+'" y="15" fill="#334155" font-size="12">通常取引の平均騰落率</text>'+
+  '<text x="'+w/2+'" y="'+(h-9)+'" text-anchor="middle" fill="#334155" font-size="12">プレマ安値（前日終値比）の区間</text>';
+}
+
+/* Clock-time profile and peak/trough frequencies from archived observed SOXX
+   5-minute premarket prices. Previous sessions and incomplete sessions are
+   never synthesized. Clock labels use America/New_York ET, including DST. */
+function preClock(minute){
+ return String(Math.floor(minute/60)).padStart(2,"0")+":"+String(minute%60).padStart(2,"0");
+}
+/* Convert each US session date from Eastern time into Japan time.
+   At 04:00 ET, JST is 17:00 under EDT or 18:00 under EST. */
+const preNYHourFormat=new Intl.DateTimeFormat("en-US",{
+ timeZone:"America/New_York",hour:"2-digit",hourCycle:"h23"
+});
+const preOffsetMemo=new Map();
+function preNYOffset(day){
+ if(preOffsetMemo.has(day))return preOffsetMemo.get(day);
+ const moment=new Date(day+"T16:00:00Z");
+ const hour=Number(preNYHourFormat.formatToParts(moment).find(x=>x.type==="hour")?.value);
+ const offset=hour===12?-4:hour===11?-5:null;
+ preOffsetMemo.set(day,offset);
+ return offset;
+}
+function preJSTTime(day,etMinutes){
+ const offset=preNYOffset(day);
+ return offset===null?null:preClock(etMinutes+(9-offset)*60);
+}
+function preJSTTimes(etMinutes,days){
+ return [...new Set(days.map(day=>preJSTTime(day,etMinutes)).filter(Boolean))].sort();
+}
+function preJSTRange(etFrom,etTo,days){
+ const ranges=[...new Set(days.map(day=>{
+  const begin=preJSTTime(day,etFrom),end=preJSTTime(day,etTo);
+  return begin&&end?begin+"〜"+end:null;
+ }).filter(Boolean))].sort();
+ return (ranges.length?ranges.join("／"):"—")+
+  "（"+preClock(etFrom)+"〜"+preClock(etTo)+" 米東部）";
+}
+function preSessionTimeLabel(day,start,end){
+ const from=preMinutes(start),to=preMinutes(end);
+ return from===null||to===null?start+"〜"+end+"（米東部）":preJSTRange(from,to,[day]);
+}
+function preMinutes(time){
+ if(typeof time!=="string"||!/^\d{2}:\d{2}$/.test(time))return null;
+ const hours=Number(time.slice(0,2)),mins=Number(time.slice(3,5));
+ const total=hours*60+mins;
+ return mins%5===0&&total>=240&&total<570?total:null;
+}
+function preClockStudy(rows,basis="close",direction="all"){
+ const bins=Array.from({length:11},(_,i)=>({
+  from:240+30*i,label:preClock(240+30*i)+"〜"+preClock(270+30*i),
+  sum:0,days:0,avg:null,high:0,low:0
+ }));
+ const eligible=rows.filter(([_,r])=>{
+  if(!r||!Array.isArray(r.pre_5m_prev)||r.pre_5m_prev.length<48)return false;
+  // Direction is the actual regular-session open-to-close move, not the gap
+  // from the previous day or the premarket return.
+  const regular=safePreNum(r.regular_return);
+  if(direction==="up"&&!(regular>0))return false;
+  if(direction==="down"&&!(regular<0))return false;
+  if(!(typeof r.pre_start==="string"&&r.pre_start<="04:05"&&
+       typeof r.pre_end==="string"&&r.pre_end>="09:20"))return false;
+  if(basis==="wick"&&(preMinutes(r.pre_high_time)===null||preMinutes(r.pre_low_time)===null))return false;
+  return true;
+ });
+ let included=0;
+ const includedDates=[];
+ for(const [day,r] of eligible){
+  const slots=Array.from({length:11},()=>({sum:0,n:0}));
+  const series=[];
+  for(const point of r.pre_5m_prev){
+   if(!Array.isArray(point)||point.length<2)continue;
+   const minute=point[0],value=point[1];
+   if(!Number.isInteger(minute)||minute<240||minute>=570||minute%5!==0)continue;
+   if(!Number.isFinite(value)||Math.abs(value)>100)continue;
+   const slot=slots[Math.floor((minute-240)/30)];
+   slot.sum+=value;slot.n++;
+   series.push({minute,value});
+  }
+  if(series.length<48)continue;
+  let highMinute,lowMinute;
+  if(basis==="wick"){
+   highMinute=preMinutes(r.pre_high_time);
+   lowMinute=preMinutes(r.pre_low_time);
+  }else{
+   // Compare actual observed 5-minute CLOSES to limit isolated thin-market wicks.
+   // Stable sort-order means equal extrema use the earliest observed candle.
+   series.sort((a,b)=>a.minute-b.minute);
+   highMinute=series.reduce((best,p)=>p.value>best.value?p:best,series[0]).minute;
+   lowMinute=series.reduce((best,p)=>p.value<best.value?p:best,series[0]).minute;
+  }
+  for(let k=0;k<11;k++){
+   if(!slots[k].n)continue;
+   bins[k].sum+=slots[k].sum/slots[k].n;
+   bins[k].days++;
+  }
+  bins[Math.floor((highMinute-240)/30)].high++;
+  bins[Math.floor((lowMinute-240)/30)].low++;
+  included++;
+  includedDates.push(day);
+ }
+ for(const b of bins){
+  b.avg=b.days?b.sum/b.days:null;
+  b.jstStart=preJSTTimes(b.from,includedDates).join("／")||"—";
+  b.label=preJSTRange(b.from,b.from+30,includedDates);
+ }
+ return {bins,total:included,eligibleDays:includedDates,basis};
+}
+function preTimeAvgSVG(bins,domain=null){
+ const w=940,h=250,l=70,r=24,t=38,b=68;
+ const valid=bins.filter(b=>Number.isFinite(b.avg));
+ if(!valid.length)return '<text x="470" y="125" text-anchor="middle" font-size="14" fill="#64748b">時刻別の5分足データを取得後に表示します</text>';
+ // Zoom vertically to show intraday change. Values shown on the axis are
+ // absolute prior-close-relative returns, not percentage-point changes.
+ const numbers=valid.map(v=>v.avg),vmin=Math.min(...numbers),vmax=Math.max(...numbers);
+ const pad=Math.max(0.04,(vmax-vmin)*0.23);
+ const yMin=domain?domain[0]:vmin-pad,yMax=domain?domain[1]:vmax+pad;
+ const py=v=>t+(yMax-v)/(yMax-yMin)*(h-t-b);
+ const px=i=>l+(w-l-r)*(i+.5)/bins.length;
+ const labelValue=v=>(v>0?"+":"")+v.toFixed(2)+"%";
+ const grid=Array.from({length:5},(_,i)=>{
+  const val=yMax-(yMax-yMin)*i/4,y=py(val);
+  return '<line x1="'+l+'" y1="'+y.toFixed(2)+'" x2="'+(w-r)+'" y2="'+y.toFixed(2)+'" stroke="#e2e8f0"/>'+
+   '<text x="'+(l-8)+'" y="'+(y+4).toFixed(2)+'" text-anchor="end" fill="#475569" font-size="11">'+labelValue(val)+'</text>';
+ }).join("");
+ const zero=yMin<=0&&yMax>=0?'<line x1="'+l+'" y1="'+py(0).toFixed(2)+'" x2="'+(w-r)+'" y2="'+py(0).toFixed(2)+'" stroke="#64748b" stroke-width="1.3" stroke-dasharray="4 3"/>':'';
+ let segments="",points="",previous=null;
+ bins.forEach((entry,i)=>{
+  if(!Number.isFinite(entry.avg)){previous=null;return}
+  const x=px(i),y=py(entry.avg),prior=previous;
+  if(prior){
+   const delta=entry.avg-prior.avg;
+   const color=delta>1e-8?"#059669":delta< -1e-8?"#dc2626":"#64748b";
+   segments+='<line x1="'+px(prior.i).toFixed(2)+'" y1="'+py(prior.avg).toFixed(2)+'" x2="'+x.toFixed(2)+'" y2="'+y.toFixed(2)+'" stroke="'+color+'" stroke-width="3" stroke-linecap="round"/>';
+  }
+  const diff=prior?entry.avg-prior.avg:null;
+  const color=diff===null?"#2563eb":diff>1e-8?"#059669":diff< -1e-8?"#dc2626":"#64748b";
+  const dy=i%2===0?-13:20;
+  const annotation=diff===null?"開始":(diff>1e-8?"▲":diff< -1e-8?"▼":"＝")+Math.abs(diff).toFixed(2)+"pt";
+  points+='<circle cx="'+x.toFixed(2)+'" cy="'+y.toFixed(2)+'" r="4.5" fill="'+color+'" stroke="#fff" stroke-width="1.2"><title>'+
+   preSvgEscape(entry.label+"｜前日終値比 "+labelValue(entry.avg)+(diff===null?"":"｜前時間帯比 "+(diff>=0?"+":"")+diff.toFixed(3)+"pt")+"｜"+entry.days+"日")+'</title></circle>'+
+   '<text x="'+x.toFixed(2)+'" y="'+Math.max(31,Math.min(h-b+16,y+dy)).toFixed(2)+'" text-anchor="middle" font-size="10" font-weight="700" fill="'+color+'">'+annotation+'</text>';
+  previous={i,avg:entry.avg};
+ });
+ const xticks=bins.map((entry,i)=>'<text x="'+px(i).toFixed(2)+'" y="'+(h-44)+'" text-anchor="middle" fill="#334155" font-size="10">'+preSvgEscape(entry.jstStart)+'</text>'+
+  '<text x="'+px(i).toFixed(2)+'" y="'+(h-28)+'" text-anchor="middle" fill="#64748b" font-size="9">（'+preClock(entry.from)+'）</text>').join("");
+ return '<rect width="'+w+'" height="'+h+'" fill="#fff"/>'+grid+zero+segments+points+xticks+
+  '<text x="'+l+'" y="16" fill="#334155" font-size="12">平均騰落率（前日終値比）｜縦軸拡大</text>'+
+  '<text x="'+(w-r)+'" y="16" text-anchor="end" fill="#64748b" font-size="10">▲上昇／▼下落＝前時間帯との差（pt）</text>'+
+  '<text x="'+(w/2)+'" y="'+(h-8)+'" fill="#334155" font-size="11" text-anchor="middle">日本時間（下段：米東部時間）｜各30分帯の開始</text>';
+}
+function preTimeFreqSVG(bins,total){
+ const w=940,h=250,l=60,r=22,t=24,b=73;
+ if(!total)return '<text x="470" y="125" text-anchor="middle" font-size="14" fill="#64748b">時刻別の高値・安値を取得後に表示します</text>';
+ const rawMax=Math.max(1,...bins.map(o=>Math.max(o.high,o.low)/total*100));
+ const ymax=Math.max(10,Math.ceil(rawMax/10)*10);
+ const sy=value=>t+(1-value/ymax)*(h-t-b);
+ const cx=i=>l+(i+.5)*(w-l-r)/bins.length;
+ const bw=17;
+ const grid=Array.from({length:5},(_,i)=>{
+  const value=ymax*(4-i)/4,y=sy(value);
+  return '<line x1="'+l+'" y1="'+y.toFixed(2)+'" x2="'+(w-r)+'" y2="'+y.toFixed(2)+'" stroke="#e2e8f0"/>'+
+   '<text x="'+(l-8)+'" y="'+(y+4).toFixed(2)+'" text-anchor="end" font-size="11" fill="#64748b">'+value.toFixed(0)+'%</text>';
+ }).join("");
+ const bars=bins.map((o,i)=>{
+  let shapes="";
+  [["high","#2563eb",-1],["low","#dc2626",1]].forEach(([key,color,side])=>{
+   const value=o[key]/total*100;if(!value)return;
+   const y=sy(value),x=cx(i)+(side===-1?-bw-2:2);
+   shapes+='<rect x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+bw+'" height="'+Math.max(.6,sy(0)-y).toFixed(2)+'" fill="'+color+'" rx="1.5"><title>'+
+    preSvgEscape(o.label+"｜"+(key==="high"?"最高値":"最安値")+" "+o[key]+" / "+total+"日（"+value.toFixed(1)+"%）")+'</title></rect>';
+  });
+  return shapes+'<text x="'+cx(i).toFixed(2)+'" y="'+(h-48)+'" text-anchor="middle" fill="#334155" font-size="10">'+preSvgEscape(o.jstStart)+'</text>'+
+   '<text x="'+cx(i).toFixed(2)+'" y="'+(h-32)+'" text-anchor="middle" fill="#64748b" font-size="9">（'+preClock(o.from)+'）</text>';
+ }).join("");
+ return '<rect width="'+w+'" height="'+h+'" fill="#fff"/>'+grid+bars+
+  '<text x="'+l+'" y="15" fill="#334155" font-size="12">全対象日に占める割合</text>'+
+  '<text x="'+w/2+'" y="'+(h-10)+'" fill="#334155" font-size="11" text-anchor="middle">日本時間（下段：米東部時間）｜各30分帯の開始</text>';
+}
+function renderPreClockStudy(rows){
+ const basis=$("preTimeBasis").value;
+ const study=preClockStudy(rows,basis);
+ const rising=preClockStudy(rows,basis,"up");
+ const falling=preClockStudy(rows,basis,"down");
+ // A shared y-axis prevents the two independently scaled charts from
+ // exaggerating differences between up-day and down-day profiles.
+ const averages=[...rising.bins,...falling.bins].map(b=>b.avg).filter(Number.isFinite);
+ const lo=averages.length?Math.min(...averages):0,hi=averages.length?Math.max(...averages):0;
+ const spread=Math.max(0.10,hi-lo),pad=Math.max(0.05,spread*0.16);
+ const domain=[lo-pad,hi+pad];
+ $("preTimeUpTitle").textContent="立会上昇日（始値→終値 ＋）｜"+rising.total+"日";
+ $("preTimeDownTitle").textContent="立会下落日（始値→終値 −）｜"+falling.total+"日";
+ $("preTimeExtremesTitle").textContent=basis==="close"?
+  "各日の最高・最低の5分足終値が現れた時間帯":
+  "各日の5分足の最高値・最安値（ヒゲ含む）が現れた時間帯";
+ const top=metric=>study.total?study.bins.reduce((best,o)=>o[metric]>best[metric]?o:best,study.bins[0]):null;
+ const high=top("high"),low=top("low");
+ $("preTimeHighTime").textContent=high?high.label:"—";
+ $("preTimeLowTime").textContent=low?low.label:"—";
+ $("preTimeHighCount").textContent=high?high.high+"/"+study.total+"日（"+(high.high/study.total*100).toFixed(1)+"%）":"対象日がありません";
+ $("preTimeLowCount").textContent=low?low.low+"/"+study.total+"日（"+(low.low/study.total*100).toFixed(1)+"%）":"対象日がありません";
+ $("preTimeValidDays").textContent=study.total+"日";
+ $("preTimeSpanNote").textContent=study.total?study.eligibleDays[0]+"〜"+study.eligibleDays.at(-1):"条件を満たす5分足データなし";
+ $("preTimeAverageUp").innerHTML=preTimeAvgSVG(rising.bins,domain);
+ $("preTimeAverageDown").innerHTML=preTimeAvgSVG(falling.bins,domain);
+ $("preTimeExtremes").innerHTML=preTimeFreqSVG(study.bins,study.total);
+ $("preTimeRows").innerHTML=study.bins.map((o,i)=>{
+  const up=rising.bins[i],down=falling.bins[i];
+  const side=b=>b.avg===null?"—":fmt(b.avg)+"（"+b.days+"日）";
+  return '<tr><td>'+o.label+'</td><td>'+side(up)+'</td><td>'+side(down)+'</td><td>'+
+   o.high+'日'+(study.total?"（"+(o.high/study.total*100).toFixed(1)+"%）":"")+'</td><td>'+
+   o.low+'日'+(study.total?"（"+(o.low/study.total*100).toFixed(1)+"%）":"")+'</td></tr>';
+ }).join("");
+ $("preTimeStatus").textContent=study.total?
+  "観測条件を満たした "+study.total+"取引日を集計。立会上昇 "+rising.total+"日／立会下落 "+falling.total+"日／横ばい "+(study.total-rising.total-falling.total)+"日（分類対象外）。"+
+  (basis==="close"?"5分足終値の最高・最低の時間帯を表示。":"5分足高値・安値（ヒゲを含む）の時間帯を表示。")+
+  "時間は日本時間（括弧内に米東部時間）へ各日の夏・冬時間で換算。両方の期間が混在する場合は日本時間を併記します。5分足内の正確な約定時刻は不明です。":
+  "時刻別データがまだありません。5分足の再取得・蓄積後に時刻別の傾向を表示します。";
+}
+function renderPremarketStudy(){
+ const symbol=preSelectedSymbol();
+ $("preStudyTitle").textContent=symbol+"｜プレマーケットと通常取引の相関分析";
+ $("preScatterSymbolTitle").textContent=symbol+"の通常取引（始値→終値）：表示する騰落率帯";
+ const rows=preStudyRows(),key=$("preStudyX").value;
+ const stats=pearsonStats(rows,key);
+ const avg=rows.length?rows.reduce((s,[_,o])=>s+o.regular_return,0)/rows.length:null;
+ const wins=rows.length?rows.filter(([_,o])=>o.regular_return>0).length/rows.length*100:null;
+ $("preStudyCount").textContent=rows.length+"日";
+ $("preStudyDates").textContent=rows.length?rows[0][0]+"〜"+rows.at(-1)[0]:"利用できるデータなし";
+ $("preStudyCorrelation").textContent=stats.r===null?"—":(stats.r>0?"+":"")+stats.r.toFixed(3);
+ $("preStudyCorrelationNote").textContent=rows.length<3?"相関には最低3日必要":stats.r===null?"指標の変動が小さく計算不能":rows.length<20?"少数サンプルのため参考値":"Pearson相関係数（因果関係を示しません）";
+ $("preStudyRegularAverage").textContent=avg===null?"—":fmt(avg);
+ $("preStudyWinRate").textContent=wins===null?"上昇した取引日の割合 —":"通常取引が上昇した日 "+wins.toFixed(1)+"%";
+ $("preStudyScatterTitle").textContent="散布図："+preMetricLabels[key]+" × 通常取引の騰落率";
+ renderPreScatterFilter(rows,key);
+ $("preStudyBuckets").innerHTML=preBucketSVG(preBuckets(rows));
+ renderPreClockStudy(rows);
+ const f=x=>safePreNum(x)===null?"—":fmt(x);
+ $("preStudyRows").innerHTML=rows.length?rows.slice().reverse().map(([day,o])=>
+  '<tr><td>'+day.replaceAll("-","/")+'</td>'+
+  '<td class="'+cls(o.pre_start_pct)+'">'+f(o.pre_start_pct)+'</td>'+
+  '<td class="'+cls(o.pre_high_pct)+'">'+f(o.pre_high_pct)+'</td>'+
+  '<td class="'+cls(o.pre_low_pct)+'">'+f(o.pre_low_pct)+'</td>'+
+  '<td class="'+cls(o.pre_end_pct)+'">'+f(o.pre_end_pct)+'</td>'+
+  '<td class="'+cls(o.regular_return)+'">'+f(o.regular_return)+'</td>'+
+  '<td class="'+cls(o.regular_gap)+'">'+f(o.regular_gap)+'</td>'+
+  '<td title="'+(o.pre_early_coverage?"プレマ開始から1時間以内に観測":"プレマ開始から1時間以内の価格データなし")+'">'+
+    preSessionTimeLabel(day,String(o.pre_start||"—"),String(o.pre_end||"—"))+
+    ' ('+Number(o.pre_bars||0)+'本)'+(!o.pre_early_coverage?' *':'')+'</td></tr>'
+ ).join(""):'<tr><td colspan="8">プレマーケット5分足の取得・蓄積ができた日がありません。取得元の制約や祝日・流動性不足の可能性があります。</td></tr>';
+ const errors=Object.keys(preStudyData?.fetch_errors||{}).length;
+ $("preStudyStatus").textContent=
+  "プレマ騰落率は前営業日の通常取引終値を0%に統一。対象："+symbol+"プレマ 日本時間17:00〜22:30（米東部夏時間04:00〜09:30）／18:00〜23:30（米東部冬時間04:00〜09:30）と同日立会始値・終値。"+
+  "保存済み "+Object.keys(preStudyData?.days||{}).length+"日"+
+  "｜最新取得 "+(preStudyData?.updated_at?new Date(preStudyData.updated_at).toLocaleString("ja-JP",{timeZone:"Asia/Tokyo"}):"未取得")+"（日本時間）"+
+  (errors?"｜一部取得失敗 "+errors+"期間":"")+
+  "｜*はプレマ開始から1時間以内の価格データがない日。";
+}
+async function selectPremarketSymbol(){
+ const ticket=++preStudyLoadToken;
+ const symbol=preSelectedSymbol();
+ $("preStudyTitle").textContent=symbol+"｜プレマーケットと通常取引の相関分析";
+ $("preStudyStatus").textContent=symbol+"のプレマーケット実データを読み込んでいます…";
+ try{
+  let obj;
+  if(symbol==="SOXX"){
+   const response=await fetch("./soxx-premarket.json?t="+Date.now(),{cache:"no-store"});
+   if(!response.ok)throw Error("HTTP "+response.status);
+   obj=await response.json();
+  }else{
+   if(!preUniverseData){
+    const response=await fetch("./premarket-universe.json?t="+Date.now(),{cache:"no-store"});
+    if(!response.ok)throw Error("HTTP "+response.status);
+    preUniverseData=await response.json();
+   }
+   obj=preUniverseData.stocks?.[symbol];
+  }
+  if(ticket!==preStudyLoadToken)return;
+  if(!obj||!obj.days||typeof obj.days!=="object")throw Error("まだ銘柄データを保存できていません");
+  preStudyData=obj;
+  renderPremarketStudy();
+  if(!Object.keys(obj.days).length){
+   $("preStudyStatus").textContent=symbol+"のプレマーケット実データを取得できていません。欠損足を補完せず、取得できたデータだけを表示します。";
+  }
+ }catch(error){
+  if(ticket!==preStudyLoadToken)return;
+  preStudyData=null;
+  renderPremarketStudy();
+  $("preStudyStatus").textContent=symbol+"のデータを読み込めません："+String(error.message||error);
+ }
+}
+async function loadPremarketStudy(){
+ $("preStudyX").addEventListener("change",()=>{if(preStudyData)renderPremarketStudy()});
+ $("preStudySpan").addEventListener("change",()=>{if(preStudyData)renderPremarketStudy()});
+ $("preStudySymbol").addEventListener("change",selectPremarketSymbol);
+ document.querySelectorAll("[data-pre-scatter-band]").forEach(el=>
+  el.addEventListener("change",()=>{if(preStudyData)renderPremarketStudy()}));
+ $("preScatterAll").addEventListener("click",()=>{
+  document.querySelectorAll("[data-pre-scatter-band]").forEach(el=>{el.checked=true});
+  if(preStudyData)renderPremarketStudy();
+ });
+ $("preScatterNone").addEventListener("click",()=>{
+  document.querySelectorAll("[data-pre-scatter-band]").forEach(el=>{el.checked=false});
+  if(preStudyData)renderPremarketStudy();
+ });
+ $("preTimeBasis").addEventListener("change",()=>{if(preStudyData)renderPreClockStudy(preStudyRows())});
+ await selectPremarketSymbol();
+}
+async function init(){
+ try{
+  const res=await fetch("./us-semiconductors.json?v="+Date.now(),{cache:"no-store"});
+  if(!res.ok)throw Error("HTTP "+res.status);
+  const d=await res.json();
+  if(!Object.keys(d.soxx||{}).length||!Object.keys(d.stocks||{}).length)throw Error("初回日足データ取得待ち");
+  stockNames=d.symbols||FALLBACK;data=d;choose();render();renderCatalysts();initSigmaStudyTicker();renderSigmaDropStudy();initSigmaAllTable();await Promise.allSettled([loadHeadlines(),loadPremarketStudy()]);
+ }catch(e){
+  stockNames=FALLBACK;choose();$("status").textContent="データ取得待ち："+String(e.message||e)+"。GitHub Actionsの初回更新後に一覧表を表示します。";
+  $("sigmaDropStatus").textContent="SOXX過去データを取得できなかったため、σ別分析は表示できません。";
+  $("sigmaAllStatus").textContent="日足データを取得できないため、全銘柄一覧は表示できません。";
+  await loadPremarketStudy();
+ }
+}
+init();
+</script><script src="./moomoo-signals.js" defer></script></body></html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>3日反復学習 | 太陽誘電 x%下落買い・y%利確</title>
+  <meta name="description" content="太陽誘電6976の実際の1分足で、x%下がったら買い、y%上がったら売る数値を3取引日の得点だけで探索">
+  <style>
+    :root{--bg:#f6f8fb;--ink:#1e293b;--sub:#64748b;--line:#dce4ee;--blue:#245bc7;--green:#057b64;--red:#b33152}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.6 system-ui,-apple-system,"Noto Sans JP",sans-serif}
+    main{max-width:1230px;margin:0 auto;padding:20px 15px 45px}
+    .tabs{display:flex;max-width:700px;border:1px solid #c8d8ed;margin-bottom:20px}
+    .tabs a{flex:1;text-align:center;padding:10px 8px;text-decoration:none;color:#345274;background:#fff;font-weight:700}
+    .tabs a+a{border-left:1px solid #c8d8ed}.tabs a.active{background:var(--blue);color:#fff}
+    h1{font-size:24px;margin:0}h2{font-size:16px;margin:0 0 10px}
+    p{margin:6px 0}.sub{color:var(--sub)}.mini{font-size:11px}
+    .card,.metric{border:1px solid var(--line);background:white;border-radius:8px}
+    .card{padding:17px;margin:12px 0}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}
+    .metric{padding:12px;min-width:0}.metric .key{color:var(--sub);font-size:11px}
+    .metric .value{font-size:21px;font-weight:750;display:block;font-variant-numeric:tabular-nums}
+    .controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+    .control{display:flex;flex-direction:column;gap:4px;min-width:105px}
+    label{font-size:11px;font-weight:700;color:#53627a}
+    input,select,button{font:inherit;padding:9px;border-radius:5px;border:1px solid #bdcadb;background:white}
+    input[type=number]{width:100px}
+    button{font-weight:700;padding:9px 13px;cursor:pointer}button.primary{background:var(--blue);color:white;border-color:var(--blue)}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .message{border:1px solid #dce6f3;background:#f3f7fc;border-radius:6px;padding:11px 13px;margin:10px 0}
+    .warn{background:#fff7ec;border-color:#f0dcbe;color:#80572d}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    svg{width:100%;height:auto;border:1px solid #e6ecf3;border-radius:6px}
+    .scroll{overflow-x:auto}table{border-collapse:collapse;min-width:740px;width:100%;font-variant-numeric:tabular-nums}
+    th,td{text-align:right;white-space:nowrap;padding:8px 9px;border-bottom:1px solid #e7edf4}
+    th{font-size:11px;background:#f4f7fa;color:#506078}th:first-child,td:first-child{text-align:left}
+    .pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}
+    @media(max-width:900px){.metrics{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:1fr}}
+    @media(max-width:540px){main{padding:12px 9px}.card{padding:12px}.metrics{grid-template-columns:repeat(2,1fr)}h1{font-size:21px}.metric .value{font-size:18px}}
+  </style>
+  <script src="./threshold-engine.js?v=2" defer></script>
+  <script src="./threshold.js?v=3" defer></script>
+  <script src="./xy-grid.js?v=1" defer></script>
+<style>main > nav {display:none!important} body{background:#fff!important}</style></head>
+<body><main>
+  <nav class="tabs" aria-label="研究モード">
+    <a href="./index.html">固定ルール検証</a>
+    <a class="active" aria-current="page" href="./episode.html">x%・y%反復学習</a>
+      <a href="./walkforward.html">逐次学習・初見検証</a>
+    <a href="./five-minute.html">5分足・長期検証</a>
+  </nav>
+  <header><div class="sub mini">STOCK STRATEGY LAB / 6976.T</div>
+    <h1>太陽誘電｜x%下落で買い・y%上昇で売り</h1>
+    <p class="sub">直近3取引日を繰り返し再生し、最後の得点を比較して下落率 x と利確率 y を改善します。</p>
+  </header>
+  <section class="card">
+    <h2>売買ルール</h2>
+    <p><strong>買い：</strong>直近30本の1分足の最高値から x% 下落した瞬間（1分足確定時）にシグナル。次の1分足の始値で買います。</p>
+    <p><strong>売り：</strong>買値から y% 上昇したら指値利確。上昇しなければ固定損切り −0.8%、最大25分保有、または前場・後場の終了で手仕舞いします。</p>
+    <p class="sub mini">指値と逆指値が同じ足で成立した場合は損切りを優先。1日最大3回の買い、売却後2分の間隔、場をまたぐ保有なし。価格と出来高は実データのみで、欠損箇所を補完しません。売買には往復コストを差し引きます。</p>
+  </section>
+  <section class="card">
+    <h2>使用するデータ</h2>
+    <div id="dataMessage" class="message">GitHub保存データを読み込んでいます…</div>
+    <div id="previewMessage" class="message">実データでの最初の学習例を読み込んでいます…</div>
+    <div class="metrics">
+      <div class="metric"><span class="key">学習する取引日</span><span class="value" id="dayCount">—</span></div>
+      <div class="metric"><span class="key">1分足の本数</span><span class="value" id="barCount">—</span></div>
+      <div class="metric"><span class="key">最良 x（下落率）</span><span class="value" id="bestX">—</span></div>
+      <div class="metric"><span class="key">最良 y（利確率）</span><span class="value" id="bestY">—</span></div>
+      <div class="metric"><span class="key">最良得点</span><span class="value" id="bestScore">—</span></div>
+    </div>
+  </section>
+  <section class="card" id="gridOptimization">
+    <h2>x・yを総当たりで最適化（実データ）</h2>
+    <div class="message" id="gridStatus">2,030通りの x・y について、学習期間と未使用日を分けた結果を読み込んでいます…</div>
+    <div class="metrics">
+      <div class="metric"><span class="key">計算した組み合わせ</span><span class="value" id="gridCount">—</span></div>
+      <div class="metric"><span class="key">全3日で最高得点のx</span><span class="value" id="gridBestX">—</span></div>
+      <div class="metric"><span class="key">全3日で最高得点のy</span><span class="value" id="gridBestY">—</span></div>
+      <div class="metric"><span class="key">全3日の最高得点</span><span class="value" id="gridBestScore">—</span></div>
+      <div class="metric"><span class="key">全3日の売買回数</span><span class="value" id="gridBestTrades">—</span></div>
+    </div>
+    <h2>古い2日で選んで、新しい1日で検証</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>選択基準</th><th>x（買い）</th><th>y（利確）</th><th>学習2日・損益</th><th>未使用1日・損益</th><th>未使用日・売買数</th><th>未使用日・勝率</th></tr></thead>
+      <tbody id="oosRows"><tr><td colspan="7" style="text-align:left">データを確認中</td></tr></tbody>
+    </table></div>
+    <p class="mini sub">パラメータの選択には新しい1日の結果を使いません。「頑健性重視」は x±0.05%、y±0.10% の近傍9通りの得点中央値が高い組み合わせです。1日だけの検証なので再現性は不明です。</p>
+    <h2 style="margin-top:18px">全3日を使った最適化・上位10組</h2>
+    <div class="scroll"><table><thead><tr><th>順位</th><th>x</th><th>y</th><th>得点</th><th>合計損益</th><th>売買回数</th><th>勝率</th><th>最大DD</th></tr></thead>
+    <tbody id="bestGridRows"><tr><td colspan="8" style="text-align:left">データを確認中</td></tr></tbody></table></div>
+    <h2 style="margin-top:18px">x・y別の得点（主要な設定）</h2>
+    <p class="mini sub">縦軸はx（30分高値からの下落率）、横軸はy（買値からの利確率）。プラスは緑、マイナスは赤、取引数不足は灰色。得点は全3日の学習期間内成績です。</p>
+    <div class="scroll"><table id="xyHeatmap" style="min-width:750px"><tbody><tr><td>読込中</td></tr></tbody></table></div>
+    <p class="mini sub">比較条件：直近30分高値からの下落で買い、売りはy%利確・固定−0.8%損切り・25分保有上限・1日最大3回・往復コスト0.10%。損益は売買ごとの率の単純合計で、資産運用利回りではありません。3日で最適だった設定を実運用で採用することは推奨していません。</p>
+  </section>
+  <section class="card">
+    <h2>3日エピソードを繰り返す</h2>
+    <div class="controls">
+      <div class="control"><label for="initialX">初期 x（%）</label><input id="initialX" type="number" value="0.60" min="0.15" max="3" step="0.05"></div>
+      <div class="control"><label for="initialY">初期 y（%）</label><input id="initialY" type="number" value="0.50" min="0.10" max="3.5" step="0.05"></div>
+      <div class="control"><label for="rounds">繰り返す回数</label><select id="rounds"><option value="10">10回</option><option value="30" selected>30回</option><option value="60">60回</option></select></div>
+      <div class="control"><label for="population">1回の候補数</label><select id="population"><option value="8">8組</option><option value="12" selected>12組</option><option value="20">20組</option></select></div>
+      <div class="control"><label for="cost">往復コスト（%）</label><input id="cost" type="number" value="0.10" min="0" max="2" step="0.01"></div>
+      <button class="primary" id="start" disabled>最初から学習</button>
+      <button id="continue" disabled>続きから学習</button>
+      <button id="reset" disabled>結果を初期化</button>
+      <button id="export" disabled>x・yと履歴を保存</button>
+    </div>
+    <div id="progress" class="message">未学習。開始ボタンで3取引日を繰り返します。</div>
+    <p class="mini sub">得点＝往復コスト控除後の売買損益合計（%ポイント）− 最大ドローダウンの半分。取引0件の候補は −0.9点。各候補の3日間が終わってから得点を比較し、x・yを更新します。過去の値動きを学習記憶に保存せず、x・yと得点のみ引き継ぎます。</p>
+  </section>
+  <div class="two">
+    <section class="card"><h2>得点の推移（学習した同じ3日間）</h2>
+      <svg id="scoreChart" viewBox="0 0 640 260" role="img" aria-label="得点推移"><text x="20" y="36" fill="#64748b">学習後に表示</text></svg></section>
+    <section class="card"><h2>選ばれた x・y の学習期間内成績</h2>
+      <div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div class="metric"><span class="key">売買損益の合計</span><span class="value" id="total">—</span></div>
+        <div class="metric"><span class="key">勝率</span><span class="value" id="wins">—</span></div>
+        <div class="metric"><span class="key">取引回数</span><span class="value" id="trades">—</span></div>
+        <div class="metric"><span class="key">最大DD</span><span class="value" id="dd">—</span></div>
+      </div>
+      <p class="mini sub">同一期間でパラメータを探索した結果です。利益の再現性は証明していません。損益は1回ごとの率を単純合算した数値です。</p></section>
+  </div>
+  <section class="card"><h2>反復学習の記録</h2>
+    <div class="scroll"><table><thead><tr><th>回数</th><th>最高得点</th><th>当回平均点</th><th>x%</th><th>y%</th><th>損益</th><th>取引数</th><th>更新</th></tr></thead><tbody id="historyRows"><tr><td colspan="8" style="text-align:left">未実行</td></tr></tbody></table></div>
+  </section>
+  <section class="card"><h2>売買履歴（学習した3日間）</h2>
+    <div class="scroll"><table><thead><tr><th>日付</th><th>買い時刻</th><th>買値</th><th>売り時刻</th><th>売値</th><th>決済理由</th><th>損益</th></tr></thead><tbody id="tradeRows"><tr><td colspan="7" style="text-align:left">未実行</td></tr></tbody></table></div>
+  </section>
+  <section class="card"><h2>未使用の新しい取引日で検証</h2>
+    <div class="message" id="holdout">学習した日より新しい日が保存されたら、パラメータを変更せずに評価します。</div>
+    <p class="mini sub">同じ3日間を何度回しても、そこは学習期間です。将来の値動きに対する有効性は、追加学習前の新しい取引日だけで判定します。</p></section>
+  <footer class="sub mini">研究用バックテストです。約定しない指値、スプレッド、出来高、株価分割、売買規制等で実績は異なります。投資判断を保証しません。</footer>
+</main></body></html>

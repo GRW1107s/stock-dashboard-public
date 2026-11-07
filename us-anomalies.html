@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>米国アノマリー投資｜NDX・SPX・SOX</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f8fb;color:#182437;font:12px/1.6 Arial,"Noto Sans JP",sans-serif}
+main{max-width:1600px;padding:0 12px 45px;margin:15px auto}h1{font-size:19px;margin:0 0 4px}h2{font-size:16px;margin:0 0 8px}h3{font-size:13px;margin:0 0 6px}
+.sub,.muted{color:#64748b}.sub{margin:0 0 12px}
+.page-tabs{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 13px;border-bottom:2px solid #dbe3ed}.page-tabs a{display:inline-block;padding:10px 18px;text-decoration:none;border:1px solid #dbe3ed;border-bottom:0;border-radius:7px 7px 0 0;background:#fff;color:#475569;font-weight:700;font-size:12px}.page-tabs a[aria-current="page"]{background:#1e40af;border-color:#1e40af;color:white}.page-tabs a:hover:not([aria-current="page"]){background:#eef2ff;color:#1e40af}
+.card,.guide{background:#fff;border:1px solid #e1e7ef;border-radius:8px;padding:12px;margin:10px 0}.guide{line-height:1.8;color:#40546a}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:end;margin:12px 0}.controls label{display:block;font-size:11px;color:#475569;font-weight:bold}.controls select{display:block;margin-top:4px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:white;font-size:12px}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.summary .card{margin:0}.summary .card strong{font-size:18px;display:block}.statline{display:flex;gap:12px;flex-wrap:wrap}
+.legend{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin:10px 0;color:#475569}.legend i{display:inline-block;width:14px;height:4px;vertical-align:middle;margin-right:5px}
+.ndx{background:#2563eb}.spx{background:#0d9488}.sox{background:#db6b35}
+.plot{width:100%;overflow-x:auto}.plot svg{display:block;width:100%;min-width:800px;height:auto}
+.scroll{overflow:auto;max-height:450px;border:1px solid #e2e8f0;border-radius:7px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:11px}th,td{padding:6px 9px;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:white}thead th{position:sticky;top:0;background:#eaf0f6;color:#334155;z-index:2}thead th:first-child{z-index:3}tbody tr:nth-child(even) td{background:#fafbfd}.pos{color:#15803d;font-weight:700}.neg{color:#dc2626;font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.note{font-size:11px;color:#64748b;line-height:1.8}
+@media(max-width:950px){.grid2{grid-template-columns:1fr}}
+@media(max-width:500px){main{padding:0 7px}.page-tabs a{flex:1;text-align:center;padding:9px 6px;font-size:11px}.summary{grid-template-columns:1fr}.card{padding:9px}}
+
+/* Unified square, contiguous navigation tabs across all dashboard pages. */
+.page-tabs{
+  display:flex;
+  flex-wrap:nowrap;
+  gap:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  max-width:100%;
+  border-bottom:1px solid #dbe3ed;
+  padding-bottom:0;
+  -webkit-overflow-scrolling:touch;
+}
+.page-tabs a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-height:38px;
+  margin-left:-1px;
+  padding:9px 14px;
+  white-space:nowrap;
+  border:1px solid #dbe3ed;
+  border-radius:0;
+  text-align:center;
+}
+.page-tabs a:first-child{margin-left:0}
+.page-tabs a[aria-current="page"]{position:relative;z-index:1}
+
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./us-ipo-study.css?v=20261103a"><script src="./dashboard-nav.js?v=20261103o" defer></script><script src="./us-ipo-study.js?v=20261103b" defer></script></head><body><main>
+<nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html" aria-current="page">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+<div id="anomaly-seasonal-header">
+<h1>米国アノマリー投資｜NDX・SPX・SOX</h1><p class="sub">大統領選挙サイクルと直近8〜20年を選んで、週別・月日別の季節性を比較</p>
+<div class="guide">NDX＝NASDAQ100、SPX＝S&amp;P500、SOX＝フィラデルフィア半導体指数。価格指数の日次終値を使用。<b>週別</b>は前週最終終値→当週最終終値、<b>日付別</b>は前取引日終値→当日終値のリターンを、同じ月内の週（例：1月第1週）／月日（MM-DD）で、選択した期間・選挙サイクルに該当する年のみを単純平均します。大統領選挙年＝2024・2020年など、翌年＝2025・2021年、中間選挙年＝2026・2022年、選挙前年＝2023・2019年など。週の分類は木曜日が属する年を基準にします。週は月曜〜日曜で、週の木曜日が属する月に割り当て、月内の第何週かを数えます。配当・手数料・為替は含みません。日付別は各月日が休日・週末と重なるため、実測年数が少なくなる場合があります。</div>
+<div class="controls" aria-label="アノマリー集計条件">
+<label>大統領選挙サイクル<select id="electionCycle">
+<option value="all">すべての年</option>
+<option value="0">大統領選挙年</option>
+<option value="1">選挙翌年</option>
+<option value="2">中間選挙年</option>
+<option value="3">選挙前年</option>
+</select></label>
+<label>集計期間<select id="yearsBack">
+<option value="8">直近8年</option>
+<option value="12">直近12年</option>
+<option value="16">直近16年</option>
+<option value="20">直近20年</option>
+</select></label>
+</div>
+<div id="filterInfo" class="note" aria-live="polite"></div>
+<div id="status" class="note">データの読み込み中...</div>
+<div class="summary" id="cards"></div>
+</div>
+<div class="card"><h2>週別平均リターン｜1月第1週〜12月第5週</h2>
+<div class="legend"><span><i class="ndx"></i>NDX</span><span><i class="spx"></i>SPX</span><span><i class="sox"></i>SOX</span></div>
+<div class="plot" id="weeklyPlot">データ取得待ち</div><p class="note">週は月曜〜日曜の取引日を集計。月をまたぐ週は木曜日が属する月にまとめます。進行中の週は除外。各月の第5週は該当する年が少ない場合があるため、サンプル数に注意してください。</p>
+</div>
+<div class="card"><h2>日付別平均リターン｜月日</h2>
+<div class="controls">
+<label>表示月<select id="month"></select></label>
+<label>大統領選挙サイクル<select id="dailyElectionCycle" aria-label="日付別の大統領選挙サイクル">
+<option value="all">すべての年</option>
+<option value="0">大統領選挙年</option>
+<option value="1">選挙翌年</option>
+<option value="2">中間選挙年</option>
+<option value="3">選挙前年</option>
+</select></label>
+</div>
+<div class="legend"><span><i class="ndx"></i>NDX</span><span><i class="spx"></i>SPX</span><span><i class="sox"></i>SOX</span><span class="muted">横軸＝日、縦軸＝平均リターン（％）</span></div>
+<div class="plot" id="dailyPlot">データ取得待ち</div>
+</div>
+<div class="grid2"><section class="card"><h2>週別集計表</h2><div class="scroll"><table><thead><tr><th>月・週</th><th>NDX 平均</th><th>SPX 平均</th><th>SOX 平均</th><th>NDX 勝率</th><th>SPX 勝率</th><th>SOX 勝率</th><th>各年数 NDX/SPX/SOX</th></tr></thead><tbody id="weekBody"></tbody></table></div></section>
+<section class="card"><h2>日付別集計表（選択月）</h2><div class="scroll"><table><thead><tr><th>月日</th><th>NDX 平均</th><th>SPX 平均</th><th>SOX 平均</th><th>NDX 勝率</th><th>SPX 勝率</th><th>SOX 勝率</th><th>各年数 NDX/SPX/SOX</th></tr></thead><tbody id="dayBody"></tbody></table></div></section></div>
+<p class="note">統計上の注意：大統領選挙サイクルを絞ると、直近8年で各区分は約2年分しかなく、統計誤差が大きくなります。日付別は休日・週末の影響でさらに標本数が少なくなります。価格指数・データ提供元の改訂により数値が変わる可能性があります。季節性は将来の利益を保証しません。</p>
+<section id="ipoStudyPanel" aria-label="巨大IPOの市場影響分析"></section>
+</main>
+<script>
+const COLORS={NDX:"#2563eb",SPX:"#0d9488",SOX:"#db6b35"},KEYS=["NDX","SPX","SOX"];
+const $=id=>document.getElementById(id),num=x=>typeof x==="number"&&Number.isFinite(x);
+const fmt=x=>num(x)?(x>0?"+":"")+x.toFixed(2)+"%":"—";
+const style=x=>!num(x)?"":x>0?"pos":x<0?"neg":"";
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const stat=a=>({avg:mean(a),wins:a.length?100*a.filter(x=>x>0).length/a.length:null,n:a.length});
+let weekly={},daily={},dataset=null;
+function yearsAgoISO(iso,n){
+ const [year,month,day]=iso.split("-").map(Number),y=year-n;
+ const lastDay=new Date(Date.UTC(y,month,0)).getUTCDate();
+ return String(y)+"-"+String(month).padStart(2,"0")+"-"+String(Math.min(day,lastDay)).padStart(2,"0");
+}
+function cycleMatches(year,cycle){
+ return cycle==="all"||((year-2024)%4+4)%4===Number(cycle);
+}
+function activeRange(data){
+ const latest=KEYS.map(k=>Object.keys(data.series[k]||{}).sort().at(-1)).filter(Boolean).sort()[0];
+ if(!latest)return null;
+ const years=Number($("yearsBack").value);
+ return {from:yearsAgoISO(latest,years),to:latest,years,cycle:$("electionCycle").value};
+}
+function isoWeek(date){
+ const d=new Date(date+"T12:00:00Z"),day=d.getUTCDay()||7;
+ d.setUTCDate(d.getUTCDate()+4-day);
+ const jan1=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+ return Math.ceil(((d-jan1)/86400000+1)/7);
+}
+function isoKey(date){
+ const d=new Date(date+"T12:00:00Z"),day=d.getUTCDay()||7;
+ d.setUTCDate(d.getUTCDate()+4-day);
+ return d.getUTCFullYear()+"-W"+String(isoWeek(date)).padStart(2,"0");
+}
+/* ISO calendar week to an intuitive Japanese month/week label.
+   A week belongs to the month of its Thursday; ordinal is the
+   first through fifth Thursday of that month. */
+function monthWeekLabel(weekId){
+ const year=Number(weekId.slice(0,4)),week=Number(weekId.slice(6));
+ const jan4=new Date(Date.UTC(year,0,4));
+ const weekday=jan4.getUTCDay()||7;
+ const thursday=new Date(Date.UTC(year,0,4-weekday+4+(week-1)*7));
+ const month=thursday.getUTCMonth()+1;
+ const ordinal=Math.ceil(thursday.getUTCDate()/7);
+ return month+"月第"+ordinal+"週";
+}
+function compute(data){
+ const range=activeRange(data);
+ if(!range){weekly={};daily={};return}
+ const {from:windowStart,to:windowEnd,cycle}=range;
+ const now=new Date();
+ const etParts=new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);
+ const etVals=Object.fromEntries(etParts.map(p=>[p.type,p.value]));
+ const etDate=etVals.year+"-"+etVals.month+"-"+etVals.day;
+ const liveWeek=isoKey(etDate);
+ weekly={};daily={};
+ for(const k of KEYS){
+  const src=data.series[k]||{},dates=Object.keys(src).sort();
+  const wmap=new Map(),wk={};const dk={};
+  // A date's return uses the immediately prior trading close (including cutoff baseline).
+  for(let i=1;i<dates.length;i++){
+   const d=dates[i],v=src[d],p=src[dates[i-1]];
+   if(!(v>0&&p>0))continue;
+   if(d>=windowStart&&d<=windowEnd&&cycleMatches(Number(d.slice(0,4)),cycle)){const md=d.slice(5);(dk[md]||(dk[md]=[])).push(100*(v/p-1))}
+  }
+  for(const d of dates){
+   const wkId=isoKey(d);
+   if(d<=etDate)wmap.set(wkId,{last:d,close:src[d]});
+  }
+  const ids=[...wmap.keys()].sort();
+  for(let i=1;i<ids.length;i++){
+   const w=ids[i],val=wmap.get(w),prior=wmap.get(ids[i-1]);
+   if(w===liveWeek||val.last<windowStart||val.last>windowEnd||!cycleMatches(Number(w.slice(0,4)),cycle)||!(val.close>0&&prior.close>0))continue;
+   const bucket=monthWeekLabel(w);
+   (wk[bucket]||(wk[bucket]=[])).push(100*(val.close/prior.close-1));
+  }
+  weekly[k]=Object.fromEntries(Object.entries(wk).map(([w,a])=>[w,stat(a)]));
+  daily[k]=Object.fromEntries(Object.entries(dk).map(([day,a])=>[day,stat(a)]));
+ }
+}
+function chart(target,axis,stats,yLabel,height){
+ const width=1120,left=62,right=22,top=27,bottom=42,H=height||340;
+ let observed=[];for(const k of KEYS)for(const label of axis){const x=stats[k]?.[label]?.avg;if(num(x))observed.push(x)}
+ const ext=Math.max(0.4,...observed.map(v=>Math.abs(v)))*1.12;
+ const y=v=>top+(ext-v)/(2*ext)*(H-top-bottom);
+ const x=i=>left+(axis.length<=1?0:i/(axis.length-1))*(width-left-right);
+ let svg='<svg viewBox="0 0 '+width+' '+H+'" role="img" aria-label="'+yLabel+'">';
+ for(let i=-2;i<=2;i++){
+  const v=ext*i/2;
+  svg+='<line x1="'+left+'" y1="'+y(v)+'" x2="'+(width-right)+'" y2="'+y(v)+'" stroke="'+(i===0?"#94a3b8":"#e2e8f0")+'"/><text x="'+(left-8)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#64748b">'+v.toFixed(1)+'%</text>';
+ }
+ const step=Math.max(1,Math.ceil(axis.length/13));
+ const isMonthWeeks=axis.length===60&&axis[0]==="1月第1週";
+ for(let i=0;i<axis.length;i+=step){
+  if(isMonthWeeks&&i%5===0)svg+='<line x1="'+x(i)+'" y1="'+top+'" x2="'+x(i)+'" y2="'+(H-bottom)+'" stroke="#dbe3ed" stroke-dasharray="3 3"/>';
+  svg+='<text x="'+x(i)+'" y="'+(H-15)+'" text-anchor="middle" font-size="10" fill="#64748b">'+axis[i]+'</text>';
+ }
+ for(const k of KEYS){
+  const pts=[];for(let i=0;i<axis.length;i++){const r=stats[k]?.[axis[i]];pts.push(r&&num(r.avg)?[i,r]:null)}
+  // Break lines on missing dates so they cannot silently bridge unobserved periods.
+  let run=[];
+  function emit(){if(run.length>1)svg+='<polyline fill="none" stroke="'+COLORS[k]+'" stroke-width="2.6" points="'+run.map(p=>x(p[0])+','+y(p[1].avg)).join(' ')+'"/>';run=[]}
+  for(const item of [...pts,null]){if(!item){emit();continue}run.push(item)}
+  for(const item of pts){if(!item)continue;const [i,r]=item;svg+='<circle cx="'+x(i)+'" cy="'+y(r.avg)+'" r="3" fill="'+COLORS[k]+'"><title>'+k+' '+axis[i]+' 平均'+fmt(r.avg)+' 勝率'+fmt(r.wins)+' 標本'+r.n+'</title></circle>'}
+ }
+ svg+='</svg>';$(target).innerHTML=svg;
+}
+function renderWeek(){
+ const nums=Array.from({length:12},(_,i)=>i+1).flatMap(m=>
+  Array.from({length:5},(_,j)=>m+"月第"+(j+1)+"週"));
+ chart("weeklyPlot",nums,weekly,"週別平均",345);
+ $("weekBody").innerHTML=nums.map(n=>row(n,weekly)).join("");
+}
+function row(label,stats){
+ const r=KEYS.map(k=>stats[k]?.[label]||{avg:null,wins:null,n:0});
+ return '<tr><td>'+label+'</td>'+r.map(x=>'<td class="'+style(x.avg)+'">'+fmt(x.avg)+'</td>').join("")+
+ r.map(x=>'<td>'+fmt(x.wins)+'</td>').join("")+'<td>'+r.map(x=>x.n).join("/")+'</td></tr>';
+}
+function renderDaily(){
+ const m=$("month").value;
+ const axis=Array.from({length:new Date(2024,Number(m),0).getDate()},(_,i)=>m+"-"+String(i+1).padStart(2,"0"));
+ chart("dailyPlot",axis,daily,"日付別平均",330);
+ $("dayBody").innerHTML=axis.map(x=>row(x,daily)).join("");
+}
+function renderAll(){
+ if(!dataset)return;
+ const d=dataset,range=activeRange(d);
+ if(!range)return;
+ compute(d);renderWeek();renderDaily();
+ const {from,to,cycle,years}=range;
+ const cycleName=$("electionCycle").selectedOptions[0].textContent;
+ const datesByIndex=KEYS.map(k=>Object.keys(d.series[k]||{}).sort());
+ const earliestCommon=datesByIndex.map(dates=>dates[0]).sort().at(-1);
+ const covered=earliestCommon<from;
+ const matchingYears=Array.from({length:Number(to.slice(0,4))-Number(from.slice(0,4))+1},(_,i)=>Number(from.slice(0,4))+i)
+  .filter(y=>cycleMatches(y,cycle)&&y>=Number(from.slice(0,4))&&y<=Number(to.slice(0,4)));
+ $("filterInfo").textContent="条件："+cycleName+"／直近"+years+"年｜対象暦年："+matchingYears.join("・")+"年（期間内の該当日だけを集計）";
+ const count=KEYS.map((k,i)=>k+" "+datesByIndex[i].filter(x=>x>=from&&x<=to&&cycleMatches(Number(x.slice(0,4)),cycle)).length+"取引日").join(" / ");
+ $("status").textContent="データ最終更新 "+(d.updated_at||"—")+" (UTC)｜指定期間 "+from+"〜"+to+"｜"+count+
+  (covered?"":"｜長期データ更新待ち：収録開始 "+earliestCommon+"（指定期間の一部のみ）");
+ $("cards").innerHTML=KEYS.map((k,i)=>{
+  const valid=datesByIndex[i].filter(x=>x>=from&&x<=to&&cycleMatches(Number(x.slice(0,4)),cycle));
+  return '<div class="card"><b>'+k+'</b><strong>'+valid.length.toLocaleString("ja-JP")+'取引日</strong><div class="muted">最終該当 '+(valid.at(-1)||"—")+'</div></div>';
+ }).join("");
+}
+async function init(){
+ for(let i=1;i<=12;i++)$("month").innerHTML+='<option value="'+String(i).padStart(2,"0")+'">'+i+'月</option>';
+ $("month").value="11";
+ $("month").addEventListener("change",renderDaily);
+ // Keep the page-wide and daily-panel cycle selectors synchronized.
+ $("dailyElectionCycle").value=$("electionCycle").value;
+ $("electionCycle").addEventListener("change",()=>{
+  $("dailyElectionCycle").value=$("electionCycle").value;
+  renderAll();
+ });
+ $("dailyElectionCycle").addEventListener("change",()=>{
+  $("electionCycle").value=$("dailyElectionCycle").value;
+  renderAll();
+ });
+ $("yearsBack").addEventListener("change",renderAll);
+ try{
+  const res=await fetch("./us-anomalies.json?v="+Date.now(),{cache:"no-store"});
+  if(!res.ok)throw Error("HTTP "+res.status);
+  const d=await res.json();
+  if(!d.series||KEYS.some(k=>Object.keys(d.series[k]||{}).length<500))throw Error("指数データの初回取得待ち");
+  dataset=d;renderAll();
+ }catch(e){
+  $("status").textContent="データ取得待ち："+String(e.message||e)+"。自動更新の初回完了後にグラフが表示されます。";
+  $("cards").innerHTML="";
+ }
+}
+init();
+</script></body></html>

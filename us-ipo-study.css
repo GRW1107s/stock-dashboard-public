@@ -1,0 +1,48 @@
+/* US anomalies: major IPO event study panel. */
+#ipoStudyPanel{width:100%;min-width:0;padding:0 0 28px;font:12px/1.65 Arial,"Noto Sans JP",sans-serif;color:#182437}
+#ipoStudyPanel h2{font-size:18px;margin:0 0 8px;color:#152b4b}
+#ipoStudyPanel h3{font-size:14px;margin:0 0 8px;color:#152b4b}
+#ipoStudyPanel .ipo-intro,#ipoStudyPanel .ipo-detail,#ipoStudyPanel .ipo-report,#ipoStudyPanel .ipo-compare,#ipoStudyPanel .ipo-chart-card{background:#fff;border:1px solid #dfe6ef;border-radius:7px;padding:14px 16px;margin:0 0 12px}
+#ipoStudyPanel p{margin:5px 0 10px}
+#ipoStudyPanel p:last-child{margin-bottom:0}
+#ipoStudyPanel .ipo-caution{color:#64748b;font-size:11px;line-height:1.75}
+#ipoStudyPanel .ipo-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 14px}
+#ipoStudyPanel .ipo-summary>div{display:flex;flex-direction:column;justify-content:center;background:#fff;border:1px solid #dfe6ef;border-radius:6px;padding:12px 13px;min-height:72px}
+#ipoStudyPanel .ipo-summary strong{font-size:19px;color:#152b4b;font-variant-numeric:tabular-nums}
+#ipoStudyPanel .ipo-summary span{font-size:11px;color:#64748b;margin-top:5px}
+#ipoStudyPanel .ipo-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:0 0 12px}
+#ipoStudyPanel .ipo-toolbar label{display:block;font-size:11px;color:#475569;font-weight:700;min-width:230px}
+#ipoStudyPanel .ipo-toolbar select{display:block;max-width:100%;width:100%;margin-top:5px;padding:8px 10px;background:white;color:#182437;border:1px solid #cbd5e1;border-radius:4px;font:12px Arial,"Noto Sans JP",sans-serif;cursor:pointer}
+#ipoStudyPanel .ipo-detail p{font-size:12px;color:#475569}
+#ipoStudyPanel .ipo-detail #ipoSources{font-size:11px;color:#475569}
+#ipoStudyPanel .ipo-detail a{color:#1d4ed8;text-decoration:none}
+#ipoStudyPanel .ipo-detail a:hover{text-decoration:underline}
+#ipoStudyPanel .ipo-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:0 0 12px}
+#ipoStudyPanel .ipo-stat{background:white;border:1px solid #e2e8f0;border-radius:6px;padding:10px;min-width:0;text-align:center}
+#ipoStudyPanel .ipo-stat>span{font-size:11px;color:#64748b;display:block;margin-bottom:4px}
+#ipoStudyPanel .ipo-stat strong{display:block;font-size:18px;color:#334155;font-variant-numeric:tabular-nums}
+#ipoStudyPanel .ipo-stat strong.ipo-pos{color:#15803d}
+#ipoStudyPanel .ipo-stat strong.ipo-neg{color:#b91c1c}
+#ipoStudyPanel .ipo-stat small{display:block;font-size:10px;color:#94a3b8}
+#ipoStudyPanel .ipo-legend{display:flex;align-items:center;flex-wrap:wrap;gap:17px;margin-bottom:12px;font-size:11px;color:#475569}
+#ipoStudyPanel .ipo-legend i{display:inline-block;width:16px;height:4px;border-radius:2px;vertical-align:middle;margin-right:5px}
+#ipoStudyPanel .ipo-chart{overflow:auto;width:100%;min-height:235px}
+#ipoStudyPanel .ipo-chart svg{display:block;width:100%;min-width:730px;height:auto}
+#ipoStudyPanel .ipo-report p{line-height:1.85;color:#334155}
+#ipoStudyPanel .ipo-report p.ipo-caution{color:#64748b;margin-top:10px}
+#ipoStudyPanel .ipo-scroll{width:100%;overflow-x:auto;max-height:470px;border:1px solid #e2e8f0;border-radius:5px}
+#ipoStudyPanel .ipo-compare table{table-layout:auto;border-collapse:collapse;width:100%;min-width:940px}
+#ipoStudyPanel .ipo-compare th,#ipoStudyPanel .ipo-compare td{padding:9px 10px;white-space:nowrap;vertical-align:middle;text-align:right;border-bottom:1px solid #e7edf5;font:11px/1.55 Arial,"Noto Sans JP",sans-serif;font-variant-numeric:tabular-nums}
+#ipoStudyPanel .ipo-compare th{position:sticky;top:0;z-index:2;background:#eaf0f6;color:#475569;font-weight:700}
+#ipoStudyPanel .ipo-compare th:first-child,#ipoStudyPanel .ipo-compare td:first-child{text-align:left;position:sticky;left:0;z-index:1;background:#fff;min-width:162px}
+#ipoStudyPanel .ipo-compare th:first-child{z-index:3;background:#eaf0f6}
+#ipoStudyPanel .ipo-compare tbody tr:nth-child(even) td{background:#f9fbfd}
+#ipoStudyPanel .ipo-compare tbody tr:hover td{background:#eef4fc}
+#ipoStudyPanel .ipo-name button{font:700 12px Arial,"Noto Sans JP",sans-serif;color:#1d4ed8;background:transparent;padding:0;border:0;cursor:pointer;text-align:left;text-decoration:underline}
+#ipoStudyPanel .ipo-name small{display:block;color:#64748b;font-size:10px;margin-top:2px}
+#ipoStudyPanel .ipo-status,#ipoStudyPanel .ipo-bottom-note{font-size:11px;color:#64748b;line-height:1.8}
+#ipoStudyPanel .ipo-bottom-note{border-top:1px solid #e2e8f0;padding-top:11px}
+@media(max-width:950px){#ipoStudyPanel .ipo-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#ipoStudyPanel .ipo-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){#ipoStudyPanel .ipo-cards{grid-template-columns:repeat(2,minmax(0,1fr))}#ipoStudyPanel .ipo-toolbar label{width:100%;min-width:0}#ipoStudyPanel .ipo-intro,#ipoStudyPanel .ipo-detail,#ipoStudyPanel .ipo-report,#ipoStudyPanel .ipo-compare,#ipoStudyPanel .ipo-chart-card{padding:11px}#ipoStudyPanel .ipo-stat strong{font-size:16px}}
+/* Seasonal controls are unrelated to the IPO event study and hide only when that tab is active. */
+main:has(#stock-dashboard-tab-3[aria-selected="true"]) #anomaly-seasonal-header{display:none!important}

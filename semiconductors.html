@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日経半導体投資｜スイング・デイトレ分析</title>
+<style>
+:root{color-scheme:light;--bg:#f5f7fb;--ink:#152336;--soft:#63768d;--line:#dfe6ee;--blue:#1f57a6;--green:#047857;--red:#be3540}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);margin:0;font:14px/1.55 system-ui,-apple-system,"Noto Sans JP",sans-serif}
+main{max-width:1350px;margin:auto;padding:20px 20px 58px}
+nav{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:28px}nav a{color:#52657c;text-decoration:none}nav a[aria-current]{color:var(--blue);font-weight:750}
+h1{font-size:clamp(25px,3.4vw,36px);letter-spacing:-.03em;margin:0 0 7px}h2{font-size:18px;margin:0 0 12px}p{margin:6px 0}.muted{color:var(--soft)}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:22px}.tag{font-size:11px;color:#174c91;border:1px solid #b9d1f5;background:#ebf3ff;border-radius:5px;padding:5px 8px;white-space:nowrap}
+.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:18px;margin:12px 0;box-shadow:0 2px 6px #15233607}
+.filters{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:13px}
+label{font-size:12px;display:block;font-weight:700;color:#52637a}
+select{width:100%;margin-top:7px;border:1px solid #ccd6e3;background:white;border-radius:7px;font-size:13px;color:#10253c;padding:10px 9px}
+.coverage{padding:12px 15px;background:#edf3fc;border:1px solid #d7e5f7;border-radius:9px;color:#27456c;font-size:12px}
+.notice{padding:13px 16px;background:#fff7ea;border:1px solid #f0dfba;border-radius:9px;color:#76511e}
+.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:14px 0}
+.metric{padding:16px;background:white;border:1px solid var(--line);border-radius:10px;min-width:0}
+.metric small{font-size:11px;display:block;color:var(--soft);min-height:18px}
+.metric strong{font-size:clamp(19px,2.1vw,27px);font-variant-numeric:tabular-nums;display:block;margin-top:4px;white-space:nowrap}
+.metric span{display:block;font-size:11px;color:var(--soft);margin-top:2px}
+.positive{color:var(--green)!important}.negative{color:var(--red)!important}
+.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.85fr);gap:12px}
+.bar-row{display:grid;grid-template-columns:95px 1fr 67px 56px;gap:10px;align-items:center;margin:11px 0;font-size:12px;font-variant-numeric:tabular-nums}
+.track{background:#e8edf5;height:12px;border-radius:4px;position:relative;overflow:hidden}.fill{position:absolute;left:50%;top:0;bottom:0;border-radius:3px;background:#247bb5}.fill.neg{background:#d04c58;left:auto;right:50%}.zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#73849a}
+.legend{font-size:11px;color:var(--soft);margin-top:10px}
+.hit{display:grid;grid-template-columns:95px 1fr 54px;gap:10px;align-items:center;font-size:12px;margin:15px 0}
+.hit .track{height:13px}.hit .fill{left:0;background:#4383c4}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:12px;min-width:630px}
+th{text-align:right;background:#f0f4f9;color:#56667b;font-size:11px;font-weight:700;padding:10px 8px;white-space:nowrap}
+td{text-align:right;padding:10px 8px;border-bottom:1px solid #e9eef5;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}tbody tr:hover{background:#f8fbff}
+.small{font-size:12px}.formula{background:#f6f8fb;border:1px solid #e4eaf1;border-radius:6px;padding:8px 10px;font-size:12px;margin:8px 0}
+footer{font-size:11px;color:#728197;margin-top:15px}
+@media(max-width:980px){.filters{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.layout{grid-template-columns:1fr}}
+@media(max-width:580px){main{padding:14px 10px 40px}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:13px}.top{display:block}.tag{display:inline-block;margin-top:8px}.bar-row{grid-template-columns:75px 1fr 60px 37px;gap:5px}}
+
+.chapter{margin:27px 0 9px;padding:0 0 8px;border-bottom:2px solid #d5e0ec}
+.chapter h2{font-size:23px;margin:0 0 4px}
+.chapter .muted{font-size:12px}
+.groupTabs{display:flex;flex-wrap:wrap;gap:9px}
+.groupTabs label{min-width:170px;flex:1}
+.section-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}
+.section-metrics .metric strong{font-size:22px}
+.analysis-note{font-size:12px;color:#4d6380;margin-top:9px}
+.segment-table{min-width:780px}
+.segment-table td:nth-child(2){font-weight:700}
+.interpretation{background:#f2f6fc;border:1px solid #d9e5f4;border-radius:9px;padding:13px 15px;color:#244b73;margin:12px 0;font-size:12px}
+@media(max-width:800px){.section-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.chapter h2{font-size:20px}}
+
+.profile-chooser{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0 15px}
+.profile-chooser label{width:min(100%,350px)}
+.profile-scroll{overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:7px}
+.profile-grid{display:grid;grid-template-columns:repeat(3,minmax(340px,1fr));gap:13px;min-width:1080px}
+.profile-card{background:#fafdff;border:1px solid #e0e8f1;border-radius:10px;padding:12px 10px;min-width:0}
+.profile-card h3{font-size:15px;margin:0;line-height:1.5}
+.profile-card .period-meta{font-size:11px;color:#71829b;min-height:20px}
+.profile-fig{border-top:1px solid #e9eff7;margin-top:12px;padding-top:9px}
+.profile-fig h4{font-size:12px;font-weight:700;color:#40536c;margin:0 0 2px}
+.profile-fig svg{display:block;width:100%;height:auto}
+.profile-desc{font-size:11px;color:#63768d;margin-top:6px}
+.profile-vol{color:#2867aa}.profile-range{color:#008778}.profile-return{color:#096b53}
+.profile-legend{font-size:12px;color:#516682;padding-top:7px}
+.profile-legend b{font-variant-numeric:tabular-nums}
+
+/* Market-overview style: daily SOX / Japanese stock cells with a two-tier header. */
+.matrix-section{margin:14px 0 24px}
+.matrix-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:11px 0 13px}
+.matrix-tools label{min-width:170px;flex:0 1 220px}
+.matrix-pickers{display:grid;grid-template-columns:repeat(5,minmax(125px,1fr));gap:8px;margin:10px 0}
+.matrix-pickers select{font-size:12px;padding:7px;margin-top:4px}
+.matrix-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.matrix-actions button{font:inherit;font-size:12px;border:1px solid #b8c7db;border-radius:5px;padding:8px 12px;background:#fff;color:#40516b;cursor:pointer}
+.matrix-actions button.active{background:#1e40af;color:white;border-color:#1e40af}
+.matrix-scroll{overflow:auto;max-height:670px;border:1px solid #d7e0ec;border-radius:8px;background:#fff}
+.matrix-table{border-collapse:separate;border-spacing:0;min-width:820px;width:100%;table-layout:fixed}
+.matrix-table th,.matrix-table td{text-align:center;vertical-align:middle;padding:7px 5px;border-right:1px solid #e4eaf2;border-bottom:1px solid #e9eef5}
+.matrix-table thead th{position:sticky;background:#eaf0f7;color:#2d435f;z-index:3}
+.matrix-table thead tr:first-child th{top:0;font-size:12px;white-space:normal;height:33px}
+.matrix-table thead tr:nth-child(2) th{top:33px;font-size:10px;font-weight:600;white-space:nowrap;height:28px}
+.matrix-table .matrix-day{position:sticky;left:0;width:90px;min-width:90px;background:#f7f9fc;font-size:11px;font-weight:700;z-index:2}
+.matrix-table thead th.matrix-day{z-index:5;top:0}
+.matrix-table .daily-return{font-size:13px;font-weight:700}
+.matrix-table .daily-volume{font-size:10px;color:#6a7e99;font-weight:400;margin-top:3px}
+.matrix-table tbody tr:nth-child(even) td{background:#fbfcfe}
+.matrix-table tbody tr:nth-child(even) .matrix-day{background:#f0f4f9}
+.matrix-table tbody tr:hover td{background:#edf5ff}
+.matrix-table tbody tr:hover .matrix-day{background:#edf5ff}
+.matrix-table .missing{color:#9aa6b6}
+.matrix-subnote{font-size:11px;color:#64748b;line-height:1.6}
+@media(max-width:650px){.matrix-pickers{grid-template-columns:repeat(2,minmax(0,1fr))}.matrix-table .matrix-day{width:76px;min-width:76px}}
+
+/* Shared market dashboard design: same top navigation and compact presentation. */
+.page-tabs{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 13px;border-bottom:2px solid #dbe3ed;padding-bottom:0}
+.page-tabs a{display:inline-block;padding:10px 18px;text-decoration:none;border:1px solid #dbe3ed;border-bottom:0;border-radius:7px 7px 0 0;background:#fff;color:#475569;font-weight:700;font-size:12px}
+.page-tabs a[aria-current="page"]{background:#1e40af;border-color:#1e40af;color:#fff}
+.page-tabs a:hover:not([aria-current="page"]){background:#eef2ff;color:#1e40af}
+body{background:#f6f8fb;color:#182437;font-family:Arial,'Noto Sans JP',sans-serif;font-size:12px}
+main{max-width:1700px;margin:15px auto;padding:0 12px}
+h1{font-size:19px;letter-spacing:0;margin:0 0 4px}
+h2{font-size:17px}
+.top{margin-bottom:10px}
+.top .muted{color:#64748b}
+.panel{border-color:#e1e7ef;border-radius:8px;box-shadow:none;padding:12px}
+.chapter{margin:20px 0 8px}
+.chapter h2{font-size:18px}
+.coverage{border-radius:8px}
+label{font-size:11px}
+select{font-size:12px;padding:7px 8px}
+.matrix-section{margin:10px 0 18px}
+.matrix-actions button{padding:6px 10px;font-size:11px}
+.matrix-table th,.matrix-table td{padding:5px 3px}
+.matrix-table .daily-return{font-size:12px}
+.matrix-table .daily-volume{font-size:10px}
+@media(max-width:500px){
+ .page-tabs a{flex:1;text-align:center;padding:10px 6px;font-size:11px}
+ main{padding:0 7px}
+ .chapter h2{font-size:17px}
+}
+
+/* Consistent narrow judgment columns; no separate 25-day judgment timeline. */
+.matrix-table col.matrix-date-col{width:84px}
+.matrix-table col.matrix-price-col{width:147px}
+.matrix-table col.matrix-judge-col{width:39px}
+.matrix-table th.matrix-judge-title{font-size:9px!important}
+.matrix-table td.matrix-judge-cell{padding:3px 1px}
+.matrix-judge-icon{display:flex;justify-content:center;align-items:center;min-height:24px}
+.matrix-judge-icon .matrix-buy,.matrix-judge-icon .matrix-sell{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:12px;font-weight:700}
+.matrix-buy{background:#dcfce7;color:#15803d}
+.matrix-sell{background:#fee2e2;color:#b91c1c}
+.matrix-dd{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#dc2626;color:white;font-size:10px;font-weight:700;line-height:1}
+.matrix-ftd{display:inline-flex;align-items:center;justify-content:center;padding:2px 3px;background:#dcfce7;color:#15803d;border-radius:3px;font-size:9px;font-weight:700}
+.matrix-judge-empty{color:#94a3b8;font-size:11px}
+.matrix-legend{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;color:#64748b;margin-top:9px;line-height:1.7}
+.matrix-legend span{white-space:nowrap}
+.matrix-legend-note{font-size:11px;color:#64748b;margin-top:3px;line-height:1.7}
+.matrix-table tbody tr.matrix-pending td{background:#f1f7ff}
+.matrix-table tbody tr.matrix-pending .matrix-day{background:#e5efff}
+.matrix-pending-note{display:block;color:#42618c;font-size:9px;font-weight:500;margin-top:2px}
+
+/* Compact overview layout: SOX + seven customizable stocks fit on a desktop. */
+.matrix-pickers{grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.matrix-pickers label{min-width:0;font-size:10px}
+.matrix-pickers select{width:100%;font-size:11px;padding:6px 4px;min-width:0}
+.matrix-table{min-width:1170px}
+.matrix-table col.matrix-date-col{width:78px}
+.matrix-table col.matrix-price-col{width:auto}
+.matrix-table col.matrix-judge-col{width:28px}
+.matrix-table th,.matrix-table td{padding:4px 1px}
+.matrix-table thead tr:first-child th{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.matrix-table thead tr:nth-child(2) th{font-size:9px;letter-spacing:-.3px}
+.matrix-table .daily-return{font-size:11px}
+.matrix-table .daily-volume{font-size:9px;margin-top:1px}
+.matrix-table .matrix-day{width:78px;min-width:78px;font-size:10px}
+.matrix-table th.matrix-judge-title{font-size:9px!important}
+.matrix-table td.matrix-judge-cell{padding:2px 0}
+.matrix-judge-icon{min-height:21px}
+@media(max-width:1200px){.matrix-pickers{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){.matrix-pickers{grid-template-columns:repeat(2,minmax(0,1fr))}.matrix-table .matrix-day{width:78px;min-width:78px}}
+/* Compact desktop: ten index/stock panels visible in a 1600px viewport. */
+.matrix-pickers{grid-template-columns:repeat(9,minmax(0,1fr))}
+.matrix-table col.matrix-judge-col{width:25px}
+.matrix-table .matrix-day{width:74px;min-width:74px}
+.matrix-table col.matrix-date-col{width:74px}
+.matrix-table th,.matrix-table td{padding:4px 1px}
+.matrix-table thead tr:first-child th{font-size:10px}
+.matrix-table thead tr:nth-child(2) th{font-size:8.5px}
+.matrix-table .daily-return{font-size:11px}
+.matrix-table .daily-volume{font-size:9px}
+@media(max-width:1250px){.matrix-pickers{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:720px){.matrix-pickers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Unified square, contiguous navigation tabs across all dashboard pages. */
+.page-tabs{
+  display:flex;
+  flex-wrap:nowrap;
+  gap:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  max-width:100%;
+  border-bottom:1px solid #dbe3ed;
+  padding-bottom:0;
+  -webkit-overflow-scrolling:touch;
+}
+.page-tabs a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-height:38px;
+  margin-left:-1px;
+  padding:9px 14px;
+  white-space:nowrap;
+  border:1px solid #dbe3ed;
+  border-radius:0;
+  text-align:center;
+}
+.page-tabs a:first-child{margin-left:0}
+.page-tabs a[aria-current="page"]{position:relative;z-index:1}
+
+.semi-summary-line{padding:3px 0;white-space:normal;overflow-wrap:anywhere}.semi-summary-line strong{color:#364d6b;margin-right:5px}
+#semiSummaryRows tr.semi-summary-am td.semi-summary-text{border-top:1px solid #dbe4ef}
+#semiSummaryRows tr.semi-summary-pm td.semi-summary-text{border-top:1px dashed #dbe4ef}
+#semiSummaryRows td.semi-summary-text{white-space:normal;text-align:left;vertical-align:top;line-height:1.6;padding:11px 10px;min-width:255px}
+#semiSummaryRows td.semi-summary-merged{vertical-align:middle}
+#semiSummaryRows tr.semi-summary-pm td.semi-summary-text{background:rgba(241,245,249,.36)}
+
+.semi-bt-modes{display:flex;flex-wrap:nowrap;overflow-x:auto;border:1px solid #cbd5e1;margin:12px 0 10px}
+.semi-bt-modes button{background:#f8fafc;color:#475569;border:0;border-right:1px solid #cbd5e1;border-radius:0;padding:9px 14px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}
+.semi-bt-modes button[aria-selected="true"]{background:#dbeafe;color:#1d4ed8}
+.semi-bt-frame-wrap{border:1px solid #dfe6ee;border-radius:4px;overflow:hidden;background:white}
+#semiBtFrame{display:block;width:100%;height:1050px;border:0;background:white}
+@media(max-width:600px){.semi-bt-modes button{font-size:11px;padding:8px 10px}}
+</style>
+<link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261104-backtest1" defer></script></head>
+<body><main>
+<nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html" aria-current="page">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+<div class="top"><div><h1>日経半導体投資｜対象4銘柄</h1><p class="muted">キオクシアHD・太陽誘電・フジクラ・SBG｜スイング／デイトレ分析</p></div><span class="tag">HISTORICAL BACKTEST · EXPERIMENT</span></div>
+<div class="coverage" id="coverage">データの取得状況を確認しています…</div>
+
+
+<section id="semi-summary-content" class="panel" style="margin:12px 0 20px">
+<h2>日経半導体｜日次サマリー</h2>
+<p class="muted small">日本市場引け後の確定値。SOXは当該日本取引日の寄り付き前に確定した米国市場の直近値です。株探の「前引け」「大引け」を事実と解釈に分け、<strong>前場どうし・後場どうしを同じ行</strong>に表示。前場・後場それぞれ2列合計120字以内です。</p>
+<p class="muted small"><strong>事実：</strong>終値・騰落率・出来高・企業発表・確認された出来事など、資料や数値で確認できる内容。「半導体関連が下落」「企業が上方修正を発表」など。<strong>解釈：</strong>値動きの背景や原因についての見方、投資家心理・市場の期待・先行き予想など。「米株安が売りを誘ったとみられる」など。<strong>原因の説明は記事の見解であり、確定した因果関係ではありません。</strong> 自動分類のため、曖昧な箇所は参照記事で確認してください。</p>
+<div class="matrix-actions" id="summaryRange" style="margin:10px 0"><button type="button" data-days="25" class="active">25取引日</button><button type="button" data-days="50">50取引日</button><button type="button" data-days="0">すべて</button></div>
+<div class="scroll"><table aria-label="前場と後場の事実・解釈を行単位で対応させた日次サマリー" style="width:100%;min-width:1080px;table-layout:fixed"><colgroup><col style="width:90px"><col style="width:135px"><col style="width:135px"><col style="width:360px"><col style="width:360px"></colgroup><thead><tr><th>日本日付</th><th>SOX（米国前営業日）<div style="font-weight:400">騰落率／σ</div></th><th>日経半導体<div style="font-weight:400">騰落率／σ</div></th><th style="text-align:left">事実（確認可能な出来事・数値）</th><th style="text-align:left">解釈（背景・見方・予想）</th></tr></thead><tbody id="semiSummaryRows"><tr><td colspan="5">取得中…</td></tr></tbody></table></div>
+<p id="semiSummaryStatus" class="muted small"></p>
+<p class="muted small">σ＝当日を含む直近20取引日の日次騰落率の平均との差÷標準偏差（10件未満・データ不足は—）。指数出典：<a href="https://indexes.nikkei.co.jp/nkave/index/profile?idx=nkscd" target="_blank" rel="noopener">日経指数公式</a>／<a href="https://nikkeiyosoku.com/nk_semicon/data/" target="_blank" rel="noopener">指数時系列</a>。前場・後場それぞれ事実と解釈の合計120字以内で表示し、参照記事へリンクしています。株探記事の確認できない一部は同記事の配信先や参考市況記事を使用。</p>
+</section>
+<section class="panel matrix-section" aria-labelledby="daily-matrix-title">
+<h2 id="daily-matrix-title">SOX・日本株｜日次騰落率と出来高前日比</h2>
+<p class="muted small">SOX＋日本株4銘柄（合計5列）を横並びで表示。上段は株価騰落率、下段は出来高前日比％です。SOX列の出来高のみSOXX ETFを使用します。</p>
+<div class="matrix-legend" aria-label="判定記号の説明"><span><i class="matrix-buy">✓</i> 買い集め</span><span><i class="matrix-sell">×</i> 売り抜け</span><span><i class="matrix-ftd">FTD</i> フォロースルーデー</span><span><i class="matrix-dd">1</i> 有効DD件数</span><span>— 通常・判定なし</span></div>
+<p class="matrix-legend-note">判定：上昇＋出来高増加＝買い集め／-0.20%以下＋出来高増加＝売り抜け。FTDは反発試行4日目以降の+1.25%以上上昇＋出来高増加による簡易判定。DDは25取引日経過または当日終値から5%以上の上昇で失効。SOXのみSOXXの出来高を代用。IBD公式判定の完全再現ではありません。</p>
+<div class="matrix-tools">
+<label>表示する銘柄<select id="matrixView"><option value="nine">SOX＋指定4銘柄</option><option value="all">SOX＋全4銘柄</option></select></label>
+<div class="matrix-actions" aria-label="表示する取引日数">
+<button id="matrix25" class="active" type="button">25取引日</button>
+<button id="matrix50" type="button">50取引日</button>
+</div>
+</div>
+<div class="matrix-pickers" id="matrixPickers"></div>
+<div class="matrix-scroll" tabindex="0" aria-label="SOXと日本株の日次データ表。横スクロールできます">
+<table class="matrix-table" id="matrixTable">
+<colgroup id="matrixCols"></colgroup>
+<thead id="matrixHead"><tr><th class="matrix-day" rowspan="2">日本日付</th><th colspan="2">SOX（米国前営業日）</th><th colspan="8">日本株4銘柄</th></tr><tr><th>騰落率（SOXX出来高）</th><th>判定</th><th colspan="8">株価騰落率（出来高前日比％）・判定</th></tr></thead>
+<tbody id="matrixBody"><tr><td colspan="11">データの読み込み中...</td></tr></tbody>
+</table>
+</div>
+<p id="matrixStatus" class="matrix-subnote">SOXの変動率は^SOX指数、SOX列の出来高はSOXX ETFの売買株数です。日本市場の寄り付き前に確定した米国取引日に対応させ、SOXXデータが欠損した日は「—」と表示します。</p>
+</section>
+<section class="chapter" id="swing"><h2>01 / スイング｜日本株急落 × その夜のSOX反発</h2>
+<p class="muted">日本株が下がった日の夜、米国SOX指数が反発したら、翌営業日の日本株はどう動くか。日足で調べます。</p></section>
+<section class="panel">
+<div class="filters">
+<label>日本株の当日下落<select id="soxFall"><option value="1">前日比−1%以上</option><option value="2">前日比−2%以上</option><option value="3" selected>前日比−3%以上</option><option value="5">前日比−5%以上</option><option value="10">前日比−10%以上</option></select></label>
+<label>その夜のSOX上昇<select id="soxRise"><option value="0" selected>前日比プラス</option><option value="1">+1%以上</option><option value="2">+2%以上</option><option value="3">+3%以上</option></select></label>
+<label>SOX反発の条件<select id="soxMode"><option value="up" selected>SOX当日上昇</option><option value="turn">SOX前日下落→当日上昇</option></select></label>
+<label>過去の集計期間<select id="soxWindow"><option value="125">直近4か月</option><option value="365">直近1年</option><option value="1095" selected>直近3年</option></select></label>
+<label>銘柄の種類<select id="soxGroup"><option value="all">対象4銘柄</option></select></label>
+<label>個別銘柄<select id="soxTicker"><option value="all">選択した銘柄グループ全体</option></select></label>
+</div>
+<div id="soxStatus" class="interpretation">SOXの日足データを取得中...</div>
+<div class="section-metrics" style="grid-template-columns:repeat(auto-fit,minmax(145px,1fr))">
+<div class="metric"><small>条件に該当した件数</small><strong id="soxCount">—</strong><span>翌日まで確定した事象</span></div>
+<div class="metric"><small>翌朝の平均ギャップ</small><strong id="soxGap">—</strong><span>前日終値 → 翌日始値</span></div>
+<div class="metric"><small>翌日の日中平均リターン</small><strong id="soxIntraday">—</strong><span>翌日始値 → 翌日終値</span></div>
+<div class="metric"><small>翌日引けまでの平均変化</small><strong id="soxClose">—</strong><span>前日終値 → 翌日終値</span></div>
+<div class="metric"><small>日中陽線率</small><strong id="soxWin">—</strong><span>翌日始値より終値が高い割合</span></div>
+<div class="metric"><small>日中最大逆行の平均</small><strong id="soxRisk">—</strong><span>翌日始値 → 翌日安値</span></div>
+</div>
+<h2>SOX上昇と下落の比較</h2>
+<div class="scroll"><table class="segment-table"><thead><tr><th>日本株が下落した夜のSOX</th><th>件数</th><th>平均ギャップ</th><th>寄り→引け平均</th><th>寄り→引け陽線率</th><th>前日引け→翌日引け</th></tr></thead><tbody id="soxCompare"><tr><td colspan="6">取得中</td></tr></tbody></table></div>
+<p class="analysis-note">比較対象の「SOX下落」は、同じ日本株下落条件で、SOXが前日比マイナスだった場合です。選択した上昇率の閾値は比較対象には適用しません。</p>
+<h2 style="margin-top:17px">銘柄別｜SOX上昇後の翌営業日</h2>
+<div class="scroll"><table class="segment-table"><thead><tr><th>銘柄</th><th>件数</th><th>平均ギャップ</th><th>日中平均騰落率</th><th>日中陽線率</th><th>翌日終値変化</th><th>平均最大逆行</th></tr></thead><tbody id="soxByStock"><tr><td colspan="7">取得中</td></tr></tbody></table></div>
+<p class="analysis-note"><strong>売買として検証できるのは、SOXの終値が確定した後の日本株の翌朝の寄り付き以降です。</strong>「前日引け→翌日引け」の変化には夜間のSOX情報を知る前の価格が含まれるので、そのまま売買損益として解釈しません。複数銘柄の同日事象は相関し、コスト・スリッページ・ストップ約定は未反映です。</p>
+</section>
+<section class="chapter" id="daytrade"><h2>02 / デイトレ｜強い時間帯とADR・ADR%</h2><p class="muted">30分足の3・10・25営業日比較グラフと、過去20営業日のADR・ADR%を表示します。</p></section>\n<section class="panel" id="fujiShapeStudy">
+<h2>フジクラ｜5分足チャートの形状分類</h2>
+<p class="muted small">9:05〜10:00の5分足12本を、価格変化の形で6種類に分類します。チャートは各分類に該当する実測日の代表例。パターン確定後、10:05の始値から10:35終値までの30分の動きを調べます。</p>
+<div class="matrix-tools"><label>表示期間<select id="fujiShapeRange"><option value="10">直近10営業日</option><option value="25" selected>直近25営業日</option><option value="0">すべて</option></select></label></div>
+<div class="scroll"><table style="min-width:670px"><thead><tr><th style="text-align:left">形状の分類</th><th>日数</th><th>その後30分の上昇確率</th><th>平均騰落率</th><th>実測チャート例</th></tr></thead><tbody id="fujiShapeTable"><tr><td colspan="5">5分足を分類中…</td></tr></tbody></table></div>
+<h3 style="font-size:13px;margin:14px 0 7px">実際のパターン例（各分類の直近日）</h3>
+<div id="fujiShapeExamples" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px"></div>
+<p id="fujiShapeStatus" class="analysis-note">読み込み中…</p><p id="fujiShapeSource" class="muted small"></p>
+<p class="muted small">分類は終値の正規化と形状の閾値による暫定的なルールです。必ず6分類のどれか1つに振り分けます。W・M型は複数回の方向転換をまとめた分類です。未来の株価を使わず判定しますが、将来の優位性を示すものではありません。集計は売買コスト控除前です。</p>
+</section>
+
+<section class="panel" id="fujikura-5m-study">
+<h2>フジクラ（5803）｜5分足パターン実測検証</h2>
+<p class="muted small">対象：フジクラのみ。寄り付きの急騰失速・急落反発・午前高値ブレイク・VWAP回復を5分足の確定データから抽出します。損益はシグナル確定後の次足始値で建て、15分後の終値で決済した仮想約定です。</p>
+<div class="matrix-tools">
+<label>集計期間<select id="fuji5Days"><option value="20">直近20暦日</option><option value="60" selected>直近60暦日</option><option value="0">蓄積全期間</option></select></label>
+<label>往復コスト<select id="fuji5Cost"><option value="0">0.00%</option><option value="0.1" selected>0.10%</option><option value="0.2">0.20%</option><option value="0.3">0.30%</option></select></label>
+</div>
+<div class="scroll"><table style="min-width:650px"><thead><tr><th style="text-align:left">パターン／方向</th><th>発生回数</th><th>コスト控除後勝率</th><th>平均損益</th><th>最悪損益</th></tr></thead><tbody id="fuji5Table"><tr><td colspan="5">5分足データを確認中…</td></tr></tbody></table></div>
+<p class="analysis-note" id="fuji5Status">実データを取得中…</p>
+<p class="muted small" id="fuji5Source"></p>
+<p class="muted small">分析上の注意：欠損足や昼休みをまたぐ取引は除外。各パターン1日最大1件。気配・板・実際の約定価格・税金は未反映です。検証結果は将来の勝率を保証しません。データ：Yahoo Finance非公式5分足を日々保存。</p>
+</section>
+
+<section class="panel">
+<div class="filters">
+<label>銘柄グループ<select id="dtGroup"><option value="all">対象4銘柄</option></select></label>
+<label>個別銘柄<select id="dtTicker"><option value="all">全銘柄</option></select></label>
+</div>
+<div class="section-metrics">
+<div class="metric"><small>分析した銘柄</small><strong id="dtCount">—</strong><span>完全な取引日だけを採用</span></div>
+<div class="metric"><small>平均ADR%(20)</small><strong id="dtAdr">—</strong><span>各銘柄のADR%の単純平均</span></div>
+<div class="metric"><small>平均陽線率</small><strong id="dtWin">—</strong><span>30分足終値 ＞ 始値</span></div>
+</div>
+<div id="dtNote" class="interpretation">実データを集計中...</div>
+
+<section aria-labelledby="profile-heading" class="panel" id="intraday-profile">
+<h2 id="profile-heading">銘柄別｜時間帯ごとの出来高と変動幅</h2>
+<p class="muted small">直近3・10・25営業日の時間帯別平均を、共通の縦軸スケールで横並び比較します。</p>
+<div class="profile-chooser">
+<label for="profileTicker">グラフに表示する銘柄
+<select id="profileTicker" aria-label="時間帯別グラフの銘柄を選択"></select></label>
+<span class="muted small">対象：30分足 / 東京市場 9:00〜15:30（昼休みを除く）</span></div>
+<div id="profileStatus" class="interpretation">直近の取得データを集計中...</div>
+<div class="profile-scroll" tabindex="0" aria-label="3日・10日・25日のグラフを左右にスクロールして比較">
+<div class="profile-grid" id="profileGrid"></div></div>
+<p class="profile-legend"><b class="profile-vol">棒グラフ：平均出来高（万株）</b> ／ <b class="profile-range">折れ線グラフ：平均変動幅（%）</b> ／ <b class="profile-return">棒グラフ：平均騰落率（%）</b>。棒や点にカーソルを合わせると値を確認できます。</p>
+<p class="profile-desc">出来高：各30分足の売買株数を対象日で平均。変動幅：（高値−安値）÷始値×100。騰落率：（終値−始値）÷始値×100を、それぞれ対象日で平均。完全な営業日のみ使用し、不足分は補完せず実際の件数を表示します。</p></section>
+<h2 style="margin-top:19px">銘柄別｜ADR(20)とADR%(20)</h2>
+<div class="scroll"><table class="segment-table"><thead><tr><th>銘柄</th><th>区分</th><th>最新終値</th><th>ADR(20)・円</th><th>ADR%(20)</th><th>30分足・陽線率</th><th>完全な日数</th></tr></thead><tbody id="dtStocks"></tbody></table></div>
+<p class="analysis-note">ADR(20) = 過去20取引日の（当日高値−当日安値）の平均。ADR%(20) = ADR(20) ÷ 最新終値 × 100（TradingView式）。30分足の平均騰落は、当該足の始値から終値までの事後的な変化であり、時間帯だけで利益が得られるという意味ではありません。寄り付き・大引けの約定コストは別途検討が必要です。</p>
+</section>
+<section class="chapter" id="rebound"><h2>03 / 詳細検証｜5%・10%急落後の反発</h2><p class="muted">従来の時間足・保有期間別バックテストを比較用に残しています。下の条件は上の2ブロックとは独立しています。</p></section>
+<section class="panel"><h2>検証条件</h2>
+<div class="filters">
+<label>時間足・対象期間<select id="interval"><option value="30m">30分足｜取得可能な約60日＋蓄積分</option><option value="60m">60分足｜直近約4か月</option></select></label>
+<label>下落の定義<select id="trigger"><option value="high">直前10営業日の高値から</option><option value="prev">前日終値から</option></select></label>
+<label>下落率<select id="threshold"><option value="5">−5%以上</option><option value="10">−10%以上</option></select></label>
+<label>売却タイミング<select id="horizon"><option value="day">当日大引け（デイトレ）</option><option value="1">次の1本の終値</option><option value="3">次の3本目の終値</option><option value="d1">翌営業日大引け</option><option value="d3" selected>3営業日後の大引け</option><option value="d5">5営業日後の大引け</option></select></label>
+<label>銘柄<select id="ticker"><option value="all">対象4銘柄（等件数集計）</option></select></label>
+</div><p class="small muted">シグナルは足の終値で判定し、<b>次の足の始値</b>で買う。5営業日の再エントリー禁止期間を設け、連続下落で同じ事象を重複計上しない。</p></section>
+<div id="warning"></div>
+<div class="metrics">
+<div class="metric"><small>売買可能な検証件数</small><strong id="num">—</strong><span>右端で未確定の取引は除外</span></div>
+<div class="metric"><small>平均確定リターン</small><strong id="avg">—</strong><span>次足始値 → 指定足の終値</span></div>
+<div class="metric"><small>勝率</small><strong id="win">—</strong><span id="ci">確定リターンがプラス</span></div>
+<div class="metric"><small>平均最大反発率</small><strong id="peak">—</strong><span>保有期間内高値 / 買値 − 1</span></div>
+<div class="metric"><small>平均最大逆行率</small><strong id="risk">—</strong><span>保有期間内安値 / 買値 − 1</span></div>
+<div class="metric"><small>通常時との差</small><strong id="edge">—</strong><span id="baseLabel">同銘柄の日次機械的購入と比較</span></div>
+</div>
+<div class="layout">
+<section class="panel"><h2>保有期間別・平均確定リターン</h2><div id="horizonBars"></div><p class="legend">シグナル発生後の実際の約定可能時点を想定。期間ごとの標本件数が異なります。</p></section>
+<section class="panel"><h2>リバウンド到達率</h2><div id="hits"></div><p class="legend">買値から各水準へ、指定保有期間中の高値が到達した割合。確定利益ではありません。</p></section>
+</div>
+<section class="panel"><h2>銘柄別の検証結果</h2><div class="scroll"><table><thead><tr><th>銘柄</th><th>件数</th><th>平均利益率</th><th>中央値</th><th>勝率</th><th>最大反発の平均</th><th>最大逆行の平均</th></tr></thead><tbody id="byTicker"><tr><td colspan="7">読み込み中</td></tr></tbody></table></div></section>
+<section class="panel"><h2>検証方法と限界</h2>
+<p>①「高値から」は<b>シグナル当日を含まない直前10営業日</b>の最高値と比較。「前日終値から」は前営業日の最後の30/60分足の終値と比較。初めて下落率が閾値を超えた足だけを抽出します。</p>
+<p>②その足の終値確定後、次足の始値で買い、選択した保有期間の最後の足の終値で売る想定。デイトレードは翌日へ持ち越さず、同日中に買いと売りが完結するケースだけ採用します。</p>
+<p>③最大反発は保有中の最高値、最大逆行は最安値を使用します。<b>同じ足内の高値と安値の到達順は判定できない</b>ため、両者を同時に取れるとはみなしません。</p>
+<p>④「通常時」は同銘柄でシグナルによらず毎日最初の足を観察し、その次の足の始値で買う参考比較です。買い時刻の分布が異なるため、厳密な因果比較ではありません。</p>
+<p>⑤銘柄間・近接日時の事象は相関するため、4銘柄を集計しても独立した4倍の証拠にはなりません。出来高、スプレッド、手数料、スリッページ、税金、株式分割調整の完全性は検証していません。実運用前に厳密な再検証が必要です。</p>
+<div class="formula">30分足はYahoo Financeの15分足を東京市場の前場・後場に合わせて2本ずつ合成。Yahooの取得上限を超える過去の30分足は再現できないため、以後の更新で実データを保存します。60分足とは異なるデータ粒度であり、成績を直接比較する際は注意してください。</div>
+<p class="small">出典：Yahoo Finance非公式Chart API（市場価格参考値）。分析対象：キオクシアHD・太陽誘電・フジクラ・SBGの4銘柄。<a href="https://github.com/GRW1107s/stock-dashboard/blob/main/scripts/update_semiconductors.py">取得コード</a> / <a href="https://www.amova-am.com/products/etf/sp/lp_nikkei_semiconductor_stock">指数構成銘柄</a> / <a href="https://ranaroussi.github.io/yfinance/reference/yfinance.price_history.html">データ期間の制限</a></p>
+</section>
+
+<section id="semi-backtest-content" class="panel" style="margin:12px 0 20px">
+<h2>03 / バックテスト｜時間足を切り替えて戦略比較</h2>
+<p class="muted small">旧株価戦略研究所を日経半導体に統合。現在、1分足の自動蓄積と実売買価格の再生に対応しているのは太陽誘電（6976）です。キオクシアHD・フジクラ・SBGには、未取得の1分足成績を流用しません。</p>
+<div class="semi-bt-modes" role="tablist" aria-label="バックテスト研究モード">
+<button type="button" data-bt="compare" role="tab" aria-selected="true">戦略比較・時間足切替</button>
+<button type="button" data-bt="walkforward" role="tab" aria-selected="false">逐次学習・初見検証</button>
+<button type="button" data-bt="fixed" role="tab" aria-selected="false">固定ルール検証</button>
+<button type="button" data-bt="xy" role="tab" aria-selected="false">x/y反復学習</button>
+<button type="button" data-bt="five" role="tab" aria-selected="false">5分足検証</button>
+</div>
+<p class="muted small" id="semiBtNote">1分・5分・15分・1時間・日足を選択し、25MA逆張りなど複数の戦略をチェックして同じ期間で比較します。</p>
+<div class="semi-bt-frame-wrap"><iframe id="semiBtFrame" src="./backtest/strategy-lab.html?v=compact-20261104" title="太陽誘電バックテスト｜戦略比較・時間足切替" loading="lazy"></iframe></div>
+<p class="muted small">研究用の仮想取引です。売買損益の合計は各取引の騰落率の単純合計で、口座全体の運用利回りではありません。実際の信用取引では約定可能性・板・スプレッド・取引規制等で結果が異なります。1日最大3回の手動反発買いは研究中であり、旧モデルの取引上限とは区別します。</p>
+</section>
+<footer>投資助言ではありません。公開されたヒストリカルデータに基づく参考検証であり、将来のパフォーマンスを保証しません。</footer>
+</main>
+<script>
+"use strict";
+const LABELS={"285A.T":"キオクシアHD","6976.T":"太陽誘電","5803.T":"フジクラ","9984.T":"ソフトバンクグループ（SBG）"};
+const $=id=>document.getElementById(id);
+let raw=null;
+const names=Object.keys(LABELS);
+names.forEach(s=>{let o=document.createElement("option");o.value=s;o.textContent=LABELS[s]+" ("+s.split(".")[0]+")";$("ticker").append(o)});
+["interval","trigger","threshold","horizon","ticker"].forEach(id=>$(id).addEventListener("change",render));
+const day=t=>String(t).slice(0,10);
+const mean=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
+const median=arr=>{if(!arr.length)return null;let a=arr.slice().sort((x,y)=>x-y);return a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2};
+const pct=(n,sign=true)=>n===null||!Number.isFinite(n)?"—":(sign&&n>0?"+":"")+n.toFixed(2)+"%";
+const cls=n=>n===null||!Number.isFinite(n)?"":n>0?"positive":n<0?"negative":"";
+const fields=["num","avg","win","peak","risk","edge"];
+function wilson(success,n){if(n===0)return null;let z=1.96,p=success/n,k=1+z*z/n,mid=(p+z*z/(2*n))/k,half=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/k;return [(mid-half)*100,(mid+half)*100]}
+function trade(bars,signal,dates,di,endByDay,horizon){
+  const entry=signal+1;if(entry>=bars.length)return null;
+  let exit;
+  if(horizon==="day"){if(day(bars[entry][0])!==day(bars[signal][0]))return null;exit=endByDay[di]}
+  else if(horizon==="1"||horizon==="3")exit=entry+Number(horizon)-1;
+  else {let n=Number(horizon.slice(1));if(di+n>=dates.length)return null;exit=endByDay[di+n]}
+  if(exit==null||exit<entry||exit>=bars.length)return null;
+  const buy=bars[entry][1],sell=bars[exit][4];
+  if(!(buy>0&&sell>0))return null;
+  let high=-Infinity,low=Infinity;
+  for(let i=entry;i<=exit;i++){high=Math.max(high,bars[i][2]);low=Math.min(low,bars[i][3])}
+  return {buy,sell,ret:100*(sell/buy-1),peak:100*(high/buy-1),risk:100*(low/buy-1)};
+}
+function testOne(symbol,horizon,trigger,threshold){
+  let bars=((raw.series||{})[symbol]||{})[$("interval").value]||[];
+  if(bars.length<15)return {events:[],control:[]};
+  bars=bars.filter(b=>Array.isArray(b)&&b.length===6&&b[1]>0&&b[4]>0).slice().sort((a,b)=>a[0].localeCompare(b[0]));
+  let dates=[],dayIdx=[],highs=[],lastClose=[],endByDay=[];
+  bars.forEach((b,i)=>{
+    let d=day(b[0]);
+    if(d!==dates[dates.length-1]){dates.push(d);highs.push(b[2]);lastClose.push(b[4]);endByDay.push(i)}
+    else{let j=dates.length-1;highs[j]=Math.max(highs[j],b[2]);lastClose[j]=b[4];endByDay[j]=i}
+    dayIdx.push(dates.length-1);
+  });
+  let events=[],control=[],lastSignal=-1000,previousDecline=0;
+  for(let i=0;i<bars.length;i++){
+    let di=dayIdx[i];
+    if(di<10)continue;
+    const t=trade(bars,i,dates,di,endByDay,horizon);
+    if(i===0||dayIdx[i-1]!==di){if(t)control.push(t)}
+    let ref=trigger==="high"?Math.max(...highs.slice(di-10,di)):lastClose[di-1];
+    let decline=ref>0?100*(1-bars[i][4]/ref):0;
+    let justCrossed=decline>=threshold&&((i===0||dayIdx[i-1]!==di)?trigger==="prev"||previousDecline<threshold:previousDecline<threshold);
+    // When a 10-session lookback reference changes at day boundary,
+    // treat a high-mode signal as crossed only if prior bar was above threshold.
+    if(trigger==="high"&&i>0&&dayIdx[i-1]!==di){
+      let previousReference=Math.max(...highs.slice(di-11,di-1));
+      let oldDecline=100*(1-bars[i-1][4]/previousReference);
+      justCrossed=decline>=threshold&&oldDecline<threshold;
+    }
+    if(justCrossed&&di-lastSignal>=5){
+      if(t){events.push({...t,signal:bars[i][0],symbol,decline,entry:bars[i+1][0]});lastSignal=di}
+    }
+    previousDecline=decline;
+  }
+  return {events,control};
+}
+function summary(items){return {n:items.length,avg:mean(items.map(x=>x.ret)),med:median(items.map(x=>x.ret)),win:items.length?100*items.filter(x=>x.ret>0).length/items.length:null,peak:mean(items.map(x=>x.peak)),risk:mean(items.map(x=>x.risk))}}
+function setMetric(id,v,formatter){let x=$(id),t=formatter?formatter(v):v;x.textContent=t;x.className=(["avg","edge","risk","peak"].includes(id)?cls(v):"")}
+function histogram(events){
+  $("hits").innerHTML=[1,3,5].map(n=>{let p=events.length?100*events.filter(x=>x.peak>=n).length/events.length:null;return '<div class="hit"><span>+'+n+'% 到達</span><div class="track"><div class="fill" style="width:'+(p||0)+'%"></div></div><b>'+(p===null?'—':p.toFixed(1)+'%')+'</b></div>'}).join("");
+}
+function render(){
+ if(!raw)return;
+ let time=$("interval").value,trigger=$("trigger").value,threshold=Number($("threshold").value),horizon=$("horizon").value,ticker=$("ticker").value;
+ let picked=ticker==="all"?names:[ticker];
+ let results={},all=[],controls=[];
+ for(let s of picked){let r=testOne(s,horizon,trigger,threshold);results[s]=r.events;all.push(...r.events);controls.push(...r.control)}
+ let st=summary(all),base=summary(controls);
+ setMetric("num",st.n,n=>n.toLocaleString("ja-JP")+"件");
+ setMetric("avg",st.avg,pct);setMetric("win",st.win,n=>pct(n,false));
+ setMetric("peak",st.peak,pct);setMetric("risk",st.risk,pct);
+ setMetric("edge",st.avg===null||base.avg===null?null:st.avg-base.avg,pct);
+ let conf=wilson(all.filter(x=>x.ret>0).length,all.length);
+ $("ci").textContent=conf?"95%区間 "+conf[0].toFixed(1)+"–"+conf[1].toFixed(1)+"%":"対象データがありません";
+ $("baseLabel").textContent=base.avg===null?"通常時サンプル不足":"通常時 "+pct(base.avg)+" / "+controls.length+"件";
+ histogram(all);
+ $("byTicker").innerHTML=picked.map(s=>{
+ let v=summary(results[s]);
+ return '<tr><td>'+LABELS[s]+'</td><td>'+v.n+'</td><td class="'+cls(v.avg)+'">'+pct(v.avg)+'</td><td>'+pct(v.med)+'</td><td>'+pct(v.win,false)+'</td><td>'+pct(v.peak)+'</td><td>'+pct(v.risk)+'</td></tr>';
+ }).join("");
+ let horizons=[["1","次の1本"],["3","次の3本"],["day","当日引け"],["d1","翌営業日"],["d3","3営業日後"],["d5","5営業日後"]];
+ let marks=horizons.map(([k,label])=>{
+   let r=picked.flatMap(s=>testOne(s,k,trigger,threshold).events);
+   return {label,...summary(r)};
+ });
+ let lim=Math.max(2,...marks.map(x=>Math.abs(x.avg||0)));
+ $("horizonBars").innerHTML=marks.map(r=>{
+  let width=r.avg===null?0:Math.min(50,50*Math.abs(r.avg)/lim);
+  return '<div class="bar-row"><span>'+r.label+'</span><div class="track"><div class="zero"></div><div class="fill '+(r.avg<0?'neg':'')+'" style="width:'+width+'%"></div></div><b class="'+cls(r.avg)+'">'+pct(r.avg)+'</b><span class="muted">n='+r.n+'</span></div>';
+ }).join("");
+ let faults=Object.keys(raw.errors||{}).filter(x=>x.endsWith(":"+time)&&picked.includes(x.split(":")[0]));
+ let notes=[];
+ if(all.length===0)notes.push("選択条件では検証可能な売買が0件です。これは勝率0%を意味しません。");
+ if(all.length<20)notes.push("検証件数が"+all.length+"件と少ないため、平均や勝率は不安定です。");
+ if(faults.length)notes.push("取得失敗（以前の保存分があれば使用）: "+faults.join("、"));
+ $("warning").innerHTML=notes.length?'<div class="notice">'+notes.join("<br>")+'</div>':"";
+}
+
+const RELATED=new Set(["5803.T","6976.T"]);
+function chosen(group,ticker){
+ const a=names.filter(s=>group==="all"||(group==="cable" ? RELATED.has(s):!RELATED.has(s)));
+ return ticker==="all"?a:a.filter(s=>s===ticker);
+}
+function signedClass(x){return cls(x)}
+function fillSelect(id){
+ names.forEach(s=>{let o=document.createElement("option");o.value=s;o.textContent=LABELS[s]+" ("+s.split(".")[0]+")";$(id).append(o)});
+}
+fillSelect("soxTicker");fillSelect("dtTicker");
+["soxFall","soxRise","soxMode","soxWindow","soxGroup","soxTicker"].forEach(id=>$(id).addEventListener("change",renderSox));
+["dtGroup","dtTicker"].forEach(id=>$(id).addEventListener("change",renderDay));
+const yr=y=>y===null||!Number.isFinite(y)?"—":Math.round(y*10)/10+"円";
+function dailySessions(s,interval){
+ const rows=((((raw||{}).series||{})[s]||{})[interval]||[]);
+ let map=new Map();
+ for(const b of rows){
+  if(!Array.isArray(b)||b.length<6||!(b[1]>0&&b[2]>0&&b[3]>0&&b[4]>0))continue;
+  let day=b[0].slice(0,10);
+  if(!map.has(day))map.set(day,[]);
+  map.get(day).push(b);
+ }
+ let minBars=interval==="30m"?11:7;
+ let sessions=[];
+ for(let [date,rr] of map){
+  rr.sort((a,b)=>a[0].localeCompare(b[0]));
+  if(rr.length!==minBars||rr[0][0].slice(11,16)!=="09:00"||rr[rr.length-1][0].slice(11,16)!=="15:00")continue;
+  const dayVolume=rr.reduce((a,b)=>a+(Number(b[5])||0),0);
+  sessions.push({date,open:rr[0][1],high:Math.max(...rr.map(b=>b[2])),
+   low:Math.min(...rr.map(b=>b[3])),close:rr[rr.length-1][4],
+   volume:dayVolume,bars:rr});
+ }
+ return sessions.sort((a,b)=>a.date.localeCompare(b.date));
+}
+const SLOTS=["09:00","09:30","10:00","10:30","11:00","12:30","13:00","13:30","14:00","14:30","15:00"];
+function timeStats(bars){
+ const r=bars.map(({bar,volume})=>({
+  ret:100*(bar[4]/bar[1]-1),
+  range:100*((bar[2]-bar[3])/bar[1]),
+  share:volume>0?100*(Number(bar[5])||0)/volume:null
+ }));
+ return {n:r.length,mean:mean(r.map(x=>x.ret)),win:r.length?100*r.filter(x=>x.ret>0).length/r.length:null,
+  range:mean(r.map(x=>x.range)),volume:mean(r.map(x=>x.share).filter(x=>x!==null))};
+}
+function renderDay(){
+ if(!raw)return;
+ const selected=chosen($("dtGroup").value,$("dtTicker").value);
+ let adrRecords=[],allBars=[],perTicker={};
+ for(const s of selected){
+  const sessions=dailySessions(s,"30m"),last=sessions.at(-1),window=sessions.slice(-20);
+  const adr=window.length===20?mean(window.map(d=>d.high-d.low)):null;
+  const adrPct=adr!==null&&last?.close>0?100*adr/last.close:null;
+  adrRecords.push({s,adr,adrPct,close:last?.close??null,days:sessions.length});
+  let own=[];
+  for(const d of sessions)for(const bar of d.bars){
+   const o={bar,volume:d.volume,s};
+   own.push(o);allBars.push(o);
+  }
+  perTicker[s]=own;
+ }
+ const valid=adrRecords.filter(x=>x.adrPct!==null);
+ const avgAdr=mean(valid.map(x=>x.adrPct));
+ const avgWin=allBars.length?100*allBars.filter(x=>x.bar[4]>x.bar[1]).length/allBars.length:null;
+ const set=(id,text,number)=>{let el=$(id);el.textContent=text;el.className=number==null?"":signedClass(number)};
+ set("dtCount",valid.length+"/"+selected.length+"銘柄",null);
+ set("dtAdr",pct(avgAdr,false),avgAdr);
+ set("dtWin",pct(avgWin,false),null);
+ $("dtNote").textContent="30分足の完全な日（11本）だけを集計。延べ"+allBars.length+
+  "本、"+new Set(allBars.map(x=>x.bar[0].slice(0,10))).size+"営業日。"+
+  "上昇の強さ＝足の始値→終値の平均騰落率。高ボラティリティは上昇方向を保証しません。"+
+  " ADRは直近20の完全な営業日の高値・安値を用います。";
+ adrRecords.sort((a,b)=>(b.adrPct??-Infinity)-(a.adrPct??-Infinity));
+ $("dtStocks").innerHTML=adrRecords.map(x=>{
+  let own=timeStats(perTicker[x.s]||[]);
+  return '<tr><td>'+LABELS[x.s]+'</td><td>'+(RELATED.has(x.s)?"電線・素材":"半導体")+'</td><td>'+
+    (x.close===null?"—":yr(x.close))+'</td><td>'+yr(x.adr)+'</td><td><b>'+pct(x.adrPct,false)+'</b></td><td>'+
+    pct(own.win,false)+'</td><td>'+x.days+'</td></tr>';
+ }).join("")||'<tr><td colspan="7">銘柄を選択してください</td></tr>';
+}
+
+
+// Comparison across three rolling windows of complete 30-minute sessions.
+fillSelect("profileTicker");
+$("profileTicker").value="285A.T";
+$("profileTicker").addEventListener("change",renderProfile);
+const PROFILE_PERIODS=[3,10,25];
+function profileWindows(symbol){
+  const sessions=dailySessions(symbol,"30m");
+  return PROFILE_PERIODS.map(n=>{
+    const recent=sessions.slice(-n);
+    const points=SLOTS.map(slot=>{
+      const observed=[];
+      for(const d of recent){
+        const b=d.bars.find(x=>x[0].slice(11,16)===slot);
+        if(b)observed.push(b);
+      }
+      return {
+        slot,
+        volume:mean(observed.map(b=>Number(b[5])/10000)),
+        range:mean(observed.map(b=>100*(b[2]-b[3])/b[1])),
+        ret:mean(observed.map(b=>100*(b[4]/b[1]-1))),
+        count:observed.length
+      };
+    });
+    return {n,days:recent.length,first:recent[0]?.date||null,
+      last:recent.at(-1)?.date||null,points};
+  });
+}
+function profileNiceMax(value){
+  if(!(value>0))return 1;
+  const m=Math.pow(10,Math.floor(Math.log10(value))),x=value/m;
+  return (x<=1?1:x<=2?2:x<=2.5?2.5:x<=5?5:10)*m;
+}
+function profileChart(points,key,maxValue,period){
+  const W=360,H=225,L=42,R=9,T=15,B=62;
+  const base=H-B,pw=W-L-R,ph=base-T;
+  const signed=key==="ret";
+  const unit=key==="volume"?"万株":"%";
+  const X=i=>L+pw*(i+.5)/SLOTS.length;
+  // Return chart has a common symmetric y-axis across all three periods.
+  const Y=v=>signed?base-((v+maxValue)/(2*maxValue))*ph:
+    base-Math.max(0,v||0)/maxValue*ph;
+  const grid=Array.from({length:5},(_,i)=>{
+    const v=signed?maxValue*(1-i/2):maxValue*i/4,y=Y(v);
+    const printed=key==="volume"?(v>=100?v.toFixed(0):v.toFixed(1)):
+      (signed&&v>0?"+":"")+v.toFixed(Math.abs(v)>=10?1:2);
+    return '<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+
+      '" stroke="'+(signed&&i===2?"#8096ad":"#e0e8f1")+'"/>'+
+      '<text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#71829b">'+printed+'</text>';
+  }).join("");
+  const labels=points.map((d,i)=>{
+    return '<text transform="translate('+X(i)+' '+(base+10)+
+      ') rotate(-45)" text-anchor="end" font-size="10" fill="#6b7f98">'+
+      d.slot.replace(/^0/,"")+'</text>';
+  }).join("");
+  let marks="";
+  if(key==="volume"){
+    marks=points.map((d,i)=>{
+      if(d.volume===null)return "";
+      const y=Y(d.volume),h=Math.max(0,base-y);
+      return '<rect x="'+(X(i)-9)+'" y="'+y+'" width="18" height="'+h+
+        '" rx="2" fill="#377eb8"><title>'+d.slot+' / '+period+'日 / '+
+        d.volume.toFixed(2)+'万株（'+d.count+'日平均）</title></rect>';
+    }).join("");
+  }else if(signed){
+    const zero=Y(0);
+    marks=points.map((d,i)=>{
+      if(d.ret===null)return "";
+      const y=Y(d.ret),top=Math.min(zero,y),height=Math.max(1,Math.abs(y-zero));
+      const color=d.ret>=0?"#008778":"#c94d61";
+      return '<rect x="'+(X(i)-9)+'" y="'+top+'" width="18" height="'+height+
+        '" rx="2" fill="'+color+'"><title>'+d.slot+' / '+period+
+        '日 / 平均騰落率 '+(d.ret>0?"+":"")+d.ret.toFixed(3)+
+        '%（'+d.count+'日平均）</title></rect>';
+    }).join("");
+  }else{
+    const actual=points.map((d,i)=>({x:X(i),y:d.range===null?null:Y(d.range),p:d}));
+    const polyline=actual.filter(d=>d.y!==null).map(d=>d.x+','+d.y).join(" ");
+    marks='<polyline points="'+polyline+
+      '" fill="none" stroke="#008778" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    marks+=actual.filter(d=>d.y!==null).map(d=>
+      '<circle cx="'+d.x+'" cy="'+d.y+
+      '" r="4.5" fill="#008778" stroke="white" stroke-width="1.5"><title>'+
+      d.p.slot+' / '+period+'日 / 平均変動幅 '+
+      d.p.range.toFixed(3)+'%（'+d.p.count+'日平均）</title></circle>'
+    ).join("");
+  }
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+period+
+    '営業日の時間帯別'+(key==="volume"?"平均出来高":key==="ret"?"平均騰落率":"平均変動幅")+
+    '。単位'+unit+'。" preserveAspectRatio="xMidYMid meet">'+grid+labels+marks+'</svg>';
+}
+function renderProfile(){
+  if(!raw)return;
+  const symbol=$("profileTicker").value;
+  if(!names.includes(symbol)){ $("profileStatus").textContent="銘柄を選択してください。";return; }
+  const windows=profileWindows(symbol);
+  const all=windows.flatMap(w=>w.points);
+  const vMax=profileNiceMax(Math.max(0,...all.map(p=>p.volume||0))*1.08);
+  const rMax=profileNiceMax(Math.max(0,...all.map(p=>p.range||0))*1.08);
+  const retMax=profileNiceMax(Math.max(0,...all.map(p=>Math.abs(p.ret||0)))*1.08);
+  const status=windows[2];
+  $("profileStatus").textContent=LABELS[symbol]+"（"+symbol.replace(".T","")+"） / 直近完全営業日："+
+    status.days+"日（25日枠） / 期間 "+(status.first||"—")+" ～ "+(status.last||"—")+
+    (status.days<25?"。不足分は補完せず、取得済みの期間だけで計算。":"。直近25営業日分を取得済み。");
+  $("profileGrid").innerHTML=windows.map(w=>{
+    const dates=w.days&&w.first&&w.last?w.first+" ～ "+w.last:"データなし";
+    const dayVol=w.days?mean(w.points.map(p=>p.volume))*11:null;
+    const meanRange=w.days?mean(w.points.map(p=>p.range)):null;
+    const meanReturn=w.days?mean(w.points.map(p=>p.ret)):null;
+    return '<article class="profile-card"><h3>直近'+w.n+'営業日 <span class="muted small">（取得'+w.days+'日）</span></h3>'+
+      '<p class="period-meta">'+dates+'</p>'+
+      '<div class="profile-fig"><h4 class="profile-vol">平均出来高 <span class="muted">/ 30分ごと・万株</span></h4>'+
+      profileChart(w.points,"volume",vMax,w.n)+'</div>'+
+      '<div class="profile-fig"><h4 class="profile-range">平均変動幅 <span class="muted">/ 30分ごと・%</span></h4>'+
+      profileChart(w.points,"range",rMax,w.n)+'</div>'+
+      '<div class="profile-fig"><h4 class="profile-return">平均騰落率 <span class="muted">/ 30分ごと・%（プラス緑、マイナス赤）</span></h4>'+
+      profileChart(w.points,"ret",retMax,w.n)+'</div>'+
+      '<p class="profile-desc">1日の平均出来高 '+(dayVol===null?"—":dayVol.toFixed(1)+"万株")+
+      ' ／ 30分の平均変動幅 '+(meanRange===null?"—":meanRange.toFixed(2)+"%")+
+      ' ／ 平均騰落率 '+(meanReturn===null?"—":(meanReturn>0?"+":"")+meanReturn.toFixed(2)+"%")+'</p></article>';
+  }).join("");
+}
+
+
+
+/* Market overview: preceding US session's SOX aligned to each Japan trading day. */
+let matrixDays=25;
+const matrixDefaults=["285A.T","6976.T","5803.T","9984.T"];
+function initDailyMatrix(){
+ $("matrixPickers").innerHTML=matrixDefaults.map((s,i)=>
+  '<label>銘柄'+(i+1)+'<select id="matrixStock'+i+'">'+
+  names.map(t=>'<option value="'+t+'"'+(t===s?' selected':'')+'>'+
+      LABELS[t]+' ('+t.replace(".T","")+')</option>').join("")+
+  '</select></label>').join("");
+ matrixDefaults.forEach((s,i)=>{
+  $("matrixStock"+i).value=s;
+  $("matrixStock"+i).addEventListener("change",renderDailyMatrix);
+ });
+ $("matrixView").addEventListener("change",renderDailyMatrix);
+ [25,50].forEach(n=>$("matrix"+n).addEventListener("click",()=>{
+  matrixDays=n;renderDailyMatrix();
+ }));
+}
+function matrixVolumePct(current,previous){
+ if(typeof current!=="number"||typeof previous!=="number"||
+     !Number.isFinite(current)||!Number.isFinite(previous)||previous<=0||current<0)return null;
+ return 100*(current/previous-1);
+}
+function matrixCell(ret,volumeChange,notes){
+ if(ret===null||!Number.isFinite(ret))
+  return '<span class="missing">—</span>';
+ const title=notes?' title="'+notes+'"':"";
+ return '<div'+title+'><div class="daily-return '+cls(ret)+'">'+pct(ret)+'</div>'+
+   '<div class="daily-volume">（'+pct(volumeChange)+'）</div></div>';
+}
+function matrixLastBefore(dates,localDate){
+ let lo=0,hi=dates.length;
+ while(lo<hi){const mid=(lo+hi)>>1;if(dates[mid]<localDate)lo=mid+1;else hi=mid;}
+ return lo-1;
+}
+
+function matrixClassifySeries(prices,volumeProxy){
+ const dates=Object.keys(prices||{}).sort(),results={};
+ let state="normal",attemptDays=0,baseLow=null;
+ let activeDD=[];
+ for(let i=0;i<dates.length;i++){
+  const date=dates[i],today=prices[date],prior=i?prices[dates[i-1]]:null;
+  if(!today||!(today[3]>0))continue;
+  const close=today[3],low=today[2];
+  const change=prior&&prior[3]>0?100*(close/prior[3]-1):null;
+  const thisVol=volumeProxy?volumeProxy[date]:today.length>=5?today[4]:null;
+  const lastVol=prior?(volumeProxy?volumeProxy[dates[i-1]]:prior.length>=5?prior[4]:null):null;
+  const volumeChange=matrixVolumePct(thisVol,lastVol);
+  let judge=null;
+  if(change!==null&&volumeChange!==null&&volumeChange>0){
+   if(change>0)judge="buy";
+   else if(change<=-0.2)judge="sell";
+  }
+  const priorHighClose=i>0?Math.max(...dates.slice(Math.max(0,i-60),i).map(d=>prices[d][3])):null;
+  if(Number.isFinite(low)&&low>0&&priorHighClose!==null){
+   if((state==="normal"||state==="confirmed")&&close<=priorHighClose*.95){
+    state="correction";attemptDays=0;baseLow=low;
+   }else if(state==="correction"){
+    if(change!==null&&change>0&&prior&&prior[2]>0){
+     baseLow=prior[2];state="attempt";attemptDays=1;
+    }
+   }else if(state==="attempt"){
+    if(low<baseLow){
+     state="correction";attemptDays=0;baseLow=low;
+    }else{
+     attemptDays++;
+     if(attemptDays>=4&&change!==null&&change>=1.25&&volumeChange!==null&&volumeChange>0){
+      judge="ftd";state="confirmed";
+     }
+    }
+   }
+  }
+  // DD expires after 25 trading sessions or a 5% closing recovery
+  // measured from the initial distribution day close.
+  activeDD=activeDD.filter(e=>i-e.index<25&&close<e.close*1.05);
+  let dd_number=null;
+  if(judge==="sell"){
+   activeDD.push({index:i,close});
+   dd_number=activeDD.length;
+  }
+  results[date]={change,volumeChange,judge,dd_number,dd_count:activeDD.length};
+ }
+ return results;
+}
+function matrixJudgeCell(record){
+ const kind=record?.judge;
+ if(!record||!kind)return '<td class="matrix-judge-cell"><span class="matrix-judge-icon"><span class="matrix-judge-empty">—</span></span></td>';
+ let badge,meaning;
+ if(kind==="ftd"){
+  badge='<span class="matrix-ftd">FTD</span>';meaning="フォロースルーデー";
+ }else if(kind==="sell"){
+  badge=record.dd_number
+   ?'<span class="matrix-dd">'+record.dd_number+'</span>'
+   :'<span class="matrix-sell">×</span>';
+  meaning="売り抜け（有効DD "+record.dd_count+"件）";
+ }else if(kind==="buy"){
+  badge='<span class="matrix-buy">✓</span>';meaning="買い集め";
+ }else{
+  return '<td class="matrix-judge-cell"><span class="matrix-judge-icon"><span class="matrix-judge-empty">—</span></span></td>';
+ }
+ return '<td class="matrix-judge-cell" title="'+meaning+'"><span class="matrix-judge-icon">'+badge+'</span></td>';
+}
+/* Create an early Japan-session row only for a verified weekday that is not an
+   exchange holiday. The US OHLCV is finalized, JP OHLCV can still be missing. */
+const jpMarketHolidays=new Set([
+ "2026-01-01","2026-01-02","2026-01-12","2026-02-11","2026-02-23","2026-03-20",
+ "2026-04-29","2026-05-04","2026-05-05","2026-05-06","2026-07-20","2026-08-11",
+ "2026-09-21","2026-09-22","2026-09-23","2026-10-12","2026-11-03","2026-11-23","2026-12-31",
+ "2027-01-01","2027-01-11","2027-02-11","2027-02-23","2027-03-22",
+ "2027-04-29","2027-05-03","2027-05-04","2027-05-05","2027-07-19",
+ "2027-08-11","2027-09-20","2027-09-23","2027-10-11","2027-11-03","2027-11-23","2027-12-31"
+]);
+function jpToday(){
+ const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"})
+   .formatToParts(new Date());
+ const values=Object.fromEntries(parts.map(x=>[x.type,x.value]));
+ return values.year+"-"+values.month+"-"+values.day;
+}
+function isJpMarketDay(date){
+ const weekday=new Date(date+"T00:00:00Z").getUTCDay();
+ return weekday>=1&&weekday<=5&&!jpMarketHolidays.has(date);
+}
+function renderDailyMatrix(){
+ if(!soxDaily||!soxDaily.sox||!soxDaily.stocks){
+  $("matrixStatus").textContent="SOX・日本株の日足データが未取得です。";
+  return;
+ }
+ const all=$("matrixView").value==="all";
+ $("matrixPickers").style.display=all?"none":"grid";
+ [25,50].forEach(n=>{const b=$("matrix"+n);b.classList.toggle("active",matrixDays===n)});
+ const selected=all?names:Array.from(new Set(matrixDefaults.map((s,i)=>$("matrixStock"+i).value).filter(s=>names.includes(s))));
+ const usDates=Object.keys(soxDaily.sox).sort(),stocks=soxDaily.stocks;
+ const knownJapanDays=[...new Set(selected.flatMap(s=>Object.keys(stocks[s]||{})))].sort();
+ const todayJp=jpToday(), latestJP=knownJapanDays.at(-1), latestUS=usDates.at(-1);
+ // The 2026-11-02 row, for example, uses finalized US 2026-10-30.
+ // Do not add dates on TSE holidays/weekends or if the stored US feed is stale.
+ const freshUS=latestUS&&latestUS<todayJp&&(Date.parse(todayJp)-Date.parse(latestUS))<=4*86400000;
+ const freshJP=latestJP&&(Date.parse(todayJp)-Date.parse(latestJP))<=7*86400000;
+ const pendingDay=isJpMarketDay(todayJp)&&!knownJapanDays.includes(todayJp)&&freshUS&&freshJP?todayJp:null;
+ if(pendingDay)knownJapanDays.push(pendingDay);
+ const jpDates=knownJapanDays.sort().reverse().slice(0,matrixDays);
+ const soxxVolume={};
+ for(const [d,bar] of Object.entries(soxDaily.soxx||{}))soxxVolume[d]=bar?.length>=5?bar[4]:null;
+ const usRates=matrixClassifySeries(soxDaily.sox,soxxVolume);
+ const jpRates={};
+ for(const s of selected)jpRates[s]=matrixClassifySeries(stocks[s]||{});
+ const columns=[{symbol:"SOX",name:"SOX（米国前営業日）"},...selected.map(s=>({symbol:s,name:LABELS[s]}))];
+ $("matrixTable").style.minWidth=Math.max(650,78+columns.length*135)+"px";
+ $("matrixCols").innerHTML='<col class="matrix-date-col">'+columns.map(()=>'<col class="matrix-price-col"><col class="matrix-judge-col">').join("");
+ $("matrixHead").innerHTML='<tr><th class="matrix-day" rowspan="2">日本日付</th>'+
+    columns.map(o=>'<th colspan="2">'+o.name+'</th>').join("")+'</tr>'+
+    '<tr>'+columns.map((o,i)=>'<th>'+(i===0?'騰落率（SOXX量%）':'騰落率（出来高%）')+'</th><th class="matrix-judge-title">判定</th>').join("")+'</tr>';
+ $("matrixBody").innerHTML=jpDates.length?jpDates.map(jp=>{
+  const usIndex=matrixLastBefore(usDates,jp);
+  const usDay=usIndex>=0?usDates[usIndex]:null;
+  const us=usDay?usRates[usDay]:null;
+  const soxCell='<td>'+matrixCell(us?.change??null,us?.volumeChange??null,
+   usDay?"SOX騰落率・SOXX出来高前日比 / 米国取引日 "+usDay:"SOX取引日なし")+'</td>'+
+   matrixJudgeCell(us);
+  const jpCells=selected.map(s=>{
+   const item=jpRates[s]?.[jp];
+   return '<td>'+matrixCell(item?.change??null,item?.volumeChange??null,LABELS[s]+" "+jp)+'</td>'+
+    matrixJudgeCell(item);
+  }).join("");
+  const isPending=jp===pendingDay;
+  return '<tr'+(isPending?' class="matrix-pending"':'')+'><td class="matrix-day">'+
+   jp.replaceAll("-","/")+(isPending?'<span class="matrix-pending-note">日本株 未確定</span>':'')+
+   '</td>'+soxCell+jpCells+'</tr>';
+ }).join(""):'<tr><td colspan="'+(selected.length*2+3)+'">表示できる日足がありません。</td></tr>';
+ $("matrixStatus").textContent="表示："+jpDates.length+"日本取引日 / "+
+  (jpDates.at(-1)||"—")+"〜"+(jpDates[0]||"—")+
+  (pendingDay?"。"+pendingDay.replaceAll("-","/")+"の日本株は未確定ですが、米国前営業日SOX・SOXXの確定済みデータを先行表示中。":"。")+
+  "各銘柄の日次表に判定列を表示（独立した25日判定履歴は表示しません）。"+
+  "SOX列は日本市場の寄り付き前に確定した直近の米国取引日（カーソルで日付を確認）。"+
+  "上段＝終値前日比、下段＝出来高前日比％。SOXの出来高はSOXX ETFを代用。"+
+  "FTD・DDは他ページと同じ独自の簡易判定で、IBD公式判定の完全再現ではありません。";
+}
+
+initDailyMatrix();
+
+let soxDaily=null;
+function soxMetric(id,value,percent=true){
+ const node=$(id);node.textContent=value===null?"—":percent?pct(value):String(value);
+ node.className=percent?cls(value):"";
+}
+function soxStats(rows){
+ const n=rows.length;
+ return {
+  n,
+  gap:mean(rows.map(x=>x.gap)),
+  intra:mean(rows.map(x=>x.intra)),
+  full:mean(rows.map(x=>x.full)),
+  win:n?100*rows.filter(x=>x.intra>0).length/n:null,
+  risk:mean(rows.map(x=>x.risk)),
+  median:median(rows.map(x=>x.intra))
+ };
+}
+function soxCutoff(latest,days){
+ if(!latest)return "9999-12-31";
+ const stamp=Date.parse(latest+"T00:00:00Z");
+ return new Date(stamp-days*86400000).toISOString().slice(0,10);
+}
+function soxCases(){
+ const d=soxDaily;
+ if(!d||!d.sox||!d.stocks)return {up:[],down:[],stocks:[]};
+ const group=$("soxGroup").value,ticker=$("soxTicker").value;
+ const selected=chosen(group,ticker),drop=Number($("soxFall").value),
+  rise=Number($("soxRise").value),mode=$("soxMode").value;
+ const allDates=selected.flatMap(s=>Object.keys(d.stocks[s]||{}));
+ const end=allDates.sort().at(-1);
+ const cutoff=soxCutoff(end,Number($("soxWindow").value));
+ const usDates=Object.keys(d.sox).sort();
+ const lastBeforeNextJP=new Map();
+ const up=[],down=[];
+ for(const s of selected){
+  const jp=d.stocks[s]||{},dates=Object.keys(jp).sort();
+  for(let i=1;i<dates.length-1;i++){
+   const day=dates[i],next=dates[i+1],prior=dates[i-1];
+   if(day<cutoff)continue;
+   const p0=jp[prior],p1=jp[day],p2=jp[next];
+   if(!p0||!p1||!p2||p0[3]<=0||p1[3]<=0||p2[0]<=0||p2[3]<=0)continue;
+   const dropPct=100*(p1[3]/p0[3]-1);
+   if(dropPct> -drop)continue;
+   if(!d.sox[day])continue;
+   // Ensure SOX US calendar day D was the LAST US close prior to Japan D2:
+   // skip extended JP holidays where the following US session supersedes D.
+   if(!lastBeforeNextJP.has(next)){
+    let lo=0,hi=usDates.length;
+    while(lo<hi){let mid=(lo+hi)>>1;if(usDates[mid]<next)lo=mid+1;else hi=mid}
+    lastBeforeNextJP.set(next,usDates[lo-1]||null);
+   }
+   if(lastBeforeNextJP.get(next)!==day)continue;
+   const usIndex=usDates.indexOf(day);
+   if(usIndex<=0)continue;
+   const prev=usDates[usIndex-1];
+   const currentSOX=d.sox[day][3],prevSOX=d.sox[prev][3];
+   if(!(currentSOX>0&&prevSOX>0))continue;
+   const soxRet=100*(currentSOX/prevSOX-1);
+   const previousSOX=usIndex>=2?d.sox[usDates[usIndex-2]][3]:null;
+   const previousRet=previousSOX>0?100*(prevSOX/previousSOX-1):null;
+   const event={
+     symbol:s,date:day,next,soxRet,dropPct,
+     gap:100*(p2[0]/p1[3]-1),
+     intra:100*(p2[3]/p2[0]-1),
+     full:100*(p2[3]/p1[3]-1),
+     risk:100*(p2[2]/p2[0]-1),
+     peak:100*(p2[1]/p2[0]-1)
+   };
+   if(soxRet>0&&soxRet>=rise&&(mode==="up"||(previousRet!==null&&previousRet<0)))up.push(event);
+   if(soxRet<0)down.push(event);
+  }
+ }
+ return {up,down,stocks:selected,cutoff};
+}
+function renderSox(){
+ if(!soxDaily){$("soxStatus").textContent="SOX日足データの初回取得待ちです。";return}
+ const study=soxCases(),stat=soxStats(study.up),control=soxStats(study.down);
+ const d=soxDaily;
+ const dates=Object.keys(d.sox||{}).sort();
+ const coverage=study.stocks.filter(s=>Object.keys((d.stocks||{})[s]||{}).length>0).length;
+ const errors=Object.keys(d.errors||{}).filter(s=>s==="^SOX"||study.stocks.includes(s));
+ $("soxStatus").textContent="データ最終更新："+(d.updated_at||"不明")+
+   "｜SOX："+(dates[0]||"—")+"〜"+(dates.at(-1)||"—")+
+   "｜国内取得済み："+coverage+"/"+study.stocks.length+"銘柄"+
+   "｜対象期間開始："+study.cutoff+
+   "｜該当："+stat.n+"件"+
+   (stat.n<30?"。標本が少ないため結果の振れが大きくなります。":"")+
+   (errors.length?"。取得エラー："+errors.join("、"):"");
+ soxMetric("soxCount",stat.n,false);
+ soxMetric("soxGap",stat.gap);soxMetric("soxIntraday",stat.intra);
+ soxMetric("soxClose",stat.full);soxMetric("soxWin",stat.win);
+ soxMetric("soxRisk",stat.risk);
+ const rows=[
+  ["SOX上昇（選択条件）",stat],
+  ["SOX下落（比較対象）",control]
+ ];
+ $("soxCompare").innerHTML=rows.map(([label,x])=>
+  '<tr><td>'+label+'</td><td>'+x.n+'</td>'+
+  '<td class="'+cls(x.gap)+'">'+pct(x.gap)+'</td>'+
+  '<td class="'+cls(x.intra)+'">'+pct(x.intra)+'</td>'+
+  '<td>'+pct(x.win,false)+'</td>'+
+  '<td class="'+cls(x.full)+'">'+pct(x.full)+'</td></tr>'
+ ).join("");
+ $("soxByStock").innerHTML=study.stocks.map(s=>{
+  const x=soxStats(study.up.filter(e=>e.symbol===s));
+  return '<tr><td>'+LABELS[s]+'</td><td>'+x.n+'</td>'+
+   '<td class="'+cls(x.gap)+'">'+pct(x.gap)+'</td>'+
+   '<td class="'+cls(x.intra)+'">'+pct(x.intra)+'</td>'+
+   '<td>'+pct(x.win,false)+'</td>'+
+   '<td class="'+cls(x.full)+'">'+pct(x.full)+'</td>'+
+   '<td class="'+cls(x.risk)+'">'+pct(x.risk)+'</td></tr>';
+ }).join("")||'<tr><td colspan="7">選択可能な銘柄がありません。</td></tr>';
+}
+async function loadSox(){
+ try{
+  const res=await fetch("./sox-swing.json?v="+Date.now(),{cache:"no-store"});
+  if(!res.ok)throw Error("HTTP "+res.status);
+  const d=await res.json();
+  if(!d.sox||Object.keys(d.sox).length<2)throw Error("SOXの初回取得が未完了");
+  soxDaily=d;renderSox();renderDailyMatrix();
+ }catch(err){
+  $("soxStatus").textContent="SOXの履歴データはまだ公開されていません（"+String(err.message||err)+"）。次のデータ更新後に表示します。";
+  $("matrixStatus").textContent="SOXの日足データが未取得のため日次一覧表は表示できません。";
+  $("matrixBody").innerHTML='<tr><td colspan="11">SOXの日足データ更新待ち</td></tr>';
+  $("soxCompare").innerHTML='<tr><td colspan="6">SOXデータ更新待ち</td></tr>';
+  $("soxByStock").innerHTML='<tr><td colspan="7">SOXデータ更新待ち</td></tr>';
+ }
+}
+
+async function init(){
+ try{
+  let res=await fetch("./semiconductors.json?v="+Date.now(),{cache:"no-store"});
+  if(!res.ok)throw Error("HTTP "+res.status);
+  raw=await res.json();
+  if(!raw.series||!Object.keys(raw.series).length)throw Error("初回データ未取得");
+  let coverage=["30m","60m"].map(k=>{
+   let days=names.flatMap(s=>(((raw.summary||{})[s]||{})[k]||{}).first?[((raw.summary||{})[s]||{})[k]]:[]);
+   let min=days.length?days.map(x=>x.first).sort()[0]:"未取得";
+   let max=days.length?days.map(x=>x.last).sort().at(-1):"未取得";
+   return (k==="30m"?"30分足":"60分足")+"："+min+" ～ "+max+"（"+days.length+"/15銘柄）";
+  });
+  $("coverage").textContent="最終更新 "+(raw.updated_at||"不明")+" ｜ "+coverage.join(" ｜ ");
+  render();renderDay();renderProfile();await loadSox();
+ }catch(err){
+  $("coverage").textContent="データの初回取得待ち：GitHub Actionsの更新後に分析結果が表示されます。";
+  $("warning").innerHTML='<div class="notice">履歴データがまだ公開されていません。取得スクリプトの実行を確認してください。'+String(err.message||"")+'</div>';
+  fields.forEach(id=>$(id).textContent="—");$("byTicker").innerHTML='<tr><td colspan="7">データ取得待ち</td></tr>';
+
+  $("soxStatus").textContent="データ更新待ち";$("dtNote").textContent="データ更新待ち";$("profileStatus").textContent="データ更新待ち";
+ }
+}
+init();
+</script>
+<script src="./semi-summary.js?v=20261104-align-v2" defer></script>
+<script src="./fujikura-5m-study.js?v=20261104a" defer></script>\n<script src="./fujikura-shapes.js?v=20261104b" defer></script>
+<script defer src="./semi-backtest.js?v=compact-20261104"></script></body></html>
