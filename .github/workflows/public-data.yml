@@ -44,6 +44,9 @@ jobs:
         run: python3 scripts/update_sectors.py
       - name: JP sectors (jp-sectors.json)
         run: python3 scripts/update_jp_sectors.py
+      - name: JP industries from Kabubusho (jp-industries.json)
+        continue-on-error: true
+        run: python3 scripts/update_jp_industries.py
       - name: JP semiconductors (semiconductors.json)
         run: python3 scripts/update_semiconductors.py
       - name: US semiconductors (us-semiconductors.json)
