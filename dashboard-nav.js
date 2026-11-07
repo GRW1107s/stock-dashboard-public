@@ -2,6 +2,10 @@
 (function(){
   "use strict";
   const pages={
+    "index.html":[
+      {label:"日次観測",start:"h1"},
+      {label:"過去データ",start:"#pane-history"}
+    ],
     "jp-sectors.html":[
       {label:"セクター分析",start:"h1"},
       {label:"業種分析",start:"#industry-analysis-panel"},
@@ -100,7 +104,6 @@
       window.addEventListener("hashchange",chooseHash);
       return;
     }
-    if(page==="index.html")return;
     if(page==="jp-themes.html"){
       // This page already implements its own working sub-tabs; reuse them.
       const existing=main.querySelector(":scope > .tabs[role='tablist']");

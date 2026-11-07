@@ -69,16 +69,13 @@
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-.subtabs{display:flex;gap:6px;margin:10px 0 8px}
-.subtabs button{font-size:12px;padding:6px 14px}
-.subtabs button.active{background:#1e293b;color:#fff}
 .obs-market-table td:nth-child(12){border-left:2px solid #c0cad8}
 .obs-market-table col{width:calc(100%/22)}
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261103o" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html" aria-current="page">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261108subtabs" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html" aria-current="page">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>米国・日本市場 日次観測</h1><p class="sub">前営業日比の変動率・出来高増減率・判定｜米国4指数・日経225・東証3市場</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">赤い丸数字は、その日時点の有効な売り抜け日（DD）件数です。番号のない×はDD集計に必要な履歴が不足する日の表示です。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
-<div class="subtabs" role="tablist" aria-label="市場概況の表示切り替え"><button type="button" role="tab" data-pane="pane-overview" class="active" aria-selected="true">日次観測</button><button type="button" role="tab" data-pane="pane-history" aria-selected="false">過去データ</button></div>
+
 <div id="pane-overview">
 <section class="history"><div class="history-title"><strong>直近25取引日の判定履歴</strong><span class="muted">左：新しい → 右：古い｜米国 → 次の日本取引日</span></div><div class="history-scroll"><div class="history-matrix" id="histories"></div></div><div class="legend"><span><i class="square buy"></i>買い集め</span><span><i class="square sell"></i>売り抜け</span><span><i class="square ftd"></i>FTD</span><span><i class="square"></i>通常・未判定</span></div></section>
 <div class="controls market-range-tabs" role="group" aria-label="表示する取引日数"><button class="active" onclick="display(25,this)">25取引日</button><button onclick="display(90,this)">90取引日</button><button onclick="display(0,this)">すべて</button></div>
@@ -155,12 +152,5 @@ function volPair(obj){
 function renderPast(){
   document.getElementById('body-all').innerHTML=rows.length?rows.map(rowHtml).join(''):'<tr><td colspan="22">表示できるデータがありません</td></tr>';
 }
-function selectTab(id){
-  document.querySelectorAll('.subtabs [data-pane]').forEach(b=>{const on=b.dataset.pane===id;b.classList.toggle('active',on);b.setAttribute('aria-selected',String(on));});
-  ['pane-overview','pane-history'].forEach(p=>{document.getElementById(p).hidden=p!==id;});
-  const want=id==='pane-history'?'#history':'#daily';
-  if(location.hash!==want)history.replaceState(null,'',want);
-}
-document.querySelectorAll('.subtabs [data-pane]').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.pane)));
-fetch('./data.json?t='+Date.now(),{cache:'no-store'}).then(res=>{if(!res.ok)throw Error('HTTP '+res.status);return res.json()}).then(data=>{rows=(data.rows||[]).filter(r=>typeof r.date==='string').sort((a,b)=>b.date.localeCompare(a.date));tseByDate=new Map((data.tse_rows||[]).filter(r=>r&&r.date).map(r=>[r.date,r]));renderSummary();display(25,document.querySelector('.controls button'));renderPast();const initialTab={'#daily':'pane-overview','#history':'pane-history'}[location.hash];if(initialTab)selectTab(initialTab);document.getElementById('status').textContent+=data.updated_at?' / 最終更新 '+new Date(data.updated_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'';const coverage=data.tse_dd_coverage;if(coverage){document.getElementById('status').textContent+=' / 東証DD履歴 '+coverage.available+'/'+coverage.required+'取引日'+(coverage.complete?'（完備）':'（蓄積中）')}}).catch(e=>{document.getElementById('body').innerHTML='<tr><td colspan="22">データ読み込みに失敗しました</td></tr>';document.getElementById('body-all').innerHTML='<tr><td colspan="22">データ読み込みに失敗しました</td></tr>';document.getElementById('status').textContent=String(e)});
+fetch('./data.json?t='+Date.now(),{cache:'no-store'}).then(res=>{if(!res.ok)throw Error('HTTP '+res.status);return res.json()}).then(data=>{rows=(data.rows||[]).filter(r=>typeof r.date==='string').sort((a,b)=>b.date.localeCompare(a.date));tseByDate=new Map((data.tse_rows||[]).filter(r=>r&&r.date).map(r=>[r.date,r]));renderSummary();display(25,document.querySelector('.controls button'));renderPast();document.getElementById('status').textContent+=data.updated_at?' / 最終更新 '+new Date(data.updated_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'';const coverage=data.tse_dd_coverage;if(coverage){document.getElementById('status').textContent+=' / 東証DD履歴 '+coverage.available+'/'+coverage.required+'取引日'+(coverage.complete?'（完備）':'（蓄積中）')}}).catch(e=>{document.getElementById('body').innerHTML='<tr><td colspan="22">データ読み込みに失敗しました</td></tr>';document.getElementById('body-all').innerHTML='<tr><td colspan="22">データ読み込みに失敗しました</td></tr>';document.getElementById('status').textContent=String(e)});
 </script></body></html>
