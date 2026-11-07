@@ -638,6 +638,68 @@ def main():
     except Exception as err:
         print("JP_KABUTAN_EPS_ERROR", str(err)[:180], flush=True)
 
+    # JPX short positions (daily disclosure of >=0.5% holders) and JPX
+    # daily margin balances by issue. Both collectors are best-effort:
+    # on failure the previously stored files are merged instead.
+    try:
+        from update_jp_short_positions import collect as collect_short
+        try:
+            collect_short()
+        except Exception as err:
+            print("JP_SHORT_POSITIONS_ERROR", str(err)[:180], flush=True)
+        from update_jp_short_positions import load_positions
+        short_data = load_positions()
+        short_positions = short_data.get("positions") or {}
+        with_short = 0
+        for row in output["jp"]:
+            pos = short_positions.get(row.get("ticker"))
+            row["short_ratio"] = pos.get("ratio") if pos else None
+            row["short_d_ratio"] = pos.get("d_ratio") if pos else None
+            row["short_shares"] = pos.get("shares") if pos else None
+            row["short_reporters"] = pos.get("reporters") if pos else None
+            row["short_asof"] = short_data.get("asof") if pos else None
+            if pos and pos.get("ratio") is not None:
+                with_short += 1
+        output["jp_short_coverage"] = {
+            "source": "JPX daily Short_Positions publication",
+            "asof": short_data.get("asof"),
+            "prev_asof": short_data.get("prev_asof"),
+            "with_positions": with_short,
+            "universe": len(output["jp"]),
+        }
+        print("JP_SHORT_COVERAGE", output["jp_short_coverage"], flush=True)
+    except Exception as err:
+        print("JP_SHORT_MERGE_ERROR", str(err)[:180], flush=True)
+    try:
+        from update_jp_margin_balances import collect as collect_margin
+        try:
+            collect_margin()
+        except Exception as err:
+            print("JP_MARGIN_ERROR", str(err)[:180], flush=True)
+        from update_jp_margin_balances import load_balances
+        margin_data = load_balances()
+        margin_balances = margin_data.get("balances") or {}
+        with_margin = 0
+        for row in output["jp"]:
+            bal = margin_balances.get(row.get("ticker"))
+            row["margin_sell"] = bal.get("sell") if bal else None
+            row["margin_sell_pct"] = bal.get("sell_pct") if bal else None
+            row["margin_buy"] = bal.get("buy") if bal else None
+            row["margin_buy_pct"] = bal.get("buy_pct") if bal else None
+            row["margin_ratio"] = bal.get("ratio") if bal else None
+            row["margin_asof"] = margin_data.get("asof") if bal else None
+            if bal:
+                with_margin += 1
+        output["jp_margin_coverage"] = {
+            "source": "JPX daily margin balances by issue (mtall)",
+            "asof": margin_data.get("asof"),
+            "with_balances": with_margin,
+            "universe": len(output["jp"]),
+        }
+        print("JP_MARGIN_COVERAGE", output["jp_margin_coverage"], flush=True)
+    except Exception as err:
+        print("JP_MARGIN_MERGE_ERROR", str(err)[:180], flush=True)
+
     # S&P 500 membership plus leading US-listed ordinary shares and ADRs.
     # A universe entry without Yahoo OHLCV remains explicitly unpriced.
     current_us, us_master = latest_us_universe(previous.get("us", []))

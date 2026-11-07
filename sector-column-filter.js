@@ -223,6 +223,13 @@ root.createLeaderColumnFilters=function(ctx){
    get:r=>{const v=marketCapJPY(r);return finite(v)?v/1e8:null;}},
   ...(market==="jp"?[{id:"size",label:"規模",kind:"choice",
    get:r=>r.size||"—",options:["大型","中型","小型","—"]}]:[]),
+  ...(market==="jp"?[
+   {id:"short",label:"大口空売り残高",kind:"number",unit:"%",get:r=>numeric(r.short_ratio)},
+   {id:"shortChg",label:"空売り増減",kind:"number",unit:"pt",get:r=>numeric(r.short_d_ratio)},
+   {id:"marginSell",label:"売残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_sell_pct)},
+   {id:"marginBuy",label:"買残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_buy_pct)},
+   {id:"marginRatio",label:"信用倍率",kind:"number",unit:"倍",get:r=>numeric(r.margin_ratio)}
+  ]:[]),
   {id:"rs",label:"RS指数",kind:"number",get:r=>numeric(r.rs_universe_pct)},
   {id:"beta",label:"ベータ値",kind:"number",get:r=>numeric(r.beta_252d)},
   {id:"sharpe",label:"シャープレシオ",kind:"number",get:r=>numeric(r.sharpe_252d)},
