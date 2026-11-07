@@ -229,9 +229,6 @@ root.createLeaderColumnFilters=function(ctx){
   {id:"return60",label:"60日騰落率",kind:"number",unit:"%",get:r=>numeric(r.return_60d)},
   {id:"etf",label:"同ETF比60日",kind:"number",unit:"pp",get:r=>relative(r)},
   {id:"high",label:"52週高値からの距離",kind:"number",unit:"%",get:r=>numeric(r.high52_distance_pct)},
-  {id:"ma20",label:"20MA",kind:"choice",
-   get:r=>r.ma20_position==="above"?"○":r.ma20_position==="below"||r.ma20_position==="equal"?"✕":"—",
-   options:["○","✕","—"]},
   ...(market==="us"?[50,200].map(period=>({
    id:"ma"+period,label:period+"MA",kind:"choice",
    get:r=>r["ma"+period+"_position"]==="above"?"○":

@@ -19,7 +19,7 @@ function industryLabel(r){
  return market==="us"&&window.StockIndustryJA?window.StockIndustryJA.display(original):original;
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?20:17;
+const totalColumns=market==="us"?19:16;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 panel.innerHTML=
 '<div class="ls-intro"><h2>セクター別 リーダー銘柄スクリーニング（試作版）</h2>'+
@@ -29,14 +29,7 @@ panel.innerHTML=
 '<fieldset class="ls-sector-fieldset"><legend>対象セクター（複数選択可）</legend><div class="ls-sector-toolbar">'+
 '<button type="button" id="ls-sector-all">すべて選択</button><button type="button" id="ls-sector-none">すべて解除</button><span id="ls-sector-count" aria-live="polite">セクターを読み込み中...</span></div>'+
 '<div class="ls-sector-options" id="ls-sector" role="group" aria-label="対象セクター"></div><p class="ls-sector-legend"><span><span class="ls-sector-leader-marker" aria-hidden="true"></span>上位3分の1を維持</span><span><span class="ls-sector-laggard-marker" aria-hidden="true"></span>下位3分の1を維持</span><span>※直近3・10・25取引日すべて</span></p></fieldset>'+
-'<div class="ls-controls">'+
-(market==="jp"?'<label>市場区分<select id="ls-market-type"><option value="">東証全市場</option><option value="プライム">プライム</option><option value="スタンダード">スタンダード</option><option value="グロース">グロース</option></select></label>':'')+
-'<label>RS指数（取得済み銘柄内・1〜99）<select id="ls-rs"><option value="0">すべて</option><option value="70">70以上</option><option value="80">80以上</option><option value="90">90以上</option></select></label>'+
-'<label>52週高値からの距離<select id="ls-high"><option value="100">指定なし</option><option value="15">15%以内</option><option value="5">5%以内</option></select></label>'+
-'<label>ROE（%）<select id="ls-roe"><option value="">指定なし</option><option value="0">0%以上</option><option value="5">5%以上</option><option value="10">10%以上</option><option value="15">15%以上</option><option value="20">20%以上</option><option value="30">30%以上</option><option value="missing">未取得のみ</option></select></label>'+
-'<label>並び順<select id="ls-sort"><option value="rs">参考RS 高い順</option><option value="column">列ヘッダー指定</option><option value="cap">時価総額が大きい順</option><option value="sector">セクター・60日順位順</option><option value="return60">60日騰落率順</option><option value="volume">出来高倍率順</option><option value="distance">52週高値に近い順</option></select></label>'+
-'<label>銘柄検索<input type="search" id="ls-search" placeholder="証券コード・銘柄名"></label>'+
-'</div>'+
+
 '<div class="ls-guidance-tiles" aria-label="EPS・ROEのスクリーニング参考基準">'+
 '<div class="ls-guidance-tile ls-guidance-eps">年間のEPSの増加率が25～50％以上の銘柄を選ぶ<span>（大化け銘柄の株式の初期上昇段階における平均の年間EPSの増加は36％であった）</span></div>'+
 '<div class="ls-guidance-tile ls-guidance-roe">過去50年で急成長を遂げたほぼ全銘柄が、最低でも17％のROEを示していた</div>'+
@@ -53,7 +46,7 @@ panel.innerHTML=
 (market==="us"?'<th title="63/126/189/252営業日の加重騰落率から、S&P500指数（^GSPC）の同期間の加重騰落率を引いた値。+ならS&P500より強い">S&amp;P500比<br>加重pp</th>':'')+
 '<th>セクター内<br>60日順位</th>'+
 '<th>60日騰落率</th><th>同ETF比<br>60日</th><th>52週高値<br>からの下落</th>'+
-'<th class="ls-ma-col" title="終値が20日単純移動平均より上なら○、下または同値なら✕。未算出は—。">20MA</th>'+
+
 (market==="us"?'<th class="ls-ma-col" title="終値が50日単純移動平均より上なら○、下または同値なら✕。未算出は—。">50MA</th><th class="ls-ma-col" title="終値が200日単純移動平均より上なら○、下または同値なら✕。未算出は—。">200MA</th>':'')+
 '<th>出来高<br>対20日平均</th>'+
 '<th title="最新の発表済み四半期EPSの前年同期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>直近四半期</th>'+
@@ -159,9 +152,9 @@ const colFilters=window.createLeaderColumnFilters?window.createLeaderColumnFilte
 }):null;
 function selectedSectors(){return new Set(Array.from(get("ls-sector").querySelectorAll('input[type="checkbox"]:checked'),function(item){return item.value}))}
 function values(){
- const sectors=selectedSectors(),search=inputVal("ls-search").trim().toLowerCase();
- const rs=Number(inputVal("ls-rs")),high=Number(inputVal("ls-high")),roeChoice=inputVal("ls-roe"),roeMin=numeric(roeChoice),order=inputVal("ls-sort");
- const marketType=market==="jp"?inputVal("ls-market-type"):"";
+ const sectors=selectedSectors(),search="";
+ const rs=0,high=100,roeChoice="",roeMin=null,order="rs";
+ const marketType="";
  let items=base.filter(function(r){
   if(!sectors.has(r.sector))return false;
   if(marketType&&r.market!==marketType)return false;
@@ -195,7 +188,6 @@ function maCell(r,period){
   "（最新"+period+"取引日の終値単純平均）":period+"MA未算出（株価データの再取得待ち、または履歴不足）";
  return '<td class="ls-ma-col" title="'+H(detail)+'"><span class="ls-ma-status '+className+'">'+label+'</span></td>';
 }
-function ma20Cell(r){return maCell(r,20);}
 function riskDetails(r,kind){
  const count=kind==="beta"?r.beta_samples:r.sharpe_samples;
  const bench=r.risk_benchmark==="1306.T"?"TOPIX連動ETF 1306.T":r.risk_benchmark==="^GSPC"?"S&P500指数 ^GSPC":"比較指数未取得";
@@ -231,7 +223,7 @@ function rowHtml(r){
  (market==="us"?'<td title="S&P500指数（^GSPC）に対する加重騰落率の差">'+cellStrong(r.rs_sp500_delta_pp,"pp")+'</td>':'')+
  '<td>'+H(r.sector_rank||"—")+(r.sector_count?'/'+H(r.sector_count):"")+'</td>'+
  '<td>'+cellStrong(r.return_60d,"%")+'</td><td>'+cellStrong(v,"pp")+'</td>'+
- '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td>'+ma20Cell(r)+(market==="us"?maCell(r,50)+maCell(r,200):"")+'<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+
+ '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td>'+(market==="us"?maCell(r,50)+maCell(r,200):"")+'<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+
  '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"previous_eps"))+'">'+cellStrong(epsPrevious,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"annual"))+'">'+cellStrong(annualEpsCagr,"%")+'</td>'+
@@ -298,11 +290,8 @@ window.stockDashboardPrivateEPS={
 get("ls-sector").addEventListener("change",filterChanged);
 get("ls-sector-all").addEventListener("click",function(){get("ls-sector").querySelectorAll('input[type="checkbox"]').forEach(function(input){input.checked=true});filterChanged()});
 get("ls-sector-none").addEventListener("click",function(){get("ls-sector").querySelectorAll('input[type="checkbox"]').forEach(function(input){input.checked=false});filterChanged()});
-["ls-rs","ls-high","ls-roe","ls-sort"].forEach(function(id){get(id).addEventListener("change",filterChanged)});
-if(market==="jp")get("ls-market-type").addEventListener("change",filterChanged);
 get("ls-prev").addEventListener("click",function(){if(currentPage>0){currentPage--;render()}});
 get("ls-next").addEventListener("click",function(){currentPage++;render()});
-get("ls-search").addEventListener("input",filterChanged);
 Promise.all([
  fetch("./sector-leaders.json?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw Error("HTTP "+r.status);return r.json()}),
  fetch(market==="jp"?"./jp-sectors.json":"./sectors.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
