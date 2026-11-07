@@ -13,6 +13,14 @@
 .market-table .ftd{font-size:8px;padding:1px 2px}
 .market-table thead tr:nth-child(2) th.judge-heading{font-size:9px}
 .market-table #subhead th,.market-table tbody td{text-align:center}
+.market-table td.hit{background:#fef3c7}
+.market-table td.jump{cursor:pointer;text-decoration:underline dotted}
+.market-table tr.flash td{background:#fef3c7}
+.table-wrap:has(> .market-table){overflow:visible}
+.market-table thead tr:first-child{height:30px}
+.market-table thead th{position:sticky;z-index:5}
+.market-table thead tr:first-child th{top:0}
+.market-table thead tr:nth-child(2) th{top:30px}
 .history{width:100%;max-width:none;margin:0 0 10px}
 .history .history-matrix{min-width:780px;width:100%}
 
@@ -82,7 +90,7 @@
 <div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2">S&amp;P500</th><th colspan="2">NASDAQ総合</th><th colspan="2">NASDAQ100</th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead"></tr></thead><tbody id="body"><tr><td colspan="22">読み込み中...</td></tr></tbody></table></div>
 <p class="info" id="status"></p><p class="info">※米国日付は米国市場の取引日、日本日付はその後の最初の日本取引日。日経225・東証P/S/Gは日本日付に対応します。NASDAQ100の出来高はQQQ（連動ETF）の出来高で代用しています。東証P/S/Gの指数値は取得状況により欠損することがあります。</p>
 </div>
-<div id="pane-history"><div class="past-tools"><div class="controls" id="past-years" aria-label="年"></div><span id="past-info" class="small"></span></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2">S&amp;P500</th><th colspan="2">NASDAQ総合</th><th colspan="2">NASDAQ100</th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead2"></tr></thead><tbody id="body-all"><tr><td colspan="22">読み込み中...</td></tr></tbody></table></div><p class="info">年ごとに全取引日を表示しています。全期間をまたぐ検索は「相場の歴史」タブでできます。</p></div>
+<div id="pane-history"><div class="past-tools"><label>年度 <select id="past-year-select" aria-label="年度"></select></label><span id="past-info" class="small"></span></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2">S&amp;P500</th><th colspan="2">NASDAQ総合</th><th colspan="2">NASDAQ100</th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead2"></tr></thead><tbody id="body-all"><tr><td colspan="22">読み込み中...</td></tr></tbody></table></div><p class="info">年ごとに全取引日を表示しています。全期間をまたぐ検索は「相場の歴史」タブでできます。</p></div>
 <div id="pane-history-search"><p class="small">1992年以降の全取引日を対象に、指数が大きく動いた日を横断検索します。σは全期間の日次変動率の標準偏差です。</p><div class="hist-tools"><div class="hist-search"><label>指数 <select id="hist-index"><option value="sp500">S&amp;P500</option><option value="nasdaq">NASDAQ総合</option><option value="nasdaq100">NASDAQ100</option><option value="dow">ダウ</option><option value="vix">VIX</option><option value="nikkei">日経225</option><option value="prime">東証プライム</option><option value="standard">東証スタンダード</option><option value="growth">東証グロース</option><option value="nikkei_vi">日経VI</option></select></label><label>方向 <select id="hist-dir"><option value="down">下落</option><option value="up">上昇</option><option value="both">両方</option></select></label><label>変動率 <select id="hist-sigma"><option value="1">1σ以上</option><option value="1.5">1.5σ以上</option><option value="2" selected>2σ以上</option><option value="2.5">2.5σ以上</option><option value="3">3σ以上</option></select></label><button type="button" id="hist-go">検索</button><button type="button" id="hist-clear">解除</button><span id="hist-info" class="small"></span></div></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2">S&amp;P500</th><th colspan="2">NASDAQ総合</th><th colspan="2">NASDAQ100</th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead3"></tr></thead><tbody id="body-search"><tr><td colspan="22">タブを開くと読み込みます</td></tr></tbody></table></div></div>
 </main><script>
 const specs=[['sp500','S&P500'],['nasdaq','NASDAQ総合'],['nasdaq100','NASDAQ100'],['dow','ダウ'],['nikkei','日経225'],['prime','東証P'],['standard','東証S'],['growth','東証G']];
@@ -146,7 +154,7 @@ let pastRows=[],pastTse=new Map(),pastYear=null;
 function renderPastYear(){const tb=document.getElementById('body-all');tb.innerHTML=pastRows.length?pastRows.map(r=>rowHtml(r,pastTse)).join(''):'<tr><td colspan="22">表示できるデータがありません</td></tr>';tb.querySelectorAll('tr').forEach((tr,i)=>{if(pastRows[i]&&pastRows[i].date)tr.dataset.date=pastRows[i].date;});}
 function loadPastYear(y){
   pastYear=y;
-  document.querySelectorAll('#past-years button').forEach(b=>b.classList.toggle('active',+b.dataset.year===y));
+  const ysel=document.getElementById('past-year-select');if(ysel)ysel.value=String(y);
   fetch('./history-'+y+'.json?t='+Date.now(),{cache:'no-store'}).then(res=>{if(!res.ok)throw Error('HTTP '+res.status);return res.json()}).then(d=>{
     pastRows=(d.rows||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
     pastTse=new Map((d.tse_rows||[]).filter(r=>r&&r.date).map(r=>[r.date,r]));
@@ -157,9 +165,9 @@ function loadPastYear(y){
 function initPast(){
   fetch('./history-index.json?t='+Date.now(),{cache:'no-store'}).then(res=>res.json()).then(d=>{
     const years=(d.years||[]).slice().sort((a,b)=>b-a);
-    const box=document.getElementById('past-years');
-    box.innerHTML=years.map(y=>'<button type="button" data-year="'+y+'">'+y+'年</button>').join('');
-    box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>loadPastYear(+b.dataset.year)));
+    const sel=document.getElementById('past-year-select');
+    sel.innerHTML=years.map(y=>'<option value="'+y+'">'+y+'年</option>').join('');
+    sel.addEventListener('change',()=>loadPastYear(+sel.value));
     if(years.length)loadPastYear(years[0]);
   }).catch(()=>{});
 }
