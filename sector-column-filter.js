@@ -255,9 +255,10 @@ root.createLeaderColumnFilters=function(ctx){
  let sort=null,active=null;
  const toolbar=document.createElement("div");
  toolbar.className="ls-column-toolbar";
- toolbar.innerHTML='<div class="ls-column-toolbar-top"><span>列フィルター：見出しの <b>▾</b> で絞り込み。列幅は見出し右端をドラッグ、列順は見出しをドラッグ（どちらも自動保存）。業種は複数選択でき、複数列はAND条件です。</span><button type="button" id="ls-reset-all">全条件を解除</button></div><div id="ls-filter-chips" class="ls-filter-chips" aria-live="polite"></div>';
- const controls=panel.querySelector(".ls-controls");
- controls.insertAdjacentElement("afterend",toolbar);
+ toolbar.innerHTML='<div class="ls-column-toolbar-top"><span>列フィルター：見出しの <b>▾</b> で絞り込み。列幅は見出し右端をドラッグ、列順は見出しをドラッグ（どちらも自動保存）。見出しを右クリックで列を非表示、右端の <b>＋</b> で再表示。業種は複数選択でき、複数列はAND条件です。</span><button type="button" id="ls-reset-all">全条件を解除</button></div><div id="ls-filter-chips" class="ls-filter-chips" aria-live="polite"></div>';
+ const toolbarAnchor=panel.querySelector(".ls-controls")||panel.querySelector(".ls-sector-fieldset");
+ if(toolbarAnchor)toolbarAnchor.insertAdjacentElement("afterend",toolbar);
+ else panel.insertBefore(toolbar,panel.querySelector(".ls-table-wrap"));
  const popup=document.createElement("div");
  popup.id="ls-column-popup";
  popup.className="ls-column-popup";
@@ -279,6 +280,65 @@ root.createLeaderColumnFilters=function(ctx){
  });
  setupColumnResize(panel,market,headings);
  const columnOrder=setupColumnOrder(panel,market,headings,defs);
+ // Column visibility: right-click a heading to hide the column; the "+"
+ // heading at the right end re-adds hidden columns. Persisted per market.
+ const headrow=panel.querySelector("table.ls-table thead tr");
+ const hiddenKey="stock-dashboard-screener-hidden-v1-"+market;
+ let hidden=new Set();
+ try{hidden=new Set((JSON.parse(localStorage.getItem(hiddenKey)||"[]")||[]).filter(id=>defs.some(d=>d.id===id)));}catch(e){}
+ const visStyle=document.createElement("style");
+ panel.appendChild(visStyle);
+ const addTh=document.createElement("th");
+ addTh.className="ls-add-col";
+ const addButton=document.createElement("button");
+ addButton.type="button";addButton.textContent="+";addButton.title="非表示の列を追加";
+ addButton.setAttribute("aria-label","非表示の列を追加");addButton.setAttribute("aria-haspopup","dialog");
+ addTh.appendChild(addButton);
+ if(headrow)headrow.appendChild(addTh);
+ const addMenu=document.createElement("div");
+ addMenu.className="ls-column-popup ls-col-menu";addMenu.hidden=true;
+ addMenu.setAttribute("role","dialog");addMenu.setAttribute("aria-label","追加する列");
+ panel.appendChild(addMenu);
+ function applyHidden(){
+  visStyle.textContent=[...hidden].map(id=>'th[data-ls-column-id="'+id+'"],td[data-ls-column-id="'+id+'"]{display:none!important}col[data-ls-column-id="'+id+'"]{visibility:collapse}').join("");
+  try{localStorage.setItem(hiddenKey,JSON.stringify([...hidden]));}catch(e){}
+  addButton.title=hidden.size?"非表示の列を追加（"+hidden.size+"列）":"非表示の列はありません";
+ }
+ function closeAddMenu(){addMenu.hidden=true;}
+ function openAddMenu(){
+  const items=defs.filter(d=>hidden.has(d.id));
+  addMenu.innerHTML='<div class="ls-column-pophead"><strong>列を追加</strong><button type="button" data-close="1" aria-label="閉じる">×</button></div>'+
+   (items.length?items.map(d=>'<button type="button" class="ls-col-menu-item" data-add="'+H(d.id)+'">'+H(d.label)+'</button>').join("")+
+   (items.length>1?'<button type="button" class="ls-col-menu-item ls-col-menu-all" data-add="__all">すべて表示</button>':""):
+   '<p class="ls-col-menu-empty">非表示の列はありません</p>');
+  addMenu.hidden=false;
+  const rect=addButton.getBoundingClientRect(),w=addMenu.offsetWidth;
+  addMenu.style.left=Math.round(Math.max(8,Math.min(rect.right-w,window.innerWidth-w-8)))+"px";
+  addMenu.style.top=Math.round(rect.bottom+6)+"px";
+ }
+ addButton.addEventListener("click",()=>{if(addMenu.hidden)openAddMenu();else closeAddMenu();});
+ addMenu.addEventListener("click",e=>{
+  if(e.target.closest("[data-close]")){closeAddMenu();return;}
+  const b=e.target.closest("[data-add]");if(!b)return;
+  if(b.dataset.add==="__all")hidden.clear();else hidden.delete(b.dataset.add);
+  applyHidden();closeAddMenu();
+ });
+ document.addEventListener("pointerdown",e=>{
+  if(!addMenu.hidden&&!addMenu.contains(e.target)&&e.target!==addButton&&!addButton.contains(e.target))closeAddMenu();
+ });
+ if(headrow)new MutationObserver(()=>{if(headrow.lastElementChild!==addTh)headrow.appendChild(addTh);}).observe(headrow,{childList:true});
+ defs.forEach((def,i)=>{
+  const th=headings[i];if(!th)return;
+  th.addEventListener("contextmenu",e=>{
+   e.preventDefault();
+   if(defs.length-hidden.size<=1)return;
+   hidden.add(def.id);
+   if(active===def.id)close();
+   closeAddMenu();
+   applyHidden();
+  });
+ });
+ applyHidden();
  function close(){popup.hidden=true;active=null;buttons.forEach(b=>b.setAttribute("aria-expanded","false"));}
  function open(def,b){
   active=def.id;
@@ -368,13 +428,13 @@ root.createLeaderColumnFilters=function(ctx){
    const filter=draft(def);
    if(meaningful(def,filter))filters.set(def.id,filter);
    else filters.delete(def.id);
-   if(action==="asc"||action==="desc"){sort={id:def.id,direction:action};get("ls-sort").value="column";}
+   if(action==="asc"||action==="desc"){sort={id:def.id,direction:action};}
    close();onChange();
   }catch(e){popup.querySelector("#ls-column-error").textContent=e.message;}
  }
  function remove(id){
   filters.delete(id);
-  if(sort&&sort.id===id){sort=null;get("ls-sort").value="rs";}
+  if(sort&&sort.id===id){sort=null;}
   onChange();
  }
  popup.addEventListener("click",e=>{
@@ -392,15 +452,13 @@ root.createLeaderColumnFilters=function(ctx){
  });
  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!popup.hidden)close();});
  window.addEventListener("scroll",event=>{if(!popup.hidden&&event.target!==popup&&!(event.target instanceof Node&&popup.contains(event.target)))close();},true);
- get("ls-sort").addEventListener("change",()=>{
-  if(get("ls-sort").value!=="column"){sort=null;refresh();}
+ const sortSelect=get("ls-sort");
+ if(sortSelect)sortSelect.addEventListener("change",()=>{
+  if(sortSelect.value!=="column"){sort=null;refresh();}
  });
  get("ls-reset-all").addEventListener("click",()=>{
   filters.clear();sort=null;close();
   get("ls-sector").querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=true);
-  get("ls-rs").value="0";get("ls-high").value="100";get("ls-roe").value="";
-  get("ls-sort").value="rs";get("ls-search").value="";
-  if(market==="jp")get("ls-market-type").value="";
   onChange();
  });
  get("ls-filter-chips").addEventListener("click",e=>{
@@ -430,8 +488,7 @@ root.createLeaderColumnFilters=function(ctx){
   });
   if(sort){const def=defs.find(d=>d.id===sort.id);chips.push('<span>並び順: '+H(def.label)+' '+(sort.direction==="asc"?"昇順":"降順")+'</span>');}
   get("ls-filter-chips").innerHTML=chips.join("");
-  const oldDefault=get("ls-rs").value==="0"&&get("ls-high").value==="100"&&get("ls-roe").value===""&&get("ls-sort").value==="rs"&&!get("ls-search").value &&
-    (market!=="jp"||!get("ls-market-type").value)&&!get("ls-sector").querySelector('input[type="checkbox"]:not(:checked)');
+  const oldDefault=!get("ls-sector").querySelector('input[type="checkbox"]:not(:checked)');
   get("ls-reset-all").disabled=!chips.length&&oldDefault;
  }
  return {matches:r=>matches(defs,filters,r),sortActive:()=>!!sort,compare:(a,b)=>{
