@@ -1,4 +1,7 @@
-"""Fill missing JP quarterly EPS growth from Kabutan quarterly results.
+"""Fill missing JP quarterly EPS growth and annual ROE from Kabutan.
+
+Also fills a missing annual ROE from the same page's profitability table
+(latest actual fiscal year; forecast rows are skipped).
 
 Yahoo Finance statements for Japanese shares usually expose only the
 latest interim quarter and its prior-year comparative, so the
@@ -32,6 +35,7 @@ from update_data import SimpleTables
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / "sector-leaders.json"
 SOURCE = "Kabutan quarterly results (discrete quarter EPS YoY)"
+ROE_SOURCE = "Kabutan annual results (published ROE)"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                          "AppleWebKit/537.36 (KHTML, like Gecko) "
                          "Chrome/126.0 Safari/537.36"}
@@ -97,6 +101,53 @@ def parse_quarterly_eps(html):
     return sorted(found.values(), reverse=True)
 
 
+ANNUAL_PERIOD = re.compile(r"(\d{2})\.(\d{2})")
+
+
+def parse_annual_roe(html):
+    """Latest actual (non-forecast) annual ROE from the profitability table.
+
+    The table header carries full-width 'ＲＯＥ'/'ＲＯＡ'; NFKC normalises
+    them. Forecast rows (marked 予) are skipped.
+    """
+    import unicodedata
+    parser = SimpleTables()
+    parser.feed(html)
+    for table in parser.tables:
+        if not table:
+            continue
+        header = [unicodedata.normalize("NFKC", cell) for cell in table[0]]
+        if not any("ROE" in cell for cell in header):
+            continue
+        if not any("ROA" in cell for cell in header):
+            continue
+        roe_idx = next(i for i, cell in enumerate(header) if "ROE" in cell)
+        best = None
+        for row in table[1:]:
+            if len(row) <= roe_idx:
+                continue
+            label = unicodedata.normalize("NFKC", row[0])
+            if "予" in label:
+                continue
+            match = ANNUAL_PERIOD.search(label)
+            if not match:
+                continue
+            yy, mm = int(match.group(1)), int(match.group(2))
+            if not 1 <= mm <= 12:
+                continue
+            value = _eps_value(row[roe_idx])
+            if value is None:
+                continue
+            end = date(2000 + yy, mm, monthrange(2000 + yy, mm)[1])
+            if best is None or end > best[0]:
+                best = (end, value)
+        if best:
+            return {"roe_pct": round(best[1], 2),
+                    "roe_period_end": best[0].isoformat(),
+                    "roe_source": ROE_SOURCE}
+    return {}
+
+
 def kabutan_growth(rows):
     latest = rows[0] if rows else None
     previous = rows[1] if len(rows) > 1 else None
@@ -146,22 +197,22 @@ def kabutan_fill(row, rows):
 
 
 def _fetch_and_fill(row):
-    """Return (row, filled_count, error)."""
+    """Return (row, filled_eps_count, filled_roe, error)."""
     if _stop.is_set():
-        return row, 0, "stopped"
+        return row, 0, 0, "stopped"
     ticker = normalize_jp_ticker(row.get("ticker"))
     if not ticker:
-        return row, 0, "invalid ticker"
+        return row, 0, 0, "invalid ticker"
     code = ticker[:-2]
     try:
         html = fetch_html(code)
     except HTTPError as exc:
         if exc.code in (403, 429):
             _stop.set()
-            return row, 0, f"{ticker}: rate-limited ({exc.code})"
-        return row, 0, f"{ticker}: HTTP {exc.code}"
+            return row, 0, 0, f"{ticker}: rate-limited ({exc.code})"
+        return row, 0, 0, f"{ticker}: HTTP {exc.code}"
     except Exception as exc:
-        return row, 0, f"{ticker}: {type(exc).__name__}"
+        return row, 0, 0, f"{ticker}: {type(exc).__name__}"
     fills = kabutan_fill(row, parse_quarterly_eps(html))
     today = date.today().isoformat()
     row["eps_kabutan_attempted_at"] = today
@@ -173,7 +224,13 @@ def _fetch_and_fill(row):
         if not row.get("eps_source"):
             row["eps_source"] = SOURCE
             row["eps_fetched_at"] = today
-    return row, len([k for k in fills if k.endswith("yoy_pct")]), None
+    roe_filled = 0
+    if row.get("roe_pct") is None:
+        roe = parse_annual_roe(html)
+        if roe:
+            row.update(roe)
+            roe_filled = 1
+    return row, len([k for k in fills if k.endswith("yoy_pct")]), roe_filled, None
 
 
 def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
@@ -187,7 +244,9 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
     cutoff = (today - timedelta(days=refresh_days)).isoformat()
     candidates = []
     for index, row in enumerate(stocks):
-        if row.get("eps_q_prev_yoy_pct") is not None and row.get("eps_q_latest_yoy_pct") is not None:
+        if (row.get("eps_q_prev_yoy_pct") is not None
+                and row.get("eps_q_latest_yoy_pct") is not None
+                and row.get("roe_pct") is not None):
             continue
         checked = row.get("eps_kabutan_attempted_at")
         if isinstance(checked, str) and checked >= cutoff:
@@ -196,17 +255,19 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
     candidates.sort(key=lambda item: (item[0], item[1]))
     attempt = [row for _, _, row in candidates[:max(1, limit)]]
     workers = max(1, min(4, workers))
-    processed = filled_rows = filled_values = 0
+    processed = filled_rows = filled_values = filled_roe_rows = 0
     errors = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for offset in range(0, len(attempt), workers * 10):
             wave = attempt[offset:offset + workers * 10]
             futures = [pool.submit(_fetch_and_fill, row) for row in wave]
             for future in as_completed(futures):
-                row, filled, error = future.result()
+                row, filled, roe_filled, error = future.result()
                 processed += 1
                 if error:
                     errors.append(error)
+                if roe_filled:
+                    filled_roe_rows += 1
                 if filled:
                     filled_rows += 1
                     filled_values += filled
@@ -223,9 +284,11 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
         "batch_size": processed,
         "filled_rows": filled_rows,
         "filled_values": filled_values,
+        "filled_roe_rows": filled_roe_rows,
         "failed_this_run": len(errors),
         "with_latest_yoy": sum(isinstance(r.get("eps_q_latest_yoy_pct"), (int, float)) for r in stocks),
         "with_previous_yoy": sum(isinstance(r.get("eps_q_prev_yoy_pct"), (int, float)) for r in stocks),
+        "with_roe": sum(isinstance(r.get("roe_pct"), (int, float)) for r in stocks),
         "attempted_ever": sum(bool(r.get("eps_kabutan_attempted_at")) for r in stocks),
         "updated_at": datetime.now().isoformat(timespec="seconds"),
     }
