@@ -72,6 +72,7 @@ function setupColumnOrder(panel,market,headings,defs){
   if(group){
    const cols=new Map([...group.children].map(col=>[col.dataset.lsColumnId,col]));
    for(const id of order){const col=cols.get(id);if(col)group.appendChild(col);}
+   const addCol=cols.get("__add");if(addCol)group.appendChild(addCol);
   }
   reset.disabled=order.every((id,i)=>id===ids[i]);
  }
@@ -162,6 +163,9 @@ function setupColumnResize(panel,market,headings){
   });
   const group=document.createElement("colgroup");
   const columns=widths.map((_,i)=>{const col=document.createElement("col");col.dataset.lsColumnId=headings[i].dataset.lsColumnId||String(i);group.appendChild(col);return col;});
+  if(table.querySelector("thead th.ls-add-col")){
+   const col=document.createElement("col");col.dataset.lsColumnId="__add";columns.push(col);widths.push(36);
+  }
    const positions=[...table.querySelectorAll("thead th")].map(th=>th.dataset.lsColumnId);
    for(const id of positions){const col=columns.find(c=>c.dataset.lsColumnId===id);if(col)group.appendChild(col);}
   table.insertBefore(group,table.querySelector("thead"));
@@ -171,7 +175,7 @@ function setupColumnResize(panel,market,headings){
    const total=widths.reduce((sum,v)=>sum+v,0)+"px";
    table.style.width=total;table.style.minWidth=total;
   }
-  function persist(){try{localStorage.setItem(key,JSON.stringify(widths));}catch(e){}}
+  function persist(){try{localStorage.setItem(key,JSON.stringify(widths.slice(0,headings.length)));}catch(e){}}
   Array.from(headings).forEach((th,i)=>{
    th.classList.add("ls-resizable-heading");
    const grip=document.createElement("span");
@@ -289,12 +293,21 @@ root.createLeaderColumnFilters=function(ctx){
  const visStyle=document.createElement("style");
  panel.appendChild(visStyle);
  const addTh=document.createElement("th");
- addTh.className="ls-add-col";
+ addTh.className="ls-add-col";addTh.dataset.lsColumnId="__add";
  const addButton=document.createElement("button");
  addButton.type="button";addButton.textContent="+";addButton.title="非表示の列を追加";
  addButton.setAttribute("aria-label","非表示の列を追加");addButton.setAttribute("aria-haspopup","dialog");
  addTh.appendChild(addButton);
  if(headrow)headrow.appendChild(addTh);
+ // If the resize setup already built the colgroup, give the "+" column a
+ // matching col so fixed layout stays aligned.
+ const builtGroup=panel.querySelector("table.ls-table colgroup");
+ if(builtGroup&&!builtGroup.querySelector('col[data-ls-column-id="__add"]')){
+  const col=document.createElement("col");col.dataset.lsColumnId="__add";col.style.width="36px";
+  builtGroup.appendChild(col);
+  const t=panel.querySelector("table.ls-table"),w=parseInt(t.style.width||"0",10);
+  if(w){t.style.width=(w+36)+"px";t.style.minWidth=(w+36)+"px";}
+ }
  const addMenu=document.createElement("div");
  addMenu.className="ls-column-popup ls-col-menu";addMenu.hidden=true;
  addMenu.setAttribute("role","dialog");addMenu.setAttribute("aria-label","追加する列");
