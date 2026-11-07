@@ -1,6 +1,7 @@
 # Maintenance: changing this script triggers a full market-data refresh after missed scheduled runs.
 """US indices and Japanese market-index daily history + TSE market volume.
-Third-party data ingestion requires permission and explicit opt-in.
+The owner confirmed use of the public stock-marketdata.com tables on
+2026-11-07; set ALLOW_TSE_THIRD_PARTY_DATA=false to disable ingestion.
 """
 import bisect
 import datetime as dt
@@ -21,7 +22,7 @@ HEADERS = {'User-Agent': 'Mozilla/5.0 (compatible; PersonalMarketDashboard/1.0)'
 FETCH_US_SESSIONS = 250
 PUBLISH_SESSIONS = 200
 
-ALLOW = os.getenv('ALLOW_TSE_THIRD_PARTY_DATA', '').lower() in ('true', '1', 'yes')
+ALLOW = os.getenv('ALLOW_TSE_THIRD_PARTY_DATA', 'true').lower() in ('true', '1', 'yes')
 
 
 def fetch(url, timeout=25):
@@ -38,12 +39,13 @@ def numeric(value):
         return None
 
 
-def us_prices(symbol):
+def index_prices(symbol, tz_name='America/New_York', cutoff=dt.time(16, 15)):
     # Fetch ~400 calendar days (usually >250 trading sessions), without 5-year history.
     end = int(time.time()) + 86400
     start = end - 400 * 86400
     params = urllib.parse.urlencode({'period1': start, 'period2': end, 'interval': '1d'})
-    now = dt.datetime.now(ZoneInfo('America/New_York'))
+    tz = ZoneInfo(tz_name)
+    now = dt.datetime.now(tz)
     last_error = None
     for server in ('query1.finance.yahoo.com', 'query2.finance.yahoo.com'):
         for attempt in range(2):
@@ -56,8 +58,8 @@ def us_prices(symbol):
                     close = numeric(close)
                     if close is None or close <= 0:
                         continue
-                    date = dt.datetime.fromtimestamp(timestamp, ZoneInfo('America/New_York')).date()
-                    if date == now.date() and now.time() < dt.time(16, 15):
+                    date = dt.datetime.fromtimestamp(timestamp, tz).date()
+                    if date == now.date() and now.time() < cutoff:
                         continue
                     prices[date.isoformat()] = {'close': close, 'low': numeric(low), 'volume': numeric(volume)}
                 if len(prices) < 30:
@@ -69,7 +71,54 @@ def us_prices(symbol):
             except Exception as e:
                 last_error = e
                 time.sleep(attempt + 1)
-    raise RuntimeError(f'Cannot fetch US series {symbol}: {last_error}')
+    raise RuntimeError(f'Cannot fetch index series {symbol}: {last_error}')
+
+
+def us_prices(symbol):
+    return index_prices(symbol)
+
+
+def jp_prices(symbol):
+    # Tokyo session closes 15:30 JST; treat the day as final after 15:45.
+    return index_prices(symbol, 'Asia/Tokyo', dt.time(15, 45))
+
+
+def enrich_jp_index(prices):
+    """Change/volume/judge + distribution-day tracking for a Japanese index.
+
+    Mirrors the TSE columns in prepare_tse: no FTD labels, and DD counts are
+    only published after at least 25 valid sessions of history.
+    """
+    dates = sorted(prices)
+    series = {}
+    for i, date in enumerate(dates):
+        item = prices[date]
+        prev = prices[dates[i - 1]] if i else None
+        change = (item['close'] / prev['close'] - 1) * 100 if prev else None
+        v, pv = item['volume'], prev['volume'] if prev else None
+        vchange = (v / pv - 1) * 100 if v is not None and pv is not None and pv > 0 else None
+        series[date] = {'change': round(change, 6) if change is not None else None,
+                        'volume': round(vchange, 6) if vchange is not None else None,
+                        'judge': classify(change, vchange),
+                        'dd_number': None, 'dd_count': None,
+                        'ra_day': None, 'shares_10000': None,
+                        '_close': item['close']}
+    valid = [d for d in dates
+             if series[d]['change'] is not None and series[d]['volume'] is not None]
+    active_dd = []
+    for i, date in enumerate(valid):
+        close = series[date]['_close']
+        active_dd = [(idx, price) for idx, price in active_dd
+                     if i - idx < 25 and close < price * 1.05]
+        if series[date]['judge'] == 'sell':
+            active_dd.append((i, close))
+            if i >= 24:
+                series[date]['dd_number'] = len(active_dd)
+        if i >= 24:
+            series[date]['dd_count'] = len(active_dd)
+    for record in series.values():
+        record.pop('_close', None)
+    return series
 
 
 def enrich_us(prices):
@@ -339,7 +388,14 @@ def prepare_tse(previous, volume, indices):
 
 def main():
     previous = existing_published()
-    us = {key: enrich_us(us_prices(symbol)) for key, symbol in [('sp500', '^GSPC'), ('nasdaq', '^IXIC')]}
+    us = {key: enrich_us(us_prices(symbol)) for key, symbol in
+          [('sp500', '^GSPC'), ('nasdaq', '^IXIC'), ('nasdaq100', '^NDX'), ('dow', '^DJI')]}
+    nikkei = {}
+    try:
+        nikkei = enrich_jp_index(jp_prices('^N225'))
+        print(f'NIKKEI 225: {len(nikkei)} sessions')
+    except Exception as exc:
+        print('WARNING Nikkei 225 ingestion failed:', repr(exc))
     volume, indices = {}, {}
     if ALLOW:
         try:
@@ -351,17 +407,23 @@ def main():
         except Exception as exc:
             print('WARNING TSE index ingestion failed:', repr(exc))
     else:
-        print('TSE third-party ingestion disabled: set ALLOW_TSE_THIRD_PARTY_DATA=true ONLY after permission is confirmed')
+        print('TSE third-party ingestion disabled via ALLOW_TSE_THIRD_PARTY_DATA=false')
     tse_rows, snapshots = prepare_tse(previous, volume, indices)
+    if nikkei:
+        by_date = {r['date']: r for r in tse_rows}
+        for day, record in nikkei.items():
+            by_date.setdefault(day, {'date': day})['nikkei'] = record
+        tse_rows = sorted(by_date.values(), key=lambda r: r['date'], reverse=True)[:PUBLISH_SESSIONS]
     japan_days = sorted(r['date'] for r in tse_rows if r['date'])
-    us_days = sorted(set(us['sp500']) & set(us['nasdaq']), reverse=True)
+    us_days = sorted(set(us['sp500']) & set(us['nasdaq']) & set(us['nasdaq100']) & set(us['dow']), reverse=True)
     rows = []
     for day in us_days[:PUBLISH_SESSIONS]:
         loc = bisect.bisect_right(japan_days, day)
         # Japan next session relative to a US trading date, no same-day alignment.
         japan = japan_days[loc] if loc < len(japan_days) else None
         rows.append({'date': day, 'japan_date': japan,
-                     'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day]})
+                     'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
+                     'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day]})
     if len(rows) < 25:
         raise ValueError('US market history insufficient')
     # 49 clean sessions are required to display fully warmed-up 25-day
@@ -379,8 +441,8 @@ def main():
                 'latest': valid_tse_days[-1] if valid_tse_days else None}
     print('TSE DD COVERAGE:', coverage)
     result = {'updated_at': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
-              'source': {'us': 'Yahoo Finance unofficial', 'japan_indices': 'stock-marketdata.com index history (opt-in)',
-                         'japan_volume': 'stock-marketdata.com (opt-in)'},
+              'source': {'us': 'Yahoo Finance unofficial', 'japan_indices': 'stock-marketdata.com index history',
+                         'japan_volume': 'stock-marketdata.com', 'nikkei225': 'Yahoo Finance unofficial'},
               'tse_enabled': ALLOW, 'tse_dd_coverage': coverage, 'rows': rows, 'tse_rows': tse_rows,
               'tse_index_snapshots': snapshots}
     (ROOT / 'data.json').write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')

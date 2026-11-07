@@ -23,6 +23,14 @@ Public, key-less sources only:
 
 - Stock prices and index history: Yahoo Finance unofficial chart API
   (`query1`/`query2.finance.yahoo.com/v8/finance/chart/...`)
+- TSE Prime/Standard/Growth index history and trading volume:
+  stock-marketdata.com public tables (enabled by default since the owner's
+  confirmation on 2026-11-07; set `ALLOW_TSE_THIRD_PARTY_DATA=false` to
+  disable). `data.json` also carries the Nikkei 225 from Yahoo Finance.
+- JP EPS growth, ROE and market cap: computed from Yahoo Finance financial
+  statements via yfinance (`scripts/update_jp_fundamentals.py`, also run as
+  a rolling batch inside `update_sector_leaders.py`; yfinance is installed
+  on demand). Only derived percentages and period ends are stored.
 - JP listed universe: JPX official listed-shares spreadsheet (`data_j.xlsx`)
 - US universe lists: public S&P 500 constituents / ticker CSVs on GitHub
 - SOXX news headlines: Yahoo Finance RSS (summaries machine-translated)
@@ -30,9 +38,7 @@ Public, key-less sources only:
 
 Not included in the public edition (private deployment only): moomoo and
 SimFin feeds, private EPS datasets, API keys, and Cloudflare deployment
-configuration. JP market-breadth rows in `data.json` stay empty unless
-`ALLOW_TSE_THIRD_PARTY_DATA=true` is set after confirming permission to use
-that third-party source. The backtest pages under `backtest/` still require
+configuration. The backtest pages under `backtest/` still require
 their own intraday data files under `backtest/data/`.
 
 Yahoo Finance data is unofficial and may be delayed or changed without
