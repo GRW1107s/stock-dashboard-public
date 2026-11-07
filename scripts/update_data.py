@@ -389,7 +389,20 @@ def prepare_tse(previous, volume, indices):
 def main():
     previous = existing_published()
     us = {key: enrich_us(us_prices(symbol)) for key, symbol in
-          [('sp500', '^GSPC'), ('nasdaq', '^IXIC'), ('nasdaq100', '^NDX'), ('dow', '^DJI')]}
+          [('sp500', '^GSPC'), ('nasdaq', '^IXIC'), ('dow', '^DJI')]}
+    # Yahoo assigns the same total Nasdaq exchange volume to ^IXIC and ^NDX,
+    # so NASDAQ-100 volume changes are taken from QQQ (the NDX tracker ETF)
+    # while its price change stays the index itself.
+    ndx = us_prices('^NDX')
+    try:
+        qqq = us_prices('QQQ')
+        for day, record in ndx.items():
+            if day in qqq:
+                record['volume'] = qqq[day]['volume']
+        print(f'NASDAQ100 VOLUME: QQQ reference applied ({sum(1 for d in ndx if d in qqq)}/{len(ndx)} sessions)')
+    except Exception as exc:
+        print('WARNING QQQ volume reference failed, keeping ^NDX volume:', repr(exc))
+    us['nasdaq100'] = enrich_us(ndx)
     nikkei = {}
     try:
         nikkei = enrich_jp_index(jp_prices('^N225'))
@@ -441,7 +454,8 @@ def main():
                 'latest': valid_tse_days[-1] if valid_tse_days else None}
     print('TSE DD COVERAGE:', coverage)
     result = {'updated_at': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
-              'source': {'us': 'Yahoo Finance unofficial', 'japan_indices': 'stock-marketdata.com index history',
+              'source': {'us': 'Yahoo Finance unofficial', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
+                         'japan_indices': 'stock-marketdata.com index history',
                          'japan_volume': 'stock-marketdata.com', 'nikkei225': 'Yahoo Finance unofficial'},
               'tse_enabled': ALLOW, 'tse_dd_coverage': coverage, 'rows': rows, 'tse_rows': tse_rows,
               'tse_index_snapshots': snapshots}
