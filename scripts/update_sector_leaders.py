@@ -620,6 +620,15 @@ def main():
     }
     print("JP_COVERAGE", output["jp_coverage"], flush=True)
 
+    # JP fundamentals enrichment: EPS growth, ROE and JPY market cap from
+    # Yahoo Finance statements (rolling batch, 60-day refresh). A failure
+    # here must never block the price pipeline.
+    try:
+        from update_jp_fundamentals import enrich_jp_fundamentals
+        enrich_jp_fundamentals(output, int(os.getenv("JP_FUND_BATCH", "4000")))
+    except Exception as err:
+        print("JP_FUNDAMENTALS_ERROR", str(err)[:180], flush=True)
+
     # S&P 500 membership plus leading US-listed ordinary shares and ADRs.
     # A universe entry without Yahoo OHLCV remains explicitly unpriced.
     current_us, us_master = latest_us_universe(previous.get("us", []))
