@@ -629,6 +629,15 @@ def main():
     except Exception as err:
         print("JP_FUNDAMENTALS_ERROR", str(err)[:180], flush=True)
 
+    # Kabutan supplement: Yahoo statements rarely carry the previous
+    # quarter, so fill still-missing quarterly EPS growth from Kabutan's
+    # discrete-quarter results. Never overwrites Yahoo-derived values.
+    try:
+        from update_jp_kabutan_eps import enrich_jp_kabutan_eps
+        enrich_jp_kabutan_eps(output, int(os.getenv("JP_KABUTAN_EPS_BATCH", "4000")))
+    except Exception as err:
+        print("JP_KABUTAN_EPS_ERROR", str(err)[:180], flush=True)
+
     # S&P 500 membership plus leading US-listed ordinary shares and ADRs.
     # A universe entry without Yahoo OHLCV remains explicitly unpriced.
     current_us, us_master = latest_us_universe(previous.get("us", []))
