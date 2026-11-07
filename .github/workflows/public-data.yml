@@ -1,0 +1,86 @@
+name: Update public market data
+
+# Public edition data pipeline.
+# Generates the JSON files the static pages read, using only public,
+# key-less sources (mainly Yahoo Finance's unofficial chart API).
+# Private feeds (moomoo, SimFin, private EPS datasets) are NOT used here.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/public-data.yml'
+  schedule:
+    - cron: '17 22 * * 1-5'  # US previous-session close: JST 07:17 Tue-Sat
+    - cron: '0 7 * * 1-5'    # Japan close: 16:00 JST Mon-Fri
+    - cron: '20 7 * * 1-5'   # JP backup: 16:20 JST Mon-Fri
+    - cron: '20 3 * * 1-5'   # Kabutan midday summary: 12:20 JST
+
+permissions:
+  contents: write
+
+concurrency:
+  group: public-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Core price data (Yahoo Finance chart API). Order matters:
+      # us-semiconductors.json is read by the SOXX premarket/news scripts,
+      # and jp-sectors.json is read by the sector leaders screener.
+      - name: Market overview (data.json)
+        run: python3 scripts/update_data.py
+      - name: US sectors (sectors.json)
+        run: python3 scripts/update_sectors.py
+      - name: JP sectors (jp-sectors.json)
+        run: python3 scripts/update_jp_sectors.py
+      - name: JP semiconductors (semiconductors.json)
+        run: python3 scripts/update_semiconductors.py
+      - name: US semiconductors (us-semiconductors.json)
+        run: python3 scripts/update_us_semiconductors.py
+      - name: SOX swing (sox-swing.json)
+        run: python3 scripts/update_sox_swing.py
+      - name: US anomalies (us-anomalies.json)
+        run: python3 scripts/update_us_anomalies.py
+
+      # Dependent / secondary datasets: one failure must not block the rest.
+      - name: SOXX premarket (soxx-premarket.json)
+        continue-on-error: true
+        run: python3 scripts/update_soxx_premarket.py
+      - name: Premarket universe (premarket-universe.json)
+        continue-on-error: true
+        run: python3 scripts/update_premarket_universe.py
+      - name: SOXX news (soxx-news.json)
+        continue-on-error: true
+        run: python3 scripts/update_soxx_news.py
+      - name: Semi summary from Kabutan (semi-summary.json)
+        continue-on-error: true
+        run: python3 scripts/update_kabutan_summary.py
+      - name: Sector leaders screener (sector-leaders.json)
+        continue-on-error: true
+        run: python3 scripts/update_sector_leaders.py
+      - name: JP tenbaggers, incremental batch (jp-tenbaggers.json)
+        continue-on-error: true
+        run: python3 scripts/update_jp_tenbaggers.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- '*.json'
+          if git diff --cached --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "Update public market data"
+            git push
+          fi
