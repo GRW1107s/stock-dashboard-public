@@ -403,6 +403,20 @@ def main():
     except Exception as exc:
         print('WARNING QQQ volume reference failed, keeping ^NDX volume:', repr(exc))
     us['nasdaq100'] = enrich_us(ndx)
+    # VIX: level + daily change only (no judge / DD tracking).
+    vix = {}
+    try:
+        raw_vix = us_prices('^VIX')
+        vix_days = sorted(raw_vix)
+        for i, day in enumerate(vix_days):
+            close = numeric(raw_vix[day].get('close'))
+            prev = numeric(raw_vix[vix_days[i - 1]].get('close')) if i else None
+            if close is not None:
+                vix[day] = {'close': round(close, 2),
+                            'change': round((close / prev - 1) * 100, 4) if prev else None}
+        print(f'VIX: {len(vix)} sessions')
+    except Exception as exc:
+        print('WARNING VIX ingestion failed:', repr(exc))
     nikkei = {}
     try:
         nikkei = enrich_jp_index(jp_prices('^N225'))
@@ -436,7 +450,8 @@ def main():
         japan = japan_days[loc] if loc < len(japan_days) else None
         rows.append({'date': day, 'japan_date': japan,
                      'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
-                     'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day]})
+                     'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
+                     'vix': vix.get(day)})
     if len(rows) < 25:
         raise ValueError('US market history insufficient')
     # 49 clean sessions are required to display fully warmed-up 25-day
@@ -454,7 +469,7 @@ def main():
                 'latest': valid_tse_days[-1] if valid_tse_days else None}
     print('TSE DD COVERAGE:', coverage)
     result = {'updated_at': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
-              'source': {'us': 'Yahoo Finance unofficial', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
+              'source': {'us': 'Yahoo Finance unofficial', 'vix': 'Yahoo Finance unofficial (^VIX)', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
                          'japan_indices': 'stock-marketdata.com index history',
                          'japan_volume': 'stock-marketdata.com', 'nikkei225': 'Yahoo Finance unofficial'},
               'tse_enabled': ALLOW, 'tse_dd_coverage': coverage, 'rows': rows, 'tse_rows': tse_rows,
