@@ -223,6 +223,24 @@ def main():
     if len(raw) < 1000:
         raise RuntimeError("Too few member histories; refusing to publish")
 
+    # Stash every member's latest close so the screener's market-cap
+    # fallback (close x shares, in update_jp_fundamentals) can price the
+    # full universe, not just the leaders' rotating quote batch.
+    try:
+        closes = {}
+        for ticker, history in raw.items():
+            if ticker == BENCHMARK or not history:
+                continue
+            last_day = max(history)
+            closes[ticker] = [history[last_day]["close"], last_day]
+        (ROOT / "jp-closes.json").write_text(json.dumps(
+            {"updated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+             "closes": closes}, ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8")
+        print(f"JP_CLOSES_STASHED {len(closes)}", flush=True)
+    except Exception as exc:
+        print("JP_CLOSES_STASH_ERROR", str(exc)[:120], flush=True)
+
     # Free-float weights for the cap-weighted indices. A bounded batch of
     # the stalest tickers refreshes each run (30-day cycle); failures keep
     # the previously stored weights.

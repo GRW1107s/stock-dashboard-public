@@ -127,6 +127,42 @@ def fetch_one(yf, row):
     return row, None, None, ticker + ": " + last
 
 
+def apply_market_cap_fallback(stocks, today):
+    """Fill missing JPY market caps as close x shares outstanding.
+
+    Shares come from the committed jp-float-shares.json store; the close is
+    the row's own chart-API price. This works even where Yahoo's statement
+    and quote endpoints return nothing (e.g. datacenter IPs)."""
+    try:
+        from update_jp_float_shares import _load as load_float_store
+        store = load_float_store()
+    except Exception:
+        return 0
+    closes = {}
+    try:
+        stash = json.loads((ROOT / "jp-closes.json").read_text(encoding="utf-8"))
+        closes = stash.get("closes") or {}
+    except Exception:
+        pass
+    filled = 0
+    for row in stocks:
+        if finite(row.get("market_cap")) is not None and row.get("market_cap_currency") == "JPY":
+            continue
+        ticker = normalize_jp_ticker(row.get("ticker")) or ""
+        entry = store.get(ticker) or {}
+        shares = entry.get("shares_outstanding") or entry.get("float_shares")
+        close = finite(row.get("close"))
+        if close is None and ticker in closes:
+            close = finite(closes[ticker][0])
+        if isinstance(shares, (int, float)) and shares > 0 and close:
+            row["market_cap"] = round(close * shares)
+            row["market_cap_currency"] = "JPY"
+            row["market_cap_asof"] = today
+            row["market_cap_source"] = "close x shares (jp-float-shares.json)"
+            filled += 1
+    return filled
+
+
 def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
                            refresh_days=60, yf=None):
     """Enrich data['jp'] entries in place; returns a stats dict."""
@@ -183,6 +219,7 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
             if rate_limited >= workers:
                 print("JP_FUNDAMENTALS_RATE_LIMIT_STOP: remaining tickers deferred", flush=True)
                 break
+    cap_fallback = apply_market_cap_fallback(stocks, today)
     data["jp_eps_yfinance_cursor"] = (cursor + processed) % max(1, len(stocks))
     data["jp_eps_coverage"] = {
         "source": SOURCE,
@@ -198,6 +235,7 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
         "with_annual_cagr": sum(isinstance(r.get(GROWTH[2]), (int, float)) for r in stocks),
         "with_roe": sum(finite(r.get("roe_pct")) is not None for r in stocks),
         "with_market_cap": sum(finite(r.get("market_cap")) is not None and r.get("market_cap_currency") == "JPY" for r in stocks),
+        "with_market_cap_fallback": cap_fallback,
         "financial_fields_updated": fin_updated,
         "attempted_ever": sum(bool(r.get("eps_yfinance_attempted_at")) for r in stocks),
         "refresh_days": refresh_days,
