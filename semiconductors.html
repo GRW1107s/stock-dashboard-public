@@ -215,22 +215,14 @@ select{font-size:12px;padding:7px 8px}
 #semiBtFrame{display:block;width:100%;height:1050px;border:0;background:white}
 @media(max-width:600px){.semi-bt-modes button{font-size:11px;padding:8px 10px}}
 </style>
-<link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261104-backtest1" defer></script></head>
+<link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261108tabs" defer></script></head>
 <body><main>
 <nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html" aria-current="page">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <div class="top"><div><h1>日経半導体投資｜対象4銘柄</h1><p class="muted">キオクシアHD・太陽誘電・フジクラ・SBG｜スイング／デイトレ分析</p></div><span class="tag">HISTORICAL BACKTEST · EXPERIMENT</span></div>
 <div class="coverage" id="coverage">データの取得状況を確認しています…</div>
 
 
-<section id="semi-summary-content" class="panel" style="margin:12px 0 20px">
-<h2>日経半導体｜日次サマリー</h2>
-<p class="muted small">日本市場引け後の確定値。SOXは当該日本取引日の寄り付き前に確定した米国市場の直近値です。株探の「前引け」「大引け」を事実と解釈に分け、<strong>前場どうし・後場どうしを同じ行</strong>に表示。前場・後場それぞれ2列合計120字以内です。</p>
-<p class="muted small"><strong>事実：</strong>終値・騰落率・出来高・企業発表・確認された出来事など、資料や数値で確認できる内容。「半導体関連が下落」「企業が上方修正を発表」など。<strong>解釈：</strong>値動きの背景や原因についての見方、投資家心理・市場の期待・先行き予想など。「米株安が売りを誘ったとみられる」など。<strong>原因の説明は記事の見解であり、確定した因果関係ではありません。</strong> 自動分類のため、曖昧な箇所は参照記事で確認してください。</p>
-<div class="matrix-actions" id="summaryRange" style="margin:10px 0"><button type="button" data-days="25" class="active">25取引日</button><button type="button" data-days="50">50取引日</button><button type="button" data-days="0">すべて</button></div>
-<div class="scroll"><table aria-label="前場と後場の事実・解釈を行単位で対応させた日次サマリー" style="width:100%;min-width:1080px;table-layout:fixed"><colgroup><col style="width:90px"><col style="width:135px"><col style="width:135px"><col style="width:360px"><col style="width:360px"></colgroup><thead><tr><th>日本日付</th><th>SOX（米国前営業日）<div style="font-weight:400">騰落率／σ</div></th><th>日経半導体<div style="font-weight:400">騰落率／σ</div></th><th style="text-align:left">事実（確認可能な出来事・数値）</th><th style="text-align:left">解釈（背景・見方・予想）</th></tr></thead><tbody id="semiSummaryRows"><tr><td colspan="5">取得中…</td></tr></tbody></table></div>
-<p id="semiSummaryStatus" class="muted small"></p>
-<p class="muted small">σ＝当日を含む直近20取引日の日次騰落率の平均との差÷標準偏差（10件未満・データ不足は—）。指数出典：<a href="https://indexes.nikkei.co.jp/nkave/index/profile?idx=nkscd" target="_blank" rel="noopener">日経指数公式</a>／<a href="https://nikkeiyosoku.com/nk_semicon/data/" target="_blank" rel="noopener">指数時系列</a>。前場・後場それぞれ事実と解釈の合計120字以内で表示し、参照記事へリンクしています。株探記事の確認できない一部は同記事の配信先や参考市況記事を使用。</p>
-</section>
+
 <section class="panel matrix-section" aria-labelledby="daily-matrix-title">
 <h2 id="daily-matrix-title">SOX・日本株｜日次騰落率と出来高前日比</h2>
 <p class="muted small">SOX＋日本株4銘柄（合計5列）を横並びで表示。上段は株価騰落率、下段は出来高前日比％です。SOX列の出来高のみSOXX ETFを使用します。</p>
@@ -365,20 +357,7 @@ select{font-size:12px;padding:7px 8px}
 <p class="small">出典：Yahoo Finance非公式Chart API（市場価格参考値）。分析対象：キオクシアHD・太陽誘電・フジクラ・SBGの4銘柄。<a href="https://github.com/GRW1107s/stock-dashboard/blob/main/scripts/update_semiconductors.py">取得コード</a> / <a href="https://www.amova-am.com/products/etf/sp/lp_nikkei_semiconductor_stock">指数構成銘柄</a> / <a href="https://ranaroussi.github.io/yfinance/reference/yfinance.price_history.html">データ期間の制限</a></p>
 </section>
 
-<section id="semi-backtest-content" class="panel" style="margin:12px 0 20px">
-<h2>03 / バックテスト｜時間足を切り替えて戦略比較</h2>
-<p class="muted small">旧株価戦略研究所を日経半導体に統合。現在、1分足の自動蓄積と実売買価格の再生に対応しているのは太陽誘電（6976）です。キオクシアHD・フジクラ・SBGには、未取得の1分足成績を流用しません。</p>
-<div class="semi-bt-modes" role="tablist" aria-label="バックテスト研究モード">
-<button type="button" data-bt="compare" role="tab" aria-selected="true">戦略比較・時間足切替</button>
-<button type="button" data-bt="walkforward" role="tab" aria-selected="false">逐次学習・初見検証</button>
-<button type="button" data-bt="fixed" role="tab" aria-selected="false">固定ルール検証</button>
-<button type="button" data-bt="xy" role="tab" aria-selected="false">x/y反復学習</button>
-<button type="button" data-bt="five" role="tab" aria-selected="false">5分足検証</button>
-</div>
-<p class="muted small" id="semiBtNote">1分・5分・15分・1時間・日足を選択し、25MA逆張りなど複数の戦略をチェックして同じ期間で比較します。</p>
-<div class="semi-bt-frame-wrap"><iframe id="semiBtFrame" src="./backtest/strategy-lab.html?v=compact-20261104" title="太陽誘電バックテスト｜戦略比較・時間足切替" loading="lazy"></iframe></div>
-<p class="muted small">研究用の仮想取引です。売買損益の合計は各取引の騰落率の単純合計で、口座全体の運用利回りではありません。実際の信用取引では約定可能性・板・スプレッド・取引規制等で結果が異なります。1日最大3回の手動反発買いは研究中であり、旧モデルの取引上限とは区別します。</p>
-</section>
+
 <footer>投資助言ではありません。公開されたヒストリカルデータに基づく参考検証であり、将来のパフォーマンスを保証しません。</footer>
 </main>
 <script>
@@ -1023,6 +1002,6 @@ async function init(){
 }
 init();
 </script>
-<script src="./semi-summary.js?v=20261104-align-v2" defer></script>
+
 <script src="./fujikura-5m-study.js?v=20261104a" defer></script>\n<script src="./fujikura-shapes.js?v=20261104b" defer></script>
-<script defer src="./semi-backtest.js?v=compact-20261104"></script></body></html>
+</body></html>

@@ -13,7 +13,6 @@
       {label:"銘柄スクリーニング",start:"#leader-screener-panel"}
     ],
     "us-semiconductors.html":[
-      {label:"市場動向",start:"#catalystPanel"},
       {label:"日次データ",start:".panel:not([id])"},
       {label:"SOXX下落σ分析",start:"#sigmaDropPanel"},
       {label:"プレマーケット",start:"#premarketStudyPanel"}
@@ -40,37 +39,33 @@
     const page=location.pathname.split("/").pop()||"index.html";
     // Japanese semiconductor research: separate swing and day trading into sub-tabs.
     if(page==="semiconductors.html"){
-      const summaryStart=document.getElementById("semi-summary-content");
       const swingStart=main.querySelector(".matrix-section");
       const dayStart=document.getElementById("daytrade");
       const reboundStart=document.getElementById("rebound");
-      const backtestStart=document.getElementById("semi-backtest-content");
       const footer=main.querySelector("footer");
-      if(!summaryStart||!swingStart||!dayStart||!reboundStart||!backtestStart||!footer)return;
+      if(!swingStart||!dayStart||!reboundStart||!footer)return;
       const swingNodes=[],dayNodes=[],reboundNodes=[];
       for(let n=swingStart;n&&n!==dayStart;n=n.nextElementSibling)swingNodes.push(n);
       for(let n=dayStart;n&&n!==reboundStart;n=n.nextElementSibling)dayNodes.push(n);
-      for(let n=reboundStart;n&&n!==backtestStart;n=n.nextElementSibling)reboundNodes.push(n);
+      for(let n=reboundStart;n&&n!==footer;n=n.nextElementSibling)reboundNodes.push(n);
       const tabs=document.createElement("nav");
       tabs.className="stock-dashboard-subtabs";
       tabs.setAttribute("aria-label","日経半導体のサブタブ");
       tabs.setAttribute("role","tablist");
       primary.insertAdjacentElement("afterend",tabs);
-      const tabIds=["summary","swing","daytrade","backtest"];
+      const tabIds=["swing","daytrade"];
       const panes=tabIds.map((id,i)=>{
         const p=document.createElement("section");
         p.className="stock-dashboard-pane";
         p.id="semi-"+id+"-pane";
         p.setAttribute("role","tabpanel");
         p.setAttribute("aria-labelledby","semi-"+id+"-tab");
-        main.insertBefore(p,summaryStart);
+        main.insertBefore(p,swingStart);
         return p;
       });
-      panes[0].appendChild(summaryStart);
-      [...swingNodes,...reboundNodes].forEach(n=>panes[1].appendChild(n));
-      dayNodes.forEach(n=>panes[2].appendChild(n));
-      panes[3].appendChild(backtestStart);
-      const buttons=["サマリー","スイング","デイトレ","バックテスト"].map((label,i)=>{
+      [...swingNodes,...reboundNodes].forEach(n=>panes[0].appendChild(n));
+      dayNodes.forEach(n=>panes[1].appendChild(n));
+      const buttons=["スイング","デイトレ"].map((label,i)=>{
         const b=document.createElement("button");
         b.type="button";b.id="semi-"+tabIds[i]+"-tab";
         b.setAttribute("role","tab");b.setAttribute("aria-controls",panes[i].id);
@@ -98,7 +93,8 @@
       });
       function chooseHash(){
         const hash=decodeURIComponent(location.hash.slice(1));
-        select(hash==="backtest"||hash==="semi-backtest-pane"||!!(document.getElementById(hash)&&panes[3].contains(document.getElementById(hash)))?3:hash==="daytrade"||hash==="semi-daytrade-pane"||!!(document.getElementById(hash)&&panes[2].contains(document.getElementById(hash)))?2:hash==="swing"||hash==="semi-swing-pane"||!!(document.getElementById(hash)&&panes[1].contains(document.getElementById(hash)))?1:0,false);
+        const el=hash?document.getElementById(hash):null;
+        select(hash==="daytrade"||hash==="semi-daytrade-pane"||!!(el&&panes[1].contains(el))?1:0,false);
       }
       chooseHash();
       window.addEventListener("hashchange",chooseHash);

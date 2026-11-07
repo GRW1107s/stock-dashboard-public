@@ -184,26 +184,12 @@ main{max-width:1700px;margin:15px auto;padding:0 12px 45px}h1{font-size:19px;mar
 .moomoo-panel th,.moomoo-panel td{border-bottom:1px solid #e8edf3;padding:7px 9px;text-align:right;white-space:nowrap;font-size:11px}
 .moomoo-panel th{position:sticky;top:0;background:#eaf0f6;color:#334155;z-index:1}
 .moomoo-panel th:first-child,.moomoo-panel td:first-child{text-align:left;font-weight:700}
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261103o" defer></script></head><body><main>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><script src="./dashboard-nav.js?v=20261108tabs" defer></script></head><body><main>
 <nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日経セクター</a><a href="./sectors.html">米国セクター</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html" aria-current="page">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>米国半導体投資｜SOXX・米国関連株</h1>
 <p class="sub">日次株価騰落率（出来高前日比％）・判定｜SOXXには20取引日基準の標準偏差も表示</p>
-<section class="panel moomoo-panel" id="moomooPanel">
-<h2>moomoo API｜米国株テクニカル指標</h2>
-<p class="note" id="moomoo-status">moomoo APIの指標を読み込み中...</p>
-<div class="moomoo-table-wrap"><table aria-label="moomoo APIによる米国株テクニカル指標">
-<thead><tr><th>銘柄</th><th>米国取引日</th><th>騰落率</th><th>出来高前日比</th><th>対SOXX RS63</th><th>20MA</th><th>50MA</th><th>200MA</th></tr></thead>
-<tbody id="moomoo-table"><tr><td colspan="8">初回データ取得待ち...</td></tr></tbody></table></div>
-<p class="note">対SOXX RS63は直近63共通取引日の個別株リターンとSOXXリターンの差（％ポイント）です。20/50/200MAは終値が単純移動平均以上なら○、下回れば×。株価・出来高の生データはこの欄に掲載しません。既存の日次分析は従来のデータソースを維持します。</p>
-</section>
-<section class="panel" id="catalystPanel">
-<div class="catalyst-bar"><h2>SOXXの騰落・相場の振り返り（Yahoo Finance）</h2>
-<div class="catalyst-control"><button type="button" id="news10" class="active">直近10日</button><button type="button" id="news25">25日</button></div></div>
-<p class="catalyst-warning">Yahoo Financeの<b>引け後の市場振り返り記事</b>を優先し、なければ決算・需要・規制など具体的な半導体関連ニュースを各取引日に最大1件表示します。米東部時間16:00〜22:00の引け後総括はその取引日に対応。日本語は記事の見出し・概要の機械翻訳です。記事が説明する背景はメディアの見解であり、SOXXの値動きとの因果関係を保証しません。閲覧数によるランキングではありません。古い記事は取得できない場合があります。</p>
-<p class="note" id="newsStatus">Yahoo Financeのニュースを読み込み中...</p>
-<div class="catalyst-scroll"><table class="catalyst-table"><thead><tr><th>米国日付</th><th>SOXX 騰落率（出来高前日比）</th><th>市場の振り返り・材料（日本語・最大1記事）</th></tr></thead>
-<tbody id="catalystTableBody"><tr><td colspan="3">SOXXの日足データを読み込み中...</td></tr></tbody></table></div>
-</section>
+
+
 <section class="panel"><div class="guide">米国時間の同じ取引日におけるSOXX ETFと個別株を比較します。SOXX列にはETF自体の株価騰落率・出来高前日比・標準偏差からの乖離・判定を表示します。NBIS・LITE・AAOIは半導体そのものに限らないAIインフラ／光通信関連銘柄です。SKHYなど上場間もない銘柄は短い履歴のみ表示します。データは米国引け後に確定します。</div>
 <div class="legend"><span><i class="ico buy">✓</i> 買い集め</span><span><i class="ico sell">×</i> 売り抜け</span><span><i class="ico dd">1</i> 有効DD件数</span><span><i class="ico ftd">FTD</i> 反発確認</span><span>— 通常・未判定</span></div>
 <p class="note">SOXXの±σは、当日を除く直前20取引日を基準にした偏差値（zスコア）です。株価は前日比％、出来高は売買株数の平均と標準偏差を使用。±2σは直近20日平均から標準偏差2個分の差を示します。基準日数が不足、または標準偏差が0なら「—」です。</p>
@@ -438,73 +424,14 @@ function soxxCell(x,z,date){
   ' <span class="z-score">'+v+'</span>）</div></td>';
 }
 
-/* RSS candidate is selected during collection; summaries only use Yahoo RSS
-   headline / short description, not article bodies. No causal inference. */
-let headlineData=null,newsDays=10,headlineError=null;
 function escapeNewsText(value){
  return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-function articleLink(url){try{const u=new URL(url);return u.protocol==="https:"?u.href:null}catch(e){return null}}
-function conciseJapanese(value){
- const s=String(value||"").trim();
- if(s.length<=155)return s;
- const sentences=s.match(/[^。！？]+[。！？]?/g)||[];
- let result="";
- for(const phrase of sentences){
-  if((result+phrase).length>150)break;
-  result+=phrase;
- }
- return result.length>=20?result:s.slice(0,145)+"…";
-}
-function renderCatalysts(){
- if(!data?.soxx||!Object.keys(data.soxx).length)return;
- const prices=data.soxx,dates=Object.keys(prices).sort(),zs=soxxSigmaSeries(prices),soxx=classify(prices),daily=headlineData?.daily||{};
- const earliestNews=(headlineData?.articles||[]).map(a=>String(a.published_at||"").slice(0,10)).filter(Boolean).sort()[0]||null;
- $("catalystTableBody").innerHTML=dates.slice(-newsDays).reverse().map(day=>{
-  const i=dates.indexOf(day),bar=prices[day],prev=i?prices[dates[i-1]]:null;
-  const article=daily[day],url=article?articleLink(article.url):null;
-  const hasSource=article&&url&&["Yahoo Finance RSS","Yahoo Finance Search"].includes(article.source);
-  const summary=hasSource&&article.summary_ja?escapeNewsText(conciseJapanese(article.summary_ja)):null;
-  const time=hasSource&&article.published_at?new Date(article.published_at).toLocaleString("ja-JP",{
-    timeZone:"America/New_York",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false
-  }):"";
-  const material=hasSource?
-   '<div class="material-summary">'+(summary||'<span class="no-material">日本語要約未取得</span>')+'</div>'+
-   '<a class="material-link" href="'+escapeNewsText(url)+'" target="_blank" rel="noopener noreferrer">Yahoo Finance掲載記事を読む</a>'+
-   '<div class="material-source">'+escapeNewsText(article.review_type||"関連報道")+'｜Yahoo Finance｜米東部 '+escapeNewsText(time)+'</div>':
-   '<span class="no-material">'+(headlineError?"取得できず":earliestNews&&day<earliestNews?"過去記事の取得範囲外":"該当する解説・材料を未検出")+'</span>';
-  return '<tr><td>'+day.replaceAll("-","/")+'</td>'+
-   soxxCell(soxx[day],zs[day],day)+
-   '<td class="material">'+material+'</td></tr>';
- }).join("");
- for(const n of [10,25])$("news"+n).classList.toggle("active",newsDays===n);
-}
-async function loadHeadlines(){
- try{
-  const response=await fetch("./soxx-news.json?t="+Date.now(),{cache:"no-store"});
-  if(!response.ok)throw Error("HTTP "+response.status);
-  const obj=await response.json();
-  if(!obj.daily||typeof obj.daily!=="object")throw Error("Yahoo Finance単独のニュースデータを更新中");
-  headlineData=obj;
-  const failed=Object.keys(obj.feed_errors||{});
-  const ok=Object.keys(obj.feed_counts||{});
-  headlineError=ok.length===0;
-  const stamp=obj.updated_at?new Date(obj.updated_at).toLocaleString("ja-JP",{timeZone:"Asia/Tokyo"}):"未取得";
-  $("newsStatus").textContent="Yahoo Finance 最終取得 "+stamp+"（日本時間）｜"+
-   (failed.length?"一部取得失敗: "+failed.join("、"):"取得成功")+
-   "｜日本語要約は見出し・概要の機械翻訳｜候補あり "+Object.keys(obj.daily).length+"取引日";
- }catch(error){
-  headlineError=true;
-  $("newsStatus").textContent="Yahoo Financeニュースデータの取得待ち。SOXXの日足は引き続き表示しています。";
- }
- renderCatalysts();
 }
 function choose(){
  $("pickers").innerHTML=DEFAULT.map((symbol,i)=>'<label>銘柄'+(i+1)+'<select id="pick'+i+'">'+Object.keys(stockNames).map(s=>'<option value="'+s+'"'+(s===symbol?' selected':'')+'>'+s+'｜'+stockNames[s]+'</option>').join("")+'</select></label>').join("");
  DEFAULT.forEach((symbol,i)=>$("pick"+i).addEventListener("change",render));
  $("view").addEventListener("change",render);
  for(const n of [25,50])$("d"+n).addEventListener("click",()=>{days=n;render()});
- for(const n of [10,25])$("news"+n).addEventListener("click",()=>{newsDays=n;renderCatalysts()});
 }
 function render(){
  if(!data)return;
@@ -1145,7 +1072,7 @@ async function init(){
   if(!res.ok)throw Error("HTTP "+res.status);
   const d=await res.json();
   if(!Object.keys(d.soxx||{}).length||!Object.keys(d.stocks||{}).length)throw Error("初回日足データ取得待ち");
-  stockNames=d.symbols||FALLBACK;data=d;choose();render();renderCatalysts();initSigmaStudyTicker();renderSigmaDropStudy();initSigmaAllTable();await Promise.allSettled([loadHeadlines(),loadPremarketStudy()]);
+  stockNames=d.symbols||FALLBACK;data=d;choose();render();initSigmaStudyTicker();renderSigmaDropStudy();initSigmaAllTable();await Promise.allSettled([loadPremarketStudy()]);
  }catch(e){
   stockNames=FALLBACK;choose();$("status").textContent="データ取得待ち："+String(e.message||e)+"。GitHub Actionsの初回更新後に一覧表を表示します。";
   $("sigmaDropStatus").textContent="SOXX過去データを取得できなかったため、σ別分析は表示できません。";
@@ -1154,4 +1081,4 @@ async function init(){
  }
 }
 init();
-</script><script src="./moomoo-signals.js" defer></script></body></html>
+</script></body></html>
