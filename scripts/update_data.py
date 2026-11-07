@@ -42,10 +42,10 @@ def numeric(value):
 
 
 def index_prices(symbol, tz_name='America/New_York', cutoff=dt.time(16, 15)):
-    # Full history since 2015: the recent 200 sessions feed data.json and
-    # every year feeds its own history-YYYY.json archive page.
+    # Full history since 1990 (the Dow series starts 1992): the recent 200
+    # sessions feed data.json and every year feeds its own archive page.
     end = int(time.time()) + 86400
-    start = int(dt.datetime(2015, 1, 1, tzinfo=dt.timezone.utc).timestamp())
+    start = int(dt.datetime(1990, 1, 1, tzinfo=dt.timezone.utc).timestamp())
     params = urllib.parse.urlencode({'period1': start, 'period2': end, 'interval': '1d'})
     tz = ZoneInfo(tz_name)
     now = dt.datetime.now(tz)

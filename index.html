@@ -83,7 +83,7 @@
 <p class="info" id="status"></p><p class="info">※米国日付は米国市場の取引日、日本日付はその後の最初の日本取引日。日経225・東証P/S/Gは日本日付に対応します。NASDAQ100の出来高はQQQ（連動ETF）の出来高で代用しています。東証P/S/Gの指数値は取得状況により欠損することがあります。</p>
 </div>
 <div id="pane-history"><div class="past-tools"><div class="controls" id="past-years" aria-label="年"></div><span id="past-info" class="small"></span></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2">S&amp;P500</th><th colspan="2">NASDAQ総合</th><th colspan="2">NASDAQ100</th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead2"></tr></thead><tbody id="body-all"><tr><td colspan="22">読み込み中...</td></tr></tbody></table></div><p class="info">年ごとに全取引日を表示しています。全期間をまたぐ検索は「相場の歴史」タブでできます。</p></div>
-<div id="pane-history-search"><p class="small">2015年以降の全取引日を対象に、指数が大きく動いた日を横断検索します。σは全期間の日次変動率の標準偏差です。</p><div class="hist-tools"><div class="hist-search"><label>指数 <select id="hist-index"><option value="sp500">S&amp;P500</option><option value="nasdaq">NASDAQ総合</option><option value="nasdaq100">NASDAQ100</option><option value="dow">ダウ</option><option value="vix">VIX</option><option value="nikkei">日経225</option><option value="prime">東証プライム</option><option value="standard">東証スタンダード</option><option value="growth">東証グロース</option><option value="nikkei_vi">日経VI</option></select></label><label>方向 <select id="hist-dir"><option value="down">下落</option><option value="up">上昇</option><option value="both">両方</option></select></label><label>変動率 <select id="hist-sigma"><option value="1">1σ以上</option><option value="1.5">1.5σ以上</option><option value="2" selected>2σ以上</option><option value="2.5">2.5σ以上</option><option value="3">3σ以上</option></select></label><button type="button" id="hist-go">検索</button><button type="button" id="hist-clear">解除</button><span id="hist-info" class="small"></span></div></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2">S&amp;P500</th><th colspan="2">NASDAQ総合</th><th colspan="2">NASDAQ100</th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead3"></tr></thead><tbody id="body-search"><tr><td colspan="22">タブを開くと読み込みます</td></tr></tbody></table></div></div>
+<div id="pane-history-search"><p class="small">1992年以降の全取引日を対象に、指数が大きく動いた日を横断検索します。σは全期間の日次変動率の標準偏差です。</p><div class="hist-tools"><div class="hist-search"><label>指数 <select id="hist-index"><option value="sp500">S&amp;P500</option><option value="nasdaq">NASDAQ総合</option><option value="nasdaq100">NASDAQ100</option><option value="dow">ダウ</option><option value="vix">VIX</option><option value="nikkei">日経225</option><option value="prime">東証プライム</option><option value="standard">東証スタンダード</option><option value="growth">東証グロース</option><option value="nikkei_vi">日経VI</option></select></label><label>方向 <select id="hist-dir"><option value="down">下落</option><option value="up">上昇</option><option value="both">両方</option></select></label><label>変動率 <select id="hist-sigma"><option value="1">1σ以上</option><option value="1.5">1.5σ以上</option><option value="2" selected>2σ以上</option><option value="2.5">2.5σ以上</option><option value="3">3σ以上</option></select></label><button type="button" id="hist-go">検索</button><button type="button" id="hist-clear">解除</button><span id="hist-info" class="small"></span></div></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2">S&amp;P500</th><th colspan="2">NASDAQ総合</th><th colspan="2">NASDAQ100</th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead3"></tr></thead><tbody id="body-search"><tr><td colspan="22">タブを開くと読み込みます</td></tr></tbody></table></div></div>
 </main><script>
 const specs=[['sp500','S&P500'],['nasdaq','NASDAQ総合'],['nasdaq100','NASDAQ100'],['dow','ダウ'],['nikkei','日経225'],['prime','東証P'],['standard','東証S'],['growth','東証G']];
 const JP_KEYS=new Set(['nikkei','prime','standard','growth']);
@@ -143,7 +143,7 @@ function renderSummary(){
     specs.slice(4).map(judgmentLine).join('');
 }
 let pastRows=[],pastTse=new Map(),pastYear=null;
-function renderPastYear(){document.getElementById('body-all').innerHTML=pastRows.length?pastRows.map(r=>rowHtml(r,pastTse)).join(''):'<tr><td colspan="22">表示できるデータがありません</td></tr>';}
+function renderPastYear(){const tb=document.getElementById('body-all');tb.innerHTML=pastRows.length?pastRows.map(r=>rowHtml(r,pastTse)).join(''):'<tr><td colspan="22">表示できるデータがありません</td></tr>';tb.querySelectorAll('tr').forEach((tr,i)=>{if(pastRows[i]&&pastRows[i].date)tr.dataset.date=pastRows[i].date;});}
 function loadPastYear(y){
   pastYear=y;
   document.querySelectorAll('#past-years button').forEach(b=>b.classList.toggle('active',+b.dataset.year===y));
@@ -175,10 +175,21 @@ function volPair(obj){
 }
 let histRows=[],histTse=new Map(),histYear=null;
 const HIST_TD={sp500:1,nasdaq:3,nasdaq100:5,dow:7,vix:9,nikkei:12,prime:14,standard:16,growth:18,nikkei_vi:20};
-function renderHist(list,hitKey){
+function renderHist(list,hitKey,emptyMsg){
   const tb=document.getElementById('body-search');
-  tb.innerHTML=list.length?list.map(r=>rowHtml(r,histTse)).join(''):'<tr><td colspan="22">該当する日がありません</td></tr>';
+  tb.innerHTML=list.length?list.map(r=>rowHtml(r,histTse)).join(''):'<tr><td colspan="22">'+(emptyMsg||'該当する日がありません')+'</td></tr>';
   if(hitKey!=null){const idx=HIST_TD[hitKey];tb.querySelectorAll('tr').forEach(tr=>{const td=tr.children[idx];if(td)td.classList.add('hit');});}
+  if(list.length){tb.querySelectorAll('tr').forEach((tr,i)=>{[0,11].forEach(c=>{const td=tr.children[c];if(td&&list[i]&&list[i].date){td.classList.add('jump');td.title='過去データで開く';td.addEventListener('click',()=>gotoPast(list[i].date));}});});}
+}
+function gotoPast(usDate){
+  const year=+usDate.slice(0,4);
+  const tabBtn=[...document.querySelectorAll('.stock-dashboard-subtabs button')].find(b=>b.textContent==='過去データ');
+  if(tabBtn)tabBtn.click();
+  const findRow=()=>document.querySelector('#body-all tr[data-date="'+usDate+'"]');
+  const finish=()=>{const tr=findRow();if(!tr)return false;tr.scrollIntoView({block:'center'});tr.classList.add('flash');setTimeout(()=>tr.classList.remove('flash'),2600);return true;};
+  if(pastYear===year&&findRow()){finish();return;}
+  loadPastYear(year);
+  let tries=0;const iv=setInterval(()=>{if(finish()||++tries>30)clearInterval(iv);},150);
 }
 let histRange='';
 function loadAllYears(){
@@ -190,7 +201,7 @@ function loadAllYears(){
       histTse=new Map();
       files.forEach(f=>(f.tse_rows||[]).forEach(r=>{if(r&&r.date)histTse.set(r.date,r);}));
       histYear=1; histRange=years[0]+'–'+years[years.length-1]+'年';
-      renderHist(histRows);
+      renderHist([],null,'検索すると結果が表示されます');
       document.getElementById('hist-info').textContent=histRange+' 全'+histRows.length+'取引日';
     });
   }).catch(()=>{histYear=1;if(!histRows.length){histRows=rows;histTse=tseByDate;histRange='直近200日';renderHist(histRows);}});
@@ -217,7 +228,7 @@ function histSearch(){
 function initHistory(){
   if(!document.getElementById('hist-go'))return;
   document.getElementById('hist-go').addEventListener('click',histSearch);
-  document.getElementById('hist-clear').addEventListener('click',()=>{renderHist(histRows);document.getElementById('hist-info').textContent=histRange+' 全'+histRows.length+'取引日';});
+  document.getElementById('hist-clear').addEventListener('click',()=>{renderHist([],null,'検索すると結果が表示されます');document.getElementById('hist-info').textContent=histRange+' 全'+histRows.length+'取引日';});
   let histLoading=false;
   const maybeLoadHist=()=>{
     if(histYear!==null||histLoading)return;
