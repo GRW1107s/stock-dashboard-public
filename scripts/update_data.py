@@ -344,7 +344,9 @@ def prepare_tse(previous, volume, indices):
             # historical table. Do not require prior day data for its first row.
             if reported is not None:
                 rec['change'] = reported
-            elif idx and dt.date.fromisoformat(day) - dt.date.fromisoformat(price_days[idx - 1]) <= dt.timedelta(days=5):
+            elif (idx and (rec.get('segment') or 'current') ==
+                  (history[price_days[idx - 1]][key].get('segment') or 'current')
+                  and dt.date.fromisoformat(day) - dt.date.fromisoformat(price_days[idx - 1]) <= dt.timedelta(days=5)):
                 prev = history[price_days[idx - 1]][key]['close']
                 rec['change'] = round((rec['close'] / prev - 1) * 100, 6)
             else:
@@ -357,8 +359,19 @@ def prepare_tse(previous, volume, indices):
                             and numeric(history[day].get(key, {}).get('volume')) is not None
                             and numeric(history[day].get(key, {}).get('change')) is not None)
         dd_active = []
-        for i, day in enumerate(valid_days):
+        prev_segment = None
+        seg_pos = -1
+        for day in valid_days:
             record = history[day][key]
+            # DD tracking restarts at a segment boundary (the 2022 market
+            # restructuring): counts never carry across segments.
+            segment = record.get('segment') or 'current'
+            if segment != prev_segment:
+                dd_active = []
+                seg_pos = -1
+                prev_segment = segment
+            seg_pos += 1
+            i = seg_pos
             close = numeric(record['close'])
             dd_active = [(j, price) for j, price in dd_active
                          if i-j < 25 and close < price * 1.05]
@@ -460,12 +473,30 @@ def chart_history(url, name_part):
     return {}
 
 
+LEGACY_BOUNDARY = '2022-04-01'  # first day of the Prime/Standard/Growth indices
+LEGACY_CHARTS = {'prime': ('japan-index-topix.html', 'TOPIX'),
+                 'growth': ('japan-index-growth-market-250-index.html', '250')}
+
+
 def fetch_tse_index_history():
-    """Full daily closes of the three market indices since 2022-04-01."""
+    """Full daily closes of the three market indices since 2022-04-01,
+    extended backwards with the pre-restructuring segment indices:
+    Prime <- TOPIX (1st Section), Growth <- ex-Mothers (Growth 250).
+    The Second Section index is not published by the source, so Standard
+    has no legacy segment. Legacy rows carry segment='legacy' and the DD
+    calculation restarts at the boundary."""
     out = {}
     for key, page in INDEX_CHARTS.items():
         for day, close in chart_history(CHART_BASE + page, '市場指数').items():
             out.setdefault(day, {})[key] = {'date': day, 'close': close}
+    for key, (page, name) in LEGACY_CHARTS.items():
+        legacy = {day: close for day, close in
+                  chart_history(CHART_BASE + page, name).items()
+                  if day < LEGACY_BOUNDARY}
+        for day, close in legacy.items():
+            out.setdefault(day, {})[key] = {'date': day, 'close': close,
+                                            'segment': 'legacy'}
+        print(f'TSE LEGACY {key}: {len(legacy)} sessions before {LEGACY_BOUNDARY}')
     if len(out) < 100:
         raise ValueError(f'TSE index history insufficient: {len(out)}')
     print(f'TSE INDEX HISTORY (chart): {len(out)} sessions')
