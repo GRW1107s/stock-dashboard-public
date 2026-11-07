@@ -4,7 +4,8 @@
   const pages={
     "index.html":[
       {label:"日次観測",start:"h1"},
-      {label:"過去データ",start:"#pane-history"}
+      {label:"過去データ",start:"#pane-history"},
+      {label:"相場の歴史",start:"#pane-history-search"}
     ],
     "jp-sectors.html":[
       {label:"セクター分析",start:"h1"},
