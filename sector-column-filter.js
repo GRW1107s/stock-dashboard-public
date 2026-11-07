@@ -221,6 +221,8 @@ root.createLeaderColumnFilters=function(ctx){
   {id:"name",label:"候補銘柄",kind:"text",get:r=>[r.name,r.ticker,r.market].filter(Boolean).join(" ")},
   {id:"cap",label:"時価総額",kind:"number",unit:"億円",
    get:r=>{const v=marketCapJPY(r);return finite(v)?v/1e8:null;}},
+  ...(market==="jp"?[{id:"size",label:"規模",kind:"choice",
+   get:r=>r.size||"—",options:["大型","中型","小型","—"]}]:[]),
   {id:"rs",label:"RS指数",kind:"number",get:r=>numeric(r.rs_universe_pct)},
   {id:"beta",label:"ベータ値",kind:"number",get:r=>numeric(r.beta_252d)},
   {id:"sharpe",label:"シャープレシオ",kind:"number",get:r=>numeric(r.sharpe_252d)},

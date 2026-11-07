@@ -19,7 +19,7 @@ function industryLabel(r){
  return market==="us"&&window.StockIndustryJA?window.StockIndustryJA.display(original):original;
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?19:16;
+const totalColumns=market==="us"?19:17;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 panel.innerHTML=
 '<div class="ls-intro"><h2>セクター別 リーダー銘柄スクリーニング（試作版）</h2>'+
@@ -40,7 +40,7 @@ panel.innerHTML=
 '<div class="ls-table-wrap"><table class="ls-table"><thead><tr>'+
 '<th>セクター</th>'+
 '<th class="ls-industry-heading" title="'+(market==="us"?"S&P500はGICS Sub-Industry、それ以外はNasdaq Industryです。":"JPXの33業種分類を使用します。")+'">業種</th>'+
-'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th><th title="取得済み銘柄だけのIBD方式参考RS（1〜99）。99は全上場株の99%超えを保証しません">RS指数<br>1〜99</th>'+
+'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+(market==="jp"?'<th title="JPXの規模区分。大型＝TOPIX100（Core30＋Large70）、中型＝TOPIX Mid400、小型＝それ以外">規模</th>':'')+'<th title="取得済み銘柄だけのIBD方式参考RS（1〜99）。99は全上場株の99%超えを保証しません">RS指数<br>1〜99</th>'+
 '<th title="直近最大252取引日の日次株価騰落率で計算した市場ベータ。最低120日以上の比較対象が必要。米国株はS&amp;P500、日本株はTOPIX連動ETF（1306）。">ベータ値</th>'+
 '<th title="直近最大252取引日の株価騰落率を年率換算したシャープレシオ。無リスク金利0%、最低120日。配当は含みません。">シャープレシオ</th>'+
 (market==="us"?'<th title="63/126/189/252営業日の加重騰落率から、S&P500指数（^GSPC）の同期間の加重騰落率を引いた値。+ならS&P500より強い">S&amp;P500比<br>加重pp</th>':'')+
@@ -217,6 +217,7 @@ function rowHtml(r){
  '<td class="ls-industry-name" title="'+H([r.industry_name,r.industry_source].filter(Boolean).join(" ｜ ")||"業種データ未取得")+'">'+H(industryLabel(r)||'—')+'</td>'+
  '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+H(r.ticker)+(r.market?' ｜ '+H(r.market):'')+(r.asof?' ｜ '+H(r.asof):' ｜ 履歴未取得')+H(mmQuote)+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
+ (market==="jp"?'<td>'+H(r.size||"—")+'</td>':'')+
  '<td><strong>'+rs+'</strong></td>'+
  '<td title="'+H(riskDetails(r,"beta"))+'">'+H(plain(r.beta_252d,"",2))+'</td>'+
  '<td title="'+H(riskDetails(r,"sharpe"))+'">'+H(plain(r.sharpe_252d,"",2))+'</td>'+
