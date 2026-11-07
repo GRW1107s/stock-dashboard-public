@@ -141,7 +141,7 @@ function renderSummary(){
     dateLine('日本日付','japan_date','history-divider')+
     specs.slice(4).map(judgmentLine).join('');
 }
-function display(n,button){document.querySelectorAll('.controls button').forEach(x=>x.classList.toggle('active',x===button));const view=n?rows.slice(0,n):rows;document.getElementById('body').innerHTML=view.length?view.map(rowHtml).join(''):'<tr><td colspan="22">表示できるデータがありません</td></tr>';document.getElementById('status').textContent=`${view.length}行表示 / 全${rows.length}行`}
+function display(n,button){document.querySelectorAll('.controls button').forEach(x=>x.classList.toggle('active',x===button));const view=n?rows.slice(0,n):rows;document.getElementById('body').innerHTML=view.length?view.map(r=>rowHtml(r)).join(''):'<tr><td colspan="22">表示できるデータがありません</td></tr>';document.getElementById('status').textContent=`${view.length}行表示 / 全${rows.length}行`}
 document.getElementById('subhead').innerHTML=specs.slice(0,4).map(()=>'<th>変動率 (出来高)</th><th title="判定">判定</th>').join('')+'<th>変動率</th><th>水準</th>'+specs.slice(4).map(()=>'<th>変動率 (出来高)</th><th title="判定">判定</th>').join('')+'<th>変動率</th><th>水準</th>';
 document.getElementById('subhead2').innerHTML=document.getElementById('subhead').innerHTML;
 function priceCellNoVol(obj){if(!obj)return '<span class="na">—</span>';return `<div class="price ${cls(obj.change)}">${fmt(obj.change)}</div>`}
