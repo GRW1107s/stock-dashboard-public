@@ -83,20 +83,28 @@ def _is_rate_limit(exc):
 
 
 def fetch_one(yf, row):
-    """Return (row, values, metrics, error); error is a short string or None."""
+    """Return (row, values, metrics, error, had_data); error is a short string or None.
+
+    had_data is False when Yahoo returned no statements and no quote at all
+    (e.g. an empty response from a datacenter IP). That is not an exception,
+    so without this flag an empty fetch looks like a successful attempt and
+    the ticker would be skipped for 60 days with no values.
+    """
     ticker = normalize_jp_ticker(row.get("ticker"))
     if not ticker:
-        return row, None, None, "invalid ticker"
+        return row, None, None, "invalid ticker", False
     for retry in range(2):
         try:
             asset = yf.Ticker(ticker)
             quarterly = _label_map(asset.get_income_stmt(freq="quarterly"))
             annual = _label_map(asset.get_income_stmt(freq="yearly"))
             values = calculate_growth(eps_rows(quarterly), eps_rows(annual))
+            had_data = bool(quarterly) or bool(annual)
             # Failure in a secondary statement must not discard EPS data.
             roe_calc = {}
             try:
                 balance = _label_map(asset.get_balance_sheet(freq="yearly"))
+                had_data = had_data or bool(balance)
                 roe_calc = annual_roe(pick_rows(annual, NET_INCOME_LABELS),
                                        pick_rows(balance, EQUITY_LABELS))
             except Exception:
@@ -114,17 +122,19 @@ def fetch_one(yf, row):
                     info = asset.get_info()
                 except Exception:
                     pass
+            had_data = had_data or bool(fast.get("currency")) \
+                or finite(fast.get("market_cap")) is not None or bool(info)
             # Snapshot/summary fallback, but calculated FY ROE takes precedence.
             metrics = quote_metrics(info, fast)
             metrics.update(roe_calc)
-            return row, values, metrics, None
+            return row, values, metrics, None, had_data
         except Exception as exc:
             if _is_rate_limit(exc):
-                return row, None, None, ticker + ": rate-limited"
+                return row, None, None, ticker + ": rate-limited", False
             if retry == 0:
                 time.sleep(2)
             last = type(exc).__name__
-    return row, None, None, ticker + ": " + last
+    return row, None, None, ticker + ": " + last, False
 
 
 def apply_market_cap_fallback(stocks, today):
@@ -181,21 +191,33 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
                               force_missing=force_missing,
                               refresh_days=refresh_days)
     today = date.today().isoformat()
-    complete = updated = processed = rate_limited = fin_updated = 0
+    complete = updated = processed = rate_limited = fin_updated = empty = 0
     errors = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for offset in range(0, len(attempt), workers * 5):
             wave = attempt[offset:offset + workers * 5]
             tasks = [pool.submit(fetch_one, yf, row) for row in wave]
             for future in as_completed(tasks):
-                row, values, metrics, error = future.result()
+                row, values, metrics, error, had_data = future.result()
                 processed += 1
                 if error:
                     errors.append(error)
                     if "rate-limited" in error:
                         rate_limited += 1
                     continue
-                row["eps_yfinance_attempted_at"] = today
+                if had_data:
+                    row["eps_yfinance_attempted_at"] = today
+                    row["eps_yfinance_empty_attempts"] = 0
+                else:
+                    # Yahoo returned nothing at all: do not mark the ticker
+                    # attempted, so the next run retries it. After three
+                    # consecutive empty responses, stamp it to back off for
+                    # the refresh window instead of retrying forever.
+                    streak = int(row.get("eps_yfinance_empty_attempts") or 0) + 1
+                    row["eps_yfinance_empty_attempts"] = streak
+                    if streak >= 3:
+                        row["eps_yfinance_attempted_at"] = today
+                    empty += 1
                 row["jp_financials_attempted_at"] = today
                 if metrics:
                     row.update(metrics)
@@ -229,6 +251,7 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
         "batch_with_growth": complete,
         "metrics_updated": updated,
         "failed_this_run": len(errors),
+        "empty_this_run": empty,
         "rate_limited_this_run": rate_limited,
         "with_latest_yoy": sum(isinstance(r.get(GROWTH[0]), (int, float)) for r in stocks),
         "with_previous_yoy": sum(isinstance(r.get(GROWTH[1]), (int, float)) for r in stocks),

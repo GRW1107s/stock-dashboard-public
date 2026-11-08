@@ -148,7 +148,14 @@ def quote_metrics(quote, fast=None, *, today=None):
 
 
 def select_batch(stocks, cursor, limit, *, today=None, refresh_days=60):
-    """Fill unseen tickers first, then refresh the oldest successfully checked."""
+    """Fill unseen tickers first, then refresh the oldest successfully checked.
+
+    A ticker counts as checked only when its last attempt actually saw Yahoo
+    data. The 2026-11-07 Actions run stamped every ticker as attempted even
+    though Yahoo returned no statements for ~90% of them, so a stamp with no
+    empty-attempt counter and still-missing Yahoo values is retried once;
+    that retry records the counter, so the repair does not repeat.
+    """
     if not stocks:
         return []
     today = today or date.today()
@@ -160,7 +167,12 @@ def select_batch(stocks, cursor, limit, *, today=None, refresh_days=60):
             checked = row.get("eps_fetched_at")
         checked = checked if isinstance(checked, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", checked) else ""
         if checked >= cutoff:
-            continue
+            missing_yahoo = (any(row.get(key) is None for key in GROWTH)
+                             or row.get("roe_pct") is None)
+            if missing_yahoo and not isinstance(row.get("eps_yfinance_empty_attempts"), int):
+                pass  # legacy stamp from an empty Yahoo response: retry once
+            else:
+                continue
         candidates.append((bool(checked), checked, (index - cursor) % len(stocks), row))
     candidates.sort(key=lambda item: item[:3])
     return [item[3] for item in candidates[:limit]]
