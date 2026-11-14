@@ -1,7 +1,10 @@
 """Fill missing JP quarterly EPS growth and annual ROE from Kabutan.
 
 Also fills a missing annual ROE from the same page's profitability table
-(latest actual fiscal year; forecast rows are skipped).
+(latest actual fiscal year; forecast rows are skipped), and a missing
+annual EPS 3-year CAGR from the same page's full-year results table
+(actual years only; the CAGR uses the Yahoo pipeline's rules: latest
+actual year versus three years earlier, both EPS values positive).
 
 Yahoo Finance statements for Japanese shares usually expose only the
 latest interim quarter and its prior-year comparative, so the
@@ -29,7 +32,7 @@ import time
 import urllib.request
 from urllib.error import HTTPError
 
-from jp_fundamentals import _find_year_prior, _yoy, finite, normalize_jp_ticker
+from jp_fundamentals import _find_year_prior, _yoy, calculate_growth, finite, normalize_jp_ticker
 from update_data import SimpleTables
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -98,6 +101,45 @@ def parse_quarterly_eps(html):
             end_year = start_year + 1 if end_month < start_month else start_year
             end = date(end_year, end_month, monthrange(end_year, end_month)[1])
             found.setdefault((end_year, end_month), (end, eps))
+    return sorted(found.values(), reverse=True)
+
+
+def parse_annual_eps(html):
+    """Return [(period_end_date, eps), ...] newest first, actual full years only.
+
+    Kabutan's full-year results table labels rows with a plain fiscal year
+    end ('25.03'), unlike the ranged labels of the quarterly tables
+    ('25.04-06'). Forecast rows carry a 予 marker and are skipped.
+    """
+    parser = SimpleTables()
+    parser.feed(html)
+    found = {}
+    for table in parser.tables:
+        if not table:
+            continue
+        header = table[0]
+        if "決算期" not in header[0]:
+            continue
+        eps_idx = next((i for i, cell in enumerate(header) if "修正1株益" in cell), None)
+        if eps_idx is None:
+            continue
+        for row in table[1:]:
+            if len(row) <= eps_idx:
+                continue
+            label = row[0]
+            if "予" in label or "-" in label:
+                continue
+            match = ANNUAL_PERIOD.search(label)
+            if not match:
+                continue
+            yy, mm = map(int, match.groups())
+            if not 1 <= mm <= 12:
+                continue
+            eps = _eps_value(row[eps_idx])
+            if eps is None:
+                continue
+            end = date(2000 + yy, mm, monthrange(2000 + yy, mm)[1])
+            found.setdefault((2000 + yy, mm), (end, eps))
     return sorted(found.values(), reverse=True)
 
 
@@ -197,22 +239,22 @@ def kabutan_fill(row, rows):
 
 
 def _fetch_and_fill(row):
-    """Return (row, filled_eps_count, filled_roe, error)."""
+    """Return (row, filled_eps_count, filled_roe, filled_cagr, error)."""
     if _stop.is_set():
-        return row, 0, 0, "stopped"
+        return row, 0, 0, 0, "stopped"
     ticker = normalize_jp_ticker(row.get("ticker"))
     if not ticker:
-        return row, 0, 0, "invalid ticker"
+        return row, 0, 0, 0, "invalid ticker"
     code = ticker[:-2]
     try:
         html = fetch_html(code)
     except HTTPError as exc:
         if exc.code in (403, 429):
             _stop.set()
-            return row, 0, 0, f"{ticker}: rate-limited ({exc.code})"
-        return row, 0, 0, f"{ticker}: HTTP {exc.code}"
+            return row, 0, 0, 0, f"{ticker}: rate-limited ({exc.code})"
+        return row, 0, 0, 0, f"{ticker}: HTTP {exc.code}"
     except Exception as exc:
-        return row, 0, 0, f"{ticker}: {type(exc).__name__}"
+        return row, 0, 0, 0, f"{ticker}: {type(exc).__name__}"
     fills = kabutan_fill(row, parse_quarterly_eps(html))
     today = date.today().isoformat()
     row["eps_kabutan_attempted_at"] = today
@@ -230,7 +272,27 @@ def _fetch_and_fill(row):
         if roe:
             row.update(roe)
             roe_filled = 1
-    return row, len([k for k in fills if k.endswith("yoy_pct")]), roe_filled, None
+    cagr_filled = 0
+    if row.get("eps_annual_3y_cagr_pct") is None:
+        annual = calculate_growth([], parse_annual_eps(html))
+        cagr = annual["eps_annual_3y_cagr_pct"]
+        kabutan_end = annual["eps_annual_end"]
+        stored_end = row.get("eps_annual_end")
+        # Fill only when the stored annual anchor is absent or matches
+        # Kabutan's latest actual year, so the CAGR never gets labelled
+        # with a different fiscal window than it was computed on.
+        if cagr is not None and kabutan_end and (not stored_end or stored_end == kabutan_end):
+            row["eps_annual_3y_cagr_pct"] = cagr
+            if not stored_end:
+                row["eps_annual_end"] = kabutan_end
+            cagr_filled = 1
+            if not fills:
+                row["eps_fill_source"] = SOURCE
+                row["eps_fill_fetched_at"] = today
+                if not row.get("eps_source"):
+                    row["eps_source"] = SOURCE
+                    row["eps_fetched_at"] = today
+    return row, len([k for k in fills if k.endswith("yoy_pct")]), roe_filled, cagr_filled, None
 
 
 def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
@@ -246,7 +308,8 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
     for index, row in enumerate(stocks):
         if (row.get("eps_q_prev_yoy_pct") is not None
                 and row.get("eps_q_latest_yoy_pct") is not None
-                and row.get("roe_pct") is not None):
+                and row.get("roe_pct") is not None
+                and row.get("eps_annual_3y_cagr_pct") is not None):
             continue
         checked = row.get("eps_kabutan_attempted_at")
         if isinstance(checked, str) and checked >= cutoff:
@@ -255,19 +318,24 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
     candidates.sort(key=lambda item: (item[0], item[1]))
     attempt = [row for _, _, row in candidates[:max(1, limit)]]
     workers = max(1, min(4, workers))
-    processed = filled_rows = filled_values = filled_roe_rows = 0
+    processed = filled_rows = filled_values = filled_roe_rows = filled_cagr_rows = 0
     errors = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for offset in range(0, len(attempt), workers * 10):
             wave = attempt[offset:offset + workers * 10]
             futures = [pool.submit(_fetch_and_fill, row) for row in wave]
             for future in as_completed(futures):
-                row, filled, roe_filled, error = future.result()
+                row, filled, roe_filled, cagr_filled, error = future.result()
                 processed += 1
                 if error:
                     errors.append(error)
                 if roe_filled:
                     filled_roe_rows += 1
+                if cagr_filled:
+                    filled_cagr_rows += 1
+                    filled_values += 1
+                    if not filled:
+                        filled_rows += 1
                 if filled:
                     filled_rows += 1
                     filled_values += filled
@@ -285,10 +353,12 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
         "filled_rows": filled_rows,
         "filled_values": filled_values,
         "filled_roe_rows": filled_roe_rows,
+        "filled_cagr_rows": filled_cagr_rows,
         "failed_this_run": len(errors),
         "with_latest_yoy": sum(isinstance(r.get("eps_q_latest_yoy_pct"), (int, float)) for r in stocks),
         "with_previous_yoy": sum(isinstance(r.get("eps_q_prev_yoy_pct"), (int, float)) for r in stocks),
         "with_roe": sum(isinstance(r.get("roe_pct"), (int, float)) for r in stocks),
+        "with_annual_cagr": sum(isinstance(r.get("eps_annual_3y_cagr_pct"), (int, float)) for r in stocks),
         "attempted_ever": sum(bool(r.get("eps_kabutan_attempted_at")) for r in stocks),
         "updated_at": datetime.now().isoformat(timespec="seconds"),
     }
