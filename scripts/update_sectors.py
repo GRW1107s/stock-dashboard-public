@@ -53,6 +53,37 @@ def download(symbol):
                 time.sleep(attempt+1)
     raise RuntimeError(f'{symbol}: {last}')
 
+def refetch_stragglers(raw, rounds=3):
+    """Re-download symbols whose series stops before the newest session.
+
+    Yahoo occasionally returns a series that is missing the latest close
+    for one symbol only; that used to publish a null for the newest date
+    and drop the sector from the strength rankings entirely. A lagging
+    response is not a result: retry a few times, keep whichever download
+    reaches furthest, and log a warning if the symbol still lags.
+    """
+    for _ in range(rounds):
+        target = max(max(p) for p in raw.values())
+        lagging = [s for s, p in raw.items() if max(p) < target]
+        if not lagging:
+            return raw
+        print(f'latest session {target} missing for {lagging}; re-downloading')
+        time.sleep(5)
+        for s in lagging:
+            try:
+                fresh = download(s)
+            except Exception as exc:
+                print(f'WARNING {s}: re-download failed: {exc}')
+                continue
+            if max(fresh) >= max(raw[s]):
+                raw[s] = fresh
+    target = max(max(p) for p in raw.values())
+    for s, p in raw.items():
+        if max(p) < target:
+            print(f'WARNING {s}: still missing latest session {target} '
+                  f'(newest {max(p)}); that date will be null for {s}')
+    return raw
+
 def enrich(prices):
     dates=sorted(prices)
     series={}
@@ -114,6 +145,7 @@ def enrich(prices):
 
 def main():
     raw={s:download(s) for s in [*SECTORS,'SPY']}
+    raw=refetch_stragglers(raw)
     enriched={s:enrich(p) for s,p in raw.items()}
     # Use the union of ETF sessions; never invent or forward-fill market closes.
     dates=sorted(set().union(*(set(p) for p in raw.values())),reverse=True)[:PUBLISH]

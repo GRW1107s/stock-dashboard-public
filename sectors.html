@@ -126,10 +126,16 @@ function historyMark(v){
 function compoundedReturns(changes){if(changes.length===0||changes.some(v=>!hasNum(v)||v<=-100))return null;return (changes.reduce((product,v)=>product*(1+v/100),1)-1)*100}
 function buildPeriodRanks(period) {
   const recent = rows.slice(0, period);
-  const spy = recent.length === period ? compoundedReturns(recent.map(r => r.spy_change)) : null;
+  if (recent.length !== period) return [];
   return keys().map(k => {
-    const values = recent.map(r => r.sectors?.[k]?.change);
-    const ret = recent.length === period ? compoundedReturns(values) : null;
+    // Skip sessions where this sector has no data (e.g. Yahoo missed one
+    // ETF's latest close) instead of dropping the sector from the ranking.
+    // SPY is compounded over the same sessions, so the diff stays comparable.
+    const days = recent.filter(r => hasNum(r.sectors?.[k]?.change));
+    if (!days.length) return { key:k, name:names[k], ret:null, diff:null };
+    const ret = compoundedReturns(days.map(r => r.sectors[k].change));
+    const spyDays = days.filter(r => hasNum(r.spy_change));
+    const spy = spyDays.length === days.length ? compoundedReturns(spyDays.map(r => r.spy_change)) : null;
     return { key:k, name:names[k], ret, diff:ret !== null && spy !== null ? ret - spy : null };
   }).filter(x => x.ret !== null).sort((a,b) => b.ret - a.ret || a.key.localeCompare(b.key));
 }
@@ -207,10 +213,12 @@ function sortedSectorKeys(){
  if(sectorSortPeriod==='original')return base;
  const period=Number(sectorSortPeriod);
  const recent=rows.slice(0,period);
- return base.map((key,index)=>({
+ return base.map((key,index)=>{
+  const values=recent.map(row=>row.sectors?.[key]?.change).filter(hasNum);
+  return {
   key,index,
-  ret:recent.length===period?compoundedReturns(recent.map(row=>row.sectors?.[key]?.change)):null
- })).sort((a,b)=>{
+  ret:recent.length===period&&values.length?compoundedReturns(values):null
+ }}).sort((a,b)=>{
   if(a.ret===null)return b.ret===null?a.index-b.index:1;
   if(b.ret===null)return -1;
   return b.ret-a.ret||a.index-b.index;
