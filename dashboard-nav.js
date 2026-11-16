@@ -3,13 +3,15 @@
   "use strict";
   const pages={
     "index.html":[
-      {label:"日次観測",start:"h1"},
+      {label:"日本市場",start:"h1"},
+      {label:"米国市場",start:"#pane-us"},
       {label:"過去データ",start:"#pane-history"},
       {label:"相場の歴史",start:"#pane-history-search"}
     ],
     "jp-sectors.html":[
       {label:"セクター分析",start:"h1"},
-      {label:"業種分析",start:"#industry-analysis-panel"},
+      {label:"業種分析①",start:"#industry-analysis-panel"},
+      {label:"業種分析②",start:"#fine-industry-panel"},
       {label:"銘柄スクリーニング",start:"#leader-screener-panel"}
     ],
     "sectors.html":[
