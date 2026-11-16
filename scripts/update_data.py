@@ -103,6 +103,7 @@ def enrich_jp_index(prices):
                         'judge': classify(change, vchange),
                         'dd_number': None, 'dd_count': None,
                         'ra_day': None, 'shares_10000': None,
+                        'close': item['close'], 'volume_value': item['volume'],
                         '_close': item['close']}
     valid = [d for d in dates
              if series[d]['change'] is not None and series[d]['volume'] is not None]
@@ -165,7 +166,8 @@ def enrich_us(prices):
                         attempt_history = []  # A completed RA sequence remains visible.
         series[date] = {'change': round(change, 6) if change is not None else None,
                         'volume': round(vchange, 6) if vchange is not None else None,
-                        'judge': judge, 'ra_day': ra_day}
+                        'judge': judge, 'ra_day': ra_day,
+                        'close': item['close'], 'volume_value': item['volume']}
     active_dd = []
     for i, date in enumerate(dates):
         close = prices[date]['close']
@@ -277,9 +279,11 @@ def fetch_tse_indices():
             for key, close_idx, pct_idx in [('prime', 1, 3), ('standard', 7, 9), ('growth', 13, 15)]:
                 close = numeric(cells[close_idx].replace(',', '').strip())
                 change = numeric(cells[pct_idx].replace('%', '').replace('−', '-').replace('＋', '+').strip())
+                diff = numeric(cells[close_idx + 1].replace(',', '').replace('−', '-').replace('＋', '+').strip())
                 if close is None or close <= 0 or change is None or abs(change) > 30:
                     raise ValueError(f'Invalid {key} market-index row on {day}: {cells[:19]}')
-                record[key] = {'date': day, 'close': close, 'reported_change_pct': change}
+                record[key] = {'date': day, 'close': close, 'reported_change_pct': change,
+                               'diff': diff}
             if day in out and out[day] != record:
                 raise ValueError(f'Duplicate conflicting index date {day}')
             out[day] = record
@@ -391,7 +395,9 @@ def prepare_tse(previous, volume, indices):
             out[key] = {'change': price_change, 'volume': volume_change,
                         'judge': classify(price_change, volume_change),
                         'dd_number': rec.get('dd_number'), 'dd_count': rec.get('dd_count'),
-                        'ra_day': None, 'shares_10000': rec.get('shares_10000')}
+                        'ra_day': None, 'shares_10000': rec.get('shares_10000'),
+                        'close': numeric(rec.get('close')),
+                        'change_value': numeric(rec.get('diff'))}
         all_final.append(out)
     final = all_final[:PUBLISH_SESSIONS]
     kept_days = set(sorted(history, reverse=True)[:PUBLISH_SESSIONS])
