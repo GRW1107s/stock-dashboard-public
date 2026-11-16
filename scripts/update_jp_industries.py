@@ -319,6 +319,14 @@ def main():
     print(f"WROTE jp-industries.json: {len(rows)} rows, {len(industries)} industries; "
           f"latest={rows[0]['date']}; failed tickers={len(failures)}")
 
+    # Fine-grained Yahoo-industry analysis (jp-industries-fine.json).
+    # Guarded: a failure here must not block the 33-industry output.
+    try:
+        from update_jp_industries_fine import main as fine_main
+        fine_main()
+    except Exception as exc:
+        print("JP_INDUSTRIES_FINE_ERROR", str(exc)[:160], flush=True)
+
 
 if __name__ == "__main__":
     main()
