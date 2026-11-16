@@ -312,7 +312,11 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
                 and row.get("eps_annual_3y_cagr_pct") is not None):
             continue
         checked = row.get("eps_kabutan_attempted_at")
-        if isinstance(checked, str) and checked >= cutoff:
+        # Tickers still missing the annual EPS CAGR are always retried:
+        # their attempt stamp predates the CAGR fill (added 2026-11-14),
+        # so the refresh cutoff would otherwise block them for 45 days.
+        if (isinstance(checked, str) and checked >= cutoff
+                and row.get("eps_annual_3y_cagr_pct") is not None):
             continue
         candidates.append((row.get("eps_q_prev_yoy_pct") is not None, index, row))
     candidates.sort(key=lambda item: (item[0], item[1]))
