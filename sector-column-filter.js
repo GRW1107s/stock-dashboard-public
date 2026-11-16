@@ -31,10 +31,12 @@ function compare(def,a,b,direction){
  const result=def.kind==="number"?va-vb:String(va).localeCompare(String(vb),"ja",{numeric:true});
  return direction==="asc"?result:-result;
 }
-function industryOptions(rows){
+function industryOptions(rows,get){
  const counts=new Map();
+ const pick=typeof get==="function"?get:function(row){return typeof row.industry_name==="string"?row.industry_name:""};
  for(const row of rows||[]){
-  const name=typeof row.industry_name==="string"?row.industry_name.trim():"";
+  const raw=pick(row);
+  const name=typeof raw==="string"?raw.trim():"";
   if(name)counts.set(name,(counts.get(name)||0)+1);
  }
  return [...counts].map(([name,count])=>({name,count}))
@@ -221,7 +223,8 @@ root.createLeaderColumnFilters=function(ctx){
  const {panel,market,get,H,numeric,finite,relative,epsValue,roeValue,reviewStatus,onChange,getRows,marketCapJPY}=ctx;
  const defs=[
   {id:"sector",label:"セクター",kind:"text",get:r=>r.sector_name||r.sector||""},
-  {id:"industry",label:"業種",kind:"multi",get:r=>r.industry_name||""},
+  {id:"industry",label:market==="jp"?"業種①":"業種",kind:"multi",get:r=>r.industry_name||""},
+  ...(market==="jp"?[{id:"industry2",label:"業種②",kind:"multi",get:r=>r.industry_fine_ja||""}]:[]),
   {id:"name",label:"候補銘柄",kind:"text",get:r=>[r.name,r.ticker,r.market].filter(Boolean).join(" ")},
   {id:"cap",label:"時価総額",kind:"number",unit:"億円",
    get:r=>{const v=marketCapJPY(r);return finite(v)?v/1e8:null;}},
@@ -368,7 +371,7 @@ root.createLeaderColumnFilters=function(ctx){
   }else if(def.kind==="multi"){
    const names=market==="us"&&root.StockIndustryJA;
    const show=name=>names?names.display(name):name;
-   const options=industryOptions(typeof getRows==="function"?getRows():[])
+   const options=industryOptions(typeof getRows==="function"?getRows():[],def.get)
     .sort((a,b)=>show(a.name).localeCompare(show(b.name),"ja",{numeric:true}));
    const chosen=new Set(saved.choices||[]);
    input='<div class="ls-industry-picker">'+
@@ -506,6 +509,15 @@ root.createLeaderColumnFilters=function(ctx){
  }
  return {matches:r=>matches(defs,filters,r),sortActive:()=>!!sort,compare:(a,b)=>{
   const d=sort&&defs.find(x=>x.id===sort.id);return d?compare(d,a,b,sort.direction):0;
- },refresh,applyOrderToRows:columnOrder.applyRows};
+ },refresh,applyOrderToRows:columnOrder.applyRows,
+ setChoices(id,choices){
+  const def=defs.find(d=>d.id===id);
+  if(!def||def.kind!=="multi")return false;
+  const list=Array.isArray(choices)?choices.filter(v=>typeof v==="string"&&v!==""):[];
+  if(list.length)filters.set(id,{choices:list});
+  else filters.delete(id);
+  refresh();onChange();
+  return true;
+ }};
 };
 })(typeof window!=="undefined"?window:globalThis);

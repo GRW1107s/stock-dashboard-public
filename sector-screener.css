@@ -66,10 +66,10 @@
 .leader-screen .ls-sector-toolbar button:hover{background:#eef2f7}
 .leader-screen .ls-sector-toolbar span{margin-left:4px;color:#64748b;font-size:11px}
 .leader-screen .ls-sector-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:7px 10px}
-.leader-screen .ls-sector-options label.ls-sector-option{display:flex;align-items:center;gap:8px;min-height:34px;padding:6px 9px;background:#fff;border:1px solid #e2e8f0;border-radius:4px;color:#334155;font-size:11px;font-weight:600;cursor:pointer}
+.leader-screen .ls-sector-options label.ls-sector-option{position:relative;display:flex;align-items:center;gap:8px;min-height:34px;padding:6px 9px;background:#fff;border:1px solid #e2e8f0;border-radius:4px;color:#334155;font-size:11px;font-weight:600;cursor:pointer}
 .leader-screen .ls-sector-options label.ls-sector-option:has(input:checked){background:#f0f5fd;border-color:#b9cbe6;color:#152b4b}
 .leader-screen .ls-sector-options label.ls-sector-option:has(input:focus-visible){outline:2px solid #2563eb;outline-offset:1px}
-.leader-screen .ls-sector-options input[type="checkbox"]{display:inline-block;width:15px;height:15px;min-width:15px;margin:0;padding:0;accent-color:#234e86;cursor:pointer;flex:none}
+.leader-screen .ls-sector-options input[type="checkbox"]{position:absolute;width:1px;height:1px;margin:0;padding:0;opacity:0;pointer-events:none}
 .leader-screen .ls-sector-options label span{min-width:0;line-height:1.4}
 @media(max-width:560px){.leader-screen .ls-sector-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.leader-screen .ls-sector-fieldset{padding:9px}}
 

@@ -19,7 +19,7 @@ function industryLabel(r){
  return market==="us"&&window.StockIndustryJA?window.StockIndustryJA.display(original):original;
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?19:22;
+const totalColumns=market==="us"?19:23;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 panel.innerHTML=
 '<div class="ls-intro"><h2>セクター別 リーダー銘柄スクリーニング（試作版）</h2>'+
@@ -39,7 +39,7 @@ panel.innerHTML=
 '<p class="ls-stat" id="ls-stat">データを読み込んでいます...</p>'+
 '<div class="ls-table-wrap"><table class="ls-table"><thead><tr>'+
 '<th>セクター</th>'+
-'<th class="ls-industry-heading" title="'+(market==="us"?"S&P500はGICS Sub-Industry、それ以外はNasdaq Industryです。":"JPXの33業種分類を使用します。")+'">業種</th>'+
+(market==="jp"?'<th class="ls-industry-heading" title="JPXの33業種分類を使用します。">業種①</th><th class="ls-industry-heading" title="Yahoo Financeの業種分類（細分類）です。">業種②</th>':'<th class="ls-industry-heading" title="S&P500はGICS Sub-Industry、それ以外はNasdaq Industryです。">業種</th>')+
 '<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+(market==="jp"?'<th title="時価総額による規模分類。超大型＝1兆円以上、大型＝3,000億円以上1兆円未満、中型＝500億円以上3,000億円未満、小型＝100億円以上500億円未満、超小型＝100億円未満">規模</th><th title="JPXが日々公表する空売り残高報告（発行済株式数の0.5%以上を保有する報告者の合計）。発行済株式数に対する割合">大口空売り<br>残高</th><th title="大口空売り残高割合の前公表日からの増減（％ポイント）">空売り<br>増減</th><th title="信用取引の売残高の前日比増減率（JPX銘柄別信用取引残高表）">売残<br>増減率</th><th title="信用取引の買残高の前日比増減率（JPX銘柄別信用取引残高表）">買残<br>増減率</th><th title="信用倍率＝買残高÷売残高（JPX銘柄別信用取引残高表）">信用<br>倍率</th>':'')+'<th title="取得済み銘柄だけのIBD方式参考RS（1〜99）。99は全上場株の99%超えを保証しません">RS指数<br>1〜99</th>'+
 '<th title="直近最大252取引日の日次株価騰落率で計算した市場ベータ。最低120日以上の比較対象が必要。米国株はS&amp;P500、日本株はTOPIX連動ETF（1306）。">ベータ値</th>'+
 '<th title="直近最大252取引日の株価騰落率を年率換算したシャープレシオ。無リスク金利0%、最低120日。配当は含みません。">シャープレシオ</th>'+
@@ -150,6 +150,21 @@ function isLeader(r){
 const colFilters=window.createLeaderColumnFilters?window.createLeaderColumnFilters({
  panel,market,get,H,numeric,finite,relative,epsValue,roeValue,onChange:filterChanged,getRows:()=>base,marketCapJPY
 }):null;
+// Called from the industry analysis sections: jump here filtered by one industry.
+window.leaderScreenerSetIndustry=function(id,value){
+ if(!colFilters||!value)return false;
+ return colFilters.setChoices(id,[value]);
+};
+// Called from the sector analysis section: keep only the given TOPIX-17 sector.
+window.leaderScreenerSetSector=function(key){
+ const boxes=Array.from(get("ls-sector").querySelectorAll('input[type="checkbox"]'));
+ if(!boxes.length||!key)return false;
+ let found=false;
+ boxes.forEach(function(b){b.checked=b.value===key;if(b.checked)found=true;});
+ if(!found){boxes.forEach(function(b){b.checked=true;});return false;}
+ filterChanged();
+ return true;
+};
 function selectedSectors(){return new Set(Array.from(get("ls-sector").querySelectorAll('input[type="checkbox"]:checked'),function(item){return item.value}))}
 function values(){
  const sectors=selectedSectors(),search="";
@@ -229,6 +244,7 @@ function rowHtml(r){
  const mmQuote=market==="us"&&finite(r.moomoo_close)&&r.moomoo_quote_asof?" ｜ moomoo $"+r.moomoo_close.toFixed(2)+" ("+r.moomoo_quote_asof+")":"";
  return '<tr><td class="ls-sector-name">'+sectorMarker(r.sector)+H(r.sector_name)+'</td>'+
  '<td class="ls-industry-name" title="'+H([r.industry_name,r.industry_source].filter(Boolean).join(" ｜ ")||"業種データ未取得")+'">'+H(industryLabel(r)||'—')+'</td>'+
+ (market==="jp"?'<td class="ls-industry-name" title="'+H(r.industry_fine_en||"業種②データ未取得")+'">'+H(r.industry_fine_ja||'—')+'</td>':'')+
  '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+H(r.ticker)+(r.market?' ｜ '+H(r.market):'')+(r.asof?' ｜ '+H(r.asof):' ｜ 履歴未取得')+H(mmQuote)+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
  (market==="jp"?'<td>'+H(sizeFromCap(r))+'</td>'+shortCells(r)+marginCells(r):'')+
@@ -269,6 +285,7 @@ function render(){
  }
  if(updatedAt)stats+="／取得処理 "+updatedAt;
  stats+="／業種取得済み "+base.filter(r=>Boolean(r.industry_name)).length+"件";
+ if(market==="jp")stats+="／業種②取得済み "+base.filter(r=>Boolean(r.industry_fine_ja)).length+"件";
  get("ls-stat").textContent=stats;
  if(colFilters)colFilters.refresh();
  get("ls-body").innerHTML=portion.length?portion.map(rowHtml).join(""):'<tr><td colspan="'+totalColumns+'">該当する銘柄がありません。選択条件または株価取得状況をご確認ください。</td></tr>';
@@ -310,7 +327,9 @@ get("ls-next").addEventListener("click",function(){currentPage++;render()});
 Promise.all([
  fetch("./sector-leaders.json?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw Error("HTTP "+r.status);return r.json()}),
  fetch(market==="jp"?"./jp-sectors.json":"./sectors.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
- fetch("./data.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})
+ fetch("./data.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
+ market==="jp"?fetch("./jp-yahoo-industries.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}):Promise.resolve(null),
+ market==="jp"?fetch("./jp-industries-fine.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}):Promise.resolve(null)
 ]).then(function(all){
  const d=all[0];history=all[1];marketData=all[2];universeMeta=d.jp_master||null;
  usdJpy=finite(d.usd_jpy&&d.usd_jpy.rate)&&d.usd_jpy.rate>0?d.usd_jpy.rate:null;
@@ -319,6 +338,13 @@ Promise.all([
  consistentSectorLeaders=strength.leaders;
  consistentSectorLaggards=strength.laggards;
  base=(d[market]||[]).filter(function(r){return r&&r.ticker&&r.sector});
+ if(market==="jp"&&all[3]&&all[3].tickers){
+  const fineNames=(all[4]&&all[4].names)||{};
+  base.forEach(function(r){
+   const rec=all[3].tickers[r.ticker];
+   if(rec&&rec.industry){r.industry_fine_en=rec.industry;r.industry_fine_ja=fineNames[rec.industry]||rec.industry;}
+  });
+ }
  updatedAt=d.updated_at?d.updated_at.slice(0,16).replace("T"," ")+" UTC":null;
  const sectors=new Map(base.map(function(r){return [r.sector,r.sector_name]}));
  Array.from(sectors.entries()).forEach(function(entry){
