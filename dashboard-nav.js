@@ -12,7 +12,8 @@
       {label:"セクター分析",start:"h1"},
       {label:"業種分析①",start:"#industry-analysis-panel"},
       {label:"業種分析②",start:"#fine-industry-panel"},
-      {label:"銘柄スクリーニング",start:"#leader-screener-panel"}
+      {label:"銘柄スクリーニング",start:"#leader-screener-panel"},
+      {label:"バックテスト",start:"#backtest-panel"}
     ],
     "sectors.html":[
       {label:"セクター分析",start:"h1"},

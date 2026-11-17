@@ -96,7 +96,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261108columns"><script src="./dashboard-nav.js?v=20261108hist3" defer></script><script src="./sector-column-filter.js?v=20261108colfix" defer></script><script src="./sector-screener.js?v=20261108columns" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261108columns"><script src="./dashboard-nav.js?v=20261117bt" defer></script><script src="./sector-column-filter.js?v=20261108colfix" defer></script><script src="./sector-screener.js?v=20261108columns" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>日本セクター概況｜TOPIX-17</h1><p class="sub">国内17業種の連動ETF（1617〜1633）で見る騰落率・出来高増減率・簡易判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はTOPIX-17連動ETFとTOPIX連動ETF（1306）の市場価格騰落率の差（％ポイント）。判定はETF自身の取引量に基づく独自の簡易指標で、業種全体への資金流入を示すものではありません。出来高が少ないETFでは値動きと判定が不安定になり得ます。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
@@ -119,6 +119,95 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <div class="table-wrap"><table class="sector-table"><colgroup id="fine-sector-cols"></colgroup><thead><tr id="fine-headrow"><th rowspan="2" class="date">日本日付</th></tr><tr id="fine-subhead"></tr></thead><tbody id="fine-body"><tr><td>読み込み中...</td></tr></tbody></table></div><p class="info" id="fine-status"></p><p class="info">※ 業種の所属銘柄はYahoo Financeの業種分類に基づきます（公式の業種区分ではありません）。指数は構成銘柄を浮動株時価総額加重で計算した参考値、出来高は構成銘柄の合計で、東証の公式業種別指数ではありません。ベンチマークは1306（TOPIX連動ETF）。約250取引日を計算用に取得し、最新200取引日を公開。最新日のデータは日本市場の引け後に反映されます。</p>
 </section>
 <section id="leader-screener-panel" class="leader-screen"></section>
+<style>
+.bt-settings{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:10px 0 14px}
+.bt-settings label{font-size:13px;color:#334155}
+.bt-settings select{margin-left:6px;padding:5px 8px;border:1px solid #b7c8db;border-radius:6px;background:#fff;font-size:13px}
+.bt-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.bt-grid{grid-template-columns:1fr}}
+.bt-block{border:1px solid #d7e0ea;border-radius:10px;padding:12px 14px;background:#fff}
+.bt-block.buy{border-top:4px solid #16a34a}
+.bt-block.sell{border-top:4px solid #dc2626}
+.bt-block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bt-block-head h3{margin:0;font-size:15px}
+.bt-clear{border:1px solid #d7e0ea;background:#f8fafc;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
+.bt-clear:hover{background:#eef4fc}
+.bt-item{display:flex;gap:8px;align-items:flex-start;padding:6px 6px;border-radius:6px;cursor:pointer;font-size:13.5px;line-height:1.45}
+.bt-item:hover{background:#f4f8fd}
+.bt-item input{margin-top:2px;width:16px;height:16px;accent-color:#2563eb;flex:none}
+.bt-note{color:#64748b;font-size:12.5px;margin:6px 0 0}
+.bt-summary{margin:14px 0 10px;font-size:13.5px}
+.bt-run{border:1px solid #b7c8db;background:#e8eefc;color:#5b6b82;border-radius:8px;padding:9px 18px;font-size:14px;cursor:not-allowed}
+.bt-result{margin-top:12px;border:1px dashed #b7c8db;border-radius:10px;padding:16px;color:#64748b;font-size:13.5px;text-align:center;background:#fbfdff}
+</style>
+<section id="backtest-panel" aria-label="バックテスト">
+<h2 class="period-rankings-title" style="margin-top:30px">バックテスト</h2>
+<p class="bt-note">買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。実行機能とデータは次の段階で接続します（この画面はUIのみ）。</p>
+<div class="bt-settings">
+<label>対象<select id="bt-universe"><option value="all">日本株 全銘柄</option><option value="prime">プライムのみ</option><option value="standard">スタンダードのみ</option><option value="growth">グロースのみ</option></select></label>
+<label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
+</div>
+<div class="bt-grid">
+<div class="bt-block buy">
+<div class="bt-block-head"><h3>買いシグナル</h3><button type="button" class="bt-clear" data-bt-clear="buy">すべて外す</button></div>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="rs80" checked><span>RS指数が80以上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="high15" checked><span>52週高値から15%以内</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="ma50" checked><span>株価が50日移動平均の上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="ma200"><span>株価が200日移動平均の上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="vol15"><span>出来高が20日平均の1.5倍以上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="eps25"><span>EPS増加率（直近四半期）が25%以上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="roe17"><span>ROEが17%以上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="sector"><span>所属セクターが上位を維持（緑丸）</span></label>
+</div>
+<div class="bt-block sell">
+<div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
+<label class="bt-item"><input type="checkbox" data-bt="sell" value="ma50" checked><span>株価が50日移動平均を下回る</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="sell" value="loss8" checked><span>買値から8%下落</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="sell" value="ma200"><span>株価が200日移動平均を下回る</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="sell" value="rs70"><span>RS指数が70以下に低下</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="sell" value="high25"><span>52週高値から25%以上下落</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="sell" value="dd3"><span>出来高を伴う下落日（DD）が3日出る</span></label>
+</div>
+</div>
+<p class="bt-summary" id="bt-summary"></p>
+<button type="button" class="bt-run" disabled>バックテストを実行（準備中）</button>
+<div class="bt-result">結果（成績サマリー・売買履歴・資産曲線）はここに表示されます</div>
+</section>
+<script>
+(function(){
+  const panel=document.getElementById('backtest-panel');
+  if(!panel)return;
+  const KEY='stock-dashboard-backtest-v1';
+  const boxes=Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt]'));
+  const summary=document.getElementById('bt-summary');
+  const universe=document.getElementById('bt-universe');
+  const period=document.getElementById('bt-period');
+  function save(){
+    const state={buy:boxes.filter(b=>b.dataset.bt==='buy'&&b.checked).map(b=>b.value),
+                 sell:boxes.filter(b=>b.dataset.bt==='sell'&&b.checked).map(b=>b.value),
+                 universe:universe.value,period:period.value};
+    try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+    const nb=state.buy.length,ns=state.sell.length;
+    summary.textContent='買い条件 '+nb+'件 / 売り条件 '+ns+'件 を選択中'+(nb===0?'（買い条件が未選択です）':'');
+  }
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEY)||'null');
+    if(saved){
+      boxes.forEach(b=>{b.checked=(saved[b.dataset.bt]||[]).includes(b.value);});
+      if(saved.universe)universe.value=saved.universe;
+      if(saved.period)period.value=saved.period;
+    }
+  }catch(e){}
+  boxes.forEach(b=>b.addEventListener('change',save));
+  universe.addEventListener('change',save);
+  period.addEventListener('change',save);
+  panel.querySelectorAll('[data-bt-clear]').forEach(btn=>btn.addEventListener('click',()=>{
+    boxes.filter(b=>b.dataset.bt===btn.dataset.btClear).forEach(b=>{b.checked=false;});
+    save();
+  }));
+  save();
+})();
+</script>
 </main><script>
 let rows=[],names={};const hasNum=v=>typeof v==='number'&&Number.isFinite(v);const fmt=v=>hasNum(v)?(v>0?'+':'')+v.toFixed(2)+'%':'—';const cls=v=>!hasNum(v)?'na':v>0?'pos':v<0?'neg':'';const keys=()=>Object.keys(names);
 function ddCircle(number){
