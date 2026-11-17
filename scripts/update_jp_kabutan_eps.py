@@ -273,20 +273,25 @@ def _fetch_and_fill(row):
             row.update(roe)
             roe_filled = 1
     cagr_filled = 0
-    if row.get("eps_annual_3y_cagr_pct") is None:
+    if row.get("eps_annual_3y_cagr_pct") is None or row.get("eps_annual_yoy_pct") is None:
         annual = calculate_growth([], parse_annual_eps(html))
         cagr = annual["eps_annual_3y_cagr_pct"]
+        annual_yoy = annual["eps_annual_yoy_pct"]
         kabutan_end = annual["eps_annual_end"]
         stored_end = row.get("eps_annual_end")
         # Fill only when the stored annual anchor is absent or matches
         # Kabutan's latest actual year, so the CAGR never gets labelled
         # with a different fiscal window than it was computed on.
-        if cagr is not None and kabutan_end and (not stored_end or stored_end == kabutan_end):
-            row["eps_annual_3y_cagr_pct"] = cagr
-            if not stored_end:
+        if kabutan_end and (not stored_end or stored_end == kabutan_end):
+            if cagr is not None and row.get("eps_annual_3y_cagr_pct") is None:
+                row["eps_annual_3y_cagr_pct"] = cagr
+                cagr_filled = 1
+            if annual_yoy is not None and row.get("eps_annual_yoy_pct") is None:
+                row["eps_annual_yoy_pct"] = annual_yoy
+                cagr_filled = 1
+            if cagr_filled and not stored_end:
                 row["eps_annual_end"] = kabutan_end
-            cagr_filled = 1
-            if not fills:
+            if cagr_filled and not fills:
                 row["eps_fill_source"] = SOURCE
                 row["eps_fill_fetched_at"] = today
                 if not row.get("eps_source"):
@@ -309,14 +314,16 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
         if (row.get("eps_q_prev_yoy_pct") is not None
                 and row.get("eps_q_latest_yoy_pct") is not None
                 and row.get("roe_pct") is not None
-                and row.get("eps_annual_3y_cagr_pct") is not None):
+                and row.get("eps_annual_3y_cagr_pct") is not None
+                and row.get("eps_annual_yoy_pct") is not None):
             continue
         checked = row.get("eps_kabutan_attempted_at")
         # Tickers still missing the annual EPS CAGR are always retried:
         # their attempt stamp predates the CAGR fill (added 2026-11-14),
         # so the refresh cutoff would otherwise block them for 45 days.
         if (isinstance(checked, str) and checked >= cutoff
-                and row.get("eps_annual_3y_cagr_pct") is not None):
+                and row.get("eps_annual_3y_cagr_pct") is not None
+                and row.get("eps_annual_yoy_pct") is not None):
             continue
         candidates.append((row.get("eps_q_prev_yoy_pct") is not None, index, row))
     candidates.sort(key=lambda item: (item[0], item[1]))

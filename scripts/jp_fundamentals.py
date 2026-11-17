@@ -16,7 +16,8 @@ from datetime import date, timedelta
 import math
 import re
 
-GROWTH = ("eps_q_latest_yoy_pct", "eps_q_prev_yoy_pct", "eps_annual_3y_cagr_pct")
+GROWTH = ("eps_q_latest_yoy_pct", "eps_q_prev_yoy_pct", "eps_annual_3y_cagr_pct",
+          "eps_annual_yoy_pct")
 SOURCE = "Yahoo Finance via yfinance (calculated EPS growth)"
 SALES_SOURCE = "Yahoo Finance via yfinance (calculated sales growth)"
 ROE_SOURCE = "Yahoo Finance annual income / average parent shareholders equity"
@@ -103,6 +104,7 @@ def calculate_growth(quarterly_eps, annual_eps):
         "eps_q_latest_yoy_pct": _yoy(latest, _find_year_prior(q, latest)) if latest else None,
         "eps_q_prev_yoy_pct": _yoy(previous, _find_year_prior(q, previous)) if previous else None,
         "eps_annual_3y_cagr_pct": cagr,
+        "eps_annual_yoy_pct": _yoy(last_annual, _find_year_prior(a, last_annual)) if last_annual else None,
         "eps_q_latest_end": latest[0].isoformat() if latest else None,
         "eps_q_prev_end": previous[0].isoformat() if previous else None,
         "eps_annual_end": last_annual[0].isoformat() if last_annual else None,
