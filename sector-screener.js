@@ -255,6 +255,75 @@ fdInputs.forEach(i=>i.addEventListener("change",fdChanged));
 fdNums.forEach(n=>{n.addEventListener("click",function(e){e.stopPropagation();});n.addEventListener("change",fdChanged);n.addEventListener("input",fdChanged);});
 const fdClearBtn=panel.querySelector("#ls-fd-clear");
 if(fdClearBtn)fdClearBtn.addEventListener("click",function(){fdInputs.forEach(i=>{i.checked=false;});fdChanged();});
+// Drag the checkbox items inside each condition card to reorder them; the
+// order is remembered per card. Dragging starts from the label text, so
+// checkboxes, selects and other controls keep their normal behaviour, and
+// a plain click still toggles the checkbox.
+function itemGroups(container,itemSelector){
+ const groups=[];let cur=[];
+ for(const child of container.children){
+  if(child.matches(itemSelector))cur.push(child);
+  else if(cur.length){groups.push(cur);cur=[];}
+ }
+ if(cur.length)groups.push(cur);
+ return groups;
+}
+function setupItemSort(container,itemSelector,storageKey){
+ const itemKey=el=>{const input=el.querySelector("input");return input?input.value:"";};
+ itemGroups(container,itemSelector).forEach(function(group,gi){
+  const key=storageKey+":"+gi;
+  try{
+   const saved=JSON.parse(localStorage.getItem(key)||"null");
+   if(Array.isArray(saved)){
+    const byKey=new Map(group.map(el=>[itemKey(el),el]));
+    const ordered=saved.map(k=>byKey.get(k)).filter(Boolean);
+    const rest=group.filter(el=>!saved.includes(itemKey(el)));
+    let ref=group[0].previousElementSibling;
+    for(const el of [...ordered,...rest]){if(ref)ref.after(el);else container.prepend(el);ref=el;}
+   }
+  }catch(e){}
+  group.forEach(function(label){
+   label.addEventListener("pointerdown",e=>{
+    if(e.button!==0||e.pointerType==="touch"||e.target.closest("input,select,button,textarea"))return;
+    const startY=e.clientY;let dragging=false;
+    function runOf(el){
+     const items=Array.from(el.parentElement.querySelectorAll(itemSelector));
+     const idx=items.indexOf(el);let a=idx,b=idx;
+     while(a>0&&items[a-1].nextElementSibling===items[a])a--;
+     while(b<items.length-1&&items[b].nextElementSibling===items[b+1])b++;
+     return items.slice(a,b+1);
+    }
+    function move(ev){
+     if(!dragging){
+      if(Math.abs(ev.clientY-startY)<6)return;
+      dragging=true;label.classList.add("ls-dragging");
+     }
+     const others=runOf(label).filter(x=>x!==label);
+     let placed=false;
+     for(const other of others){
+      const r=other.getBoundingClientRect();
+      if(ev.clientY<r.top+r.height/2){other.before(label);placed=true;break;}
+     }
+     if(!placed&&others.length)others[others.length-1].after(label);
+    }
+    function up(){
+     window.removeEventListener("pointermove",move);
+     window.removeEventListener("pointerup",up);
+     if(!dragging)return;
+     label.classList.remove("ls-dragging");
+     try{localStorage.setItem(key,JSON.stringify(runOf(label).map(itemKey)));}catch(err){}
+     const kill=c=>{c.preventDefault();c.stopPropagation();window.removeEventListener("click",kill,true);};
+     window.addEventListener("click",kill,true);
+    }
+    window.addEventListener("pointermove",move);
+    window.addEventListener("pointerup",up);
+   });
+  });
+ });
+}
+setupItemSort(panel.querySelector(".ls-rk-card"),".ls-tt-item","stock-dashboard-rk-order");
+setupItemSort(panel.querySelector(".ls-fd-card"),".ls-tt-item","stock-dashboard-fd-order");
+setupItemSort(panel.querySelector(".ls-tt-card"),".ls-tt-item","stock-dashboard-tt-order");
 function values(){
  const search="";
  const rs=0,high=100,roeChoice="",roeMin=null,order="rs";
