@@ -132,11 +132,16 @@ function orderPairs(m,pairs){
   return pairs.slice().sort((a,b)=>pos(a[0])-pos(b[0]));
 }
 const ALL_IDX=Object.keys(IDX_LABEL);
-let visibleCols=new Set(ALL_IDX);
-try{const saved=JSON.parse(localStorage.getItem('overviewVisibleCols')||'null');if(Array.isArray(saved)&&saved.length)visibleCols=new Set(saved.filter(k=>ALL_IDX.includes(k)));}catch(e){}
-function saveCols(){try{localStorage.setItem('overviewVisibleCols',JSON.stringify([...visibleCols]))}catch(e){}}
+let visibleCols={jp:new Set(tabIdx('jp')),us:new Set(tabIdx('us'))};
+try{
+  const saved2=JSON.parse(localStorage.getItem('overviewVisibleCols-v2')||'null');
+  if(saved2){for(const m of ['jp','us']){if(Array.isArray(saved2[m])&&saved2[m].length)visibleCols[m]=new Set(saved2[m].filter(k=>tabIdx(m).includes(k)));}}
+  else{const saved=JSON.parse(localStorage.getItem('overviewVisibleCols')||'null');if(Array.isArray(saved)&&saved.length)for(const m of ['jp','us'])visibleCols[m]=new Set(tabIdx(m).filter(k=>saved.includes(k)));}
+  for(const m of ['jp','us'])if(!visibleCols[m].size)visibleCols[m]=new Set(tabIdx(m));
+}catch(e){}
+function saveCols(){try{localStorage.setItem('overviewVisibleCols-v2',JSON.stringify({jp:[...visibleCols.jp],us:[...visibleCols.us]}))}catch(e){}}
 function tabIdx(m){return TAB_COLS[m].filter(x=>x!=='date-us'&&x!=='date-jp')}
-function visibleTabIdx(m){return tabIdx(m).filter(k=>visibleCols.has(k))}
+function visibleTabIdx(m){return tabIdx(m).filter(k=>visibleCols[m].has(k))}
 
 let rows=[],tseByDate=new Map();
 const hasNum=v=>typeof v==='number'&&Number.isFinite(v);
@@ -187,7 +192,7 @@ function renderSummary(){
   };
   document.getElementById('histories-us').innerHTML=
     dateLine('米国日付','date')+
-    orderPairs('us',specs.slice(0,4)).filter(([k])=>visibleCols.has(k)).map(judgmentLine).join('');
+    orderPairs('us',specs.slice(0,4)).filter(([k])=>visibleCols.us.has(k)).map(judgmentLine).join('');
   const jpAll=[...tseByDate.values()].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
   const jpPad=jpAll.concat(Array.from({length:25-jpAll.length},()=>null));
   const jpLine=([key,name])=>{
@@ -201,9 +206,9 @@ function renderSummary(){
   };
   document.getElementById('histories-jp').innerHTML=
     dateLine('米国日付','date')+
-    orderPairs('jp',['nasdaq100','sp500','nasdaq'].map(k=>[k,IDX_LABEL[k]])).filter(([k])=>visibleCols.has(k)).map(judgmentLine).join('')+
+    orderPairs('jp',['nasdaq100','sp500','nasdaq'].map(k=>[k,IDX_LABEL[k]])).filter(([k])=>visibleCols.jp.has(k)).map(judgmentLine).join('')+
     historyLine('日本日付',jpPad.map(t=>t?.date||null),'history-divider')+
-    orderPairs('jp',specs.slice(4)).filter(([k])=>visibleCols.has(k)).map(jpLine).join('');
+    orderPairs('jp',specs.slice(4)).filter(([k])=>visibleCols.jp.has(k)).map(jpLine).join('');
 }
 function fmtClose(v){return hasNum(v)?v.toLocaleString('ja-JP',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}
 function fmtDelta(v){return hasNum(v)?(v>0?'+':'')+v.toLocaleString('ja-JP',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}
@@ -233,7 +238,7 @@ function idxCells(v,key){
   const vs=fmtVolShares(volShares);
   return cells
     +'<td>'+(vs?'<div>'+vs+'</div>':'<span class="na">—</span>')+'</td>'
-    +'<td><div>'+(hasNum(v.volume)?fmt(v.volume):'—')+'</div></td>';
+    +'<td><div class="'+cls(v.volume)+'">'+(hasNum(v.volume)?fmt(v.volume):'—')+'</div></td>';
 }
 function attachIdxDrag(m){
   const head=document.getElementById('headrow-'+m);
@@ -278,7 +283,7 @@ function attachIdxDrag(m){
 }
 window.__setMarketOrder=function(m,arr){colOrder[m]=arr.slice();saveOrder();renderMarket(m);renderSummary();};
 function renderMarket(m){
-  const layout=orderedLayout(m).filter(x=>x==='date-us'||x==='date-jp'||visibleCols.has(x));
+  const layout=orderedLayout(m).filter(x=>x==='date-us'||x==='date-jp'||visibleCols[m].has(x));
   const units=layout.flatMap(x=>x.startsWith('date')?[2]:NO_VOL.has(x)?[1,1,1]:[1,1,1,1,1]);
   document.getElementById('cols-'+m).innerHTML=units.map(u=>'<col style="width:'+(u*64)+'px">').join('');
   const totalCols=units.length;
@@ -308,13 +313,13 @@ function renderMarket(m){
 }
 function renderPicker(m){
   const el=document.getElementById('picker-'+m);
-  el.innerHTML='<span class="cp-title">表示する指数</span>'+tabIdx(m).map(k=>'<label><input type="checkbox" data-key="'+k+'"'+(visibleCols.has(k)?' checked':'')+'>'+IDX_LABEL[k]+'</label>').join('');
+  el.innerHTML='<span class="cp-title">表示する指数</span>'+tabIdx(m).map(k=>'<label><input type="checkbox" data-key="'+k+'"'+(visibleCols[m].has(k)?' checked':'')+'>'+IDX_LABEL[k]+'</label>').join('');
   el.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>{
     const key=cb.dataset.key;
-    if(cb.checked)visibleCols.add(key);
+    if(cb.checked)visibleCols[m].add(key);
     else{
       if(visibleTabIdx(m).length<=1){cb.checked=true;return;}
-      visibleCols.delete(key);
+      visibleCols[m].delete(key);
     }
     saveCols();renderMarket(m);renderSummary();
   }));
