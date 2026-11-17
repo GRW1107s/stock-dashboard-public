@@ -408,6 +408,7 @@ def prepare_tse(previous, volume, indices):
 
 
 NIKKEI_VI_CSV = 'https://indexes.nikkei.co.jp/nkave/historical/nikkei_stock_average_vi_daily_jp.csv'
+NIKKEI_CSV = 'https://indexes.nikkei.co.jp/nkave/historical/nikkei_stock_average_daily_jp.csv'
 
 CHART_BASE = 'https://stock-marketdata.com/time-series/charts/'
 INDEX_CHARTS = {'prime': 'japan-index-prime-market-index.html',
@@ -529,6 +530,35 @@ def fetch_tse_volume_history():
     return out
 
 
+def fetch_nikkei_official():
+    """Nikkei 225 daily OHLC from Nikkei Indexes' official CSV (2023-).
+
+    Returns {date: {'close': close, 'low': low}}. The CSV carries no
+    volume; Yahoo's ^N225 volume is merged in by the caller when present.
+    This is the primary source for recent sessions because Yahoo's chart
+    API sometimes serves the latest ^N225 bar late or not at all.
+    """
+    request = urllib.request.Request(NIKKEI_CSV, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(request, timeout=25) as response:
+        raw = response.read()
+    try:
+        text = raw.decode('cp932')
+    except UnicodeDecodeError:
+        text = raw.decode('utf-8-sig', 'replace')
+    out = {}
+    for line in text.splitlines():
+        parts = [p.strip().strip('"') for p in line.split(',')]
+        if len(parts) < 5 or not re.match(r'\d{4}/\d{2}/\d{2}$', parts[0]):
+            continue
+        close, low = numeric(parts[1]), numeric(parts[4])
+        if close is not None:
+            out[parts[0].replace('/', '-')] = {'close': close, 'low': low}
+    if len(out) < 100:
+        raise ValueError(f'Nikkei official CSV insufficient: {len(out)}')
+    print(f'NIKKEI OFFICIAL: {len(out)} sessions')
+    return out
+
+
 def fetch_nikkei_vi():
     """Nikkei 225 VI daily closes from Nikkei Indexes' official CSV.
 
@@ -588,7 +618,22 @@ def main():
         print('WARNING VIX ingestion failed:', repr(exc))
     nikkei = {}
     try:
-        nikkei = enrich_jp_index(jp_prices('^N225'))
+        yahoo_prices = {}
+        try:
+            yahoo_prices = jp_prices('^N225')
+        except Exception as exc:
+            print('WARNING Nikkei 225 Yahoo fetch failed:', repr(exc))
+        merged = dict(yahoo_prices)
+        try:
+            for day, rec in fetch_nikkei_official().items():
+                base = merged.get(day) or {}
+                merged[day] = {'close': rec['close'], 'low': rec['low'],
+                               'volume': base.get('volume')}
+        except Exception as exc:
+            print('WARNING Nikkei official ingestion failed:', repr(exc))
+        if not merged:
+            raise ValueError('No Nikkei 225 data from any source')
+        nikkei = enrich_jp_index(merged)
         print(f'NIKKEI 225: {len(nikkei)} sessions')
     except Exception as exc:
         print('WARNING Nikkei 225 ingestion failed:', repr(exc))
