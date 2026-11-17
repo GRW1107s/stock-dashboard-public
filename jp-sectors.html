@@ -152,6 +152,12 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
 </div>
 <div class="bt-grid">
+<div class="bt-block market">
+<div class="bt-block-head"><h3>市場動向</h3><button type="button" class="bt-clear" data-bt-clear="market">すべて外す</button></div>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ftd"><span>FTD（フォロースルーデー）が発生</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD数（買い集め日）が<input type="number" class="bt-num" data-bt-num="ad" min="0" max="25" step="1" value="3">日以上（直近25取引日）</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD数（売り抜け日）が<input type="number" class="bt-num" data-bt-num="dd" min="0" max="25" step="1" value="5">日以下（直近25取引日）</span></label>
+</div>
 <div class="bt-block buy">
 <div class="bt-block-head"><h3>買いシグナル</h3><button type="button" class="bt-clear" data-bt-clear="buy">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="rs80" checked><span>RS指数が80以上</span></label>
@@ -180,12 +186,6 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="rs70"><span>RS指数が70以下に低下</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="high25"><span>52週高値から25%以上下落</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="dd3"><span>出来高を伴う下落日（DD）が3日出る</span></label>
-</div>
-<div class="bt-block market">
-<div class="bt-block-head"><h3>市場動向</h3><button type="button" class="bt-clear" data-bt-clear="market">すべて外す</button></div>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="ftd"><span>FTD（フォロースルーデー）が発生</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD数（買い集め日）が<input type="number" class="bt-num" data-bt-num="ad" min="0" max="25" step="1" value="3">日以上（直近25取引日）</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD数（売り抜け日）が<input type="number" class="bt-num" data-bt-num="dd" min="0" max="25" step="1" value="5">日以下（直近25取引日）</span></label>
 </div>
 </div>
 <p class="bt-summary" id="bt-summary"></p>
