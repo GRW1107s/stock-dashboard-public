@@ -113,7 +113,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 
 
 </section>
-<section id="fine-industry-panel" aria-label="業種分析"><h2 class="period-rankings-title" style="margin-top:30px">業種分析②｜Yahoo細分類</h2><h2 class="period-rankings-title">業種強さランキング（3・10・25取引日）</h2><p class="rank-leader-legend"><span class="rank-legend-item"><span class="rank-leader-marker" aria-hidden="true"></span>上位3分の1を維持</span><span class="rank-legend-item"><span class="rank-laggard-marker" aria-hidden="true"></span>下位3分の1を維持</span><span>※直近3・10・25取引日のすべてで該当</span></p><section class="period-rankings" id="fine-period-rankings" aria-label="3・10・25取引日のセクター強さランキング"></section>
+<section id="fine-industry-panel" aria-label="業種分析"><h2 class="period-rankings-title" style="margin-top:30px">業種分析②｜Yahoo細分類</h2><h2 class="period-rankings-title">業種強さランキング（3・10・25取引日）</h2><p class="rank-leader-legend"><span class="rank-legend-item"><span class="rank-leader-marker" aria-hidden="true"></span>上位10分の1を維持</span><span class="rank-legend-item"><span class="rank-laggard-marker" aria-hidden="true"></span>下位3分の1を維持</span><span>※直近3・10・25取引日のすべてで該当</span></p><section class="period-rankings" id="fine-period-rankings" aria-label="3・10・25取引日のセクター強さランキング"></section>
 <section class="history"><div class="history-title"><strong>直近25取引日の判定履歴</strong><span class="muted">左：新しい → 右：古い</span></div><div class="history-scroll"><div class="history-matrix" id="fine-histories"></div></div><div class="legend"><span><i class="square buy"></i>買い集め</span><span><i class="square sell"></i>売り抜け</span><span><i class="square ftd"></i>FTD</span><span><i class="square"></i>通常・未判定</span></div></section>
 <div class="controls fine-controls"><button class="active" onclick="fineDisplay(25,this)">25取引日</button><button onclick="fineDisplay(90,this)">90取引日</button><button onclick="fineDisplay(0,this)">すべて</button><label class="sector-sort" for="fine-sector-sort">列の並び <select id="fine-sector-sort" onchange="fineSortColumns(this.value)"><option value="1">直近1取引日｜強い順</option><option value="3">直近3取引日｜強い順</option><option value="10">直近10取引日｜強い順</option><option value="25">直近25取引日｜強い順</option><option value="original">元の並び</option></select></label><span class="sector-sort-note">株価騰落率の累積で降順。データ不足は右端</span></div>
 <div class="table-wrap"><table class="sector-table"><colgroup id="fine-sector-cols"></colgroup><thead><tr id="fine-headrow"><th rowspan="2" class="date">日本日付</th></tr><tr id="fine-subhead"></tr></thead><tbody id="fine-body"><tr><td>読み込み中...</td></tr></tbody></table></div><p class="info" id="fine-status"></p><p class="info">※ 業種の所属銘柄はYahoo Financeの業種分類に基づきます（公式の業種区分ではありません）。指数は構成銘柄を浮動株時価総額加重で計算した参考値、出来高は構成銘柄の合計で、東証の公式業種別指数ではありません。ベンチマークは1306（TOPIX連動ETF）。約250取引日を計算用に取得し、最新200取引日を公開。最新日のデータは日本市場の引け後に反映されます。</p>
@@ -562,12 +562,14 @@ function renderRankings() {
   const rank25 = buildPeriodRanks(25);
   const rank10 = buildPeriodRanks(10);
   const rank3 = buildPeriodRanks(3);
-  // Mark sectors consistently in the top or bottom third across all 3 periods.
+  // Mark industries consistently in the top tenth (leaders) or the
+  // bottom third (laggards) across all 3 periods.
   const topThirdCutoff = Math.ceil(keys().length / 3);
+  const leaderCutoff = Math.ceil(keys().length / 10);
   const completeRankings = [rank3, rank10, rank25].every(rank => rank.length === keys().length);
-  const top3 = new Set(rank3.slice(0, topThirdCutoff).map(v => v.key));
-  const top10 = new Set(rank10.slice(0, topThirdCutoff).map(v => v.key));
-  const top25 = new Set(rank25.slice(0, topThirdCutoff).map(v => v.key));
+  const top3 = new Set(rank3.slice(0, leaderCutoff).map(v => v.key));
+  const top10 = new Set(rank10.slice(0, leaderCutoff).map(v => v.key));
+  const top25 = new Set(rank25.slice(0, leaderCutoff).map(v => v.key));
   const consistentLeaders = new Set(completeRankings
     ? [...top3].filter(k => top10.has(k) && top25.has(k))
     : []);
@@ -589,7 +591,7 @@ function renderRankings() {
         ? `<span class="rank-shift ${state}" title="${previousPeriod}日順位との差">${indicator}</span>`
         : '';
       const leaderMarker = consistentLeaders.has(v.key)
-        ? '<span class="rank-leader-marker" role="img" aria-label="3・10・25日のすべてで上位3分の1" title="3・10・25日のすべてで上位3分の1"></span>'
+        ? '<span class="rank-leader-marker" role="img" aria-label="3・10・25日のすべてで上位10分の1" title="3・10・25日のすべてで上位10分の1"></span>'
         : consistentLaggards.has(v.key)
         ? '<span class="rank-laggard-marker" role="img" aria-label="3・10・25日のすべてで下位3分の1" title="3・10・25日のすべてで下位3分の1"></span>'
         : '';
