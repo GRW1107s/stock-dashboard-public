@@ -35,8 +35,9 @@ panel.innerHTML=
 '<p class="ls-tt-note">複数チェックはAND条件です。上位の目安は各ランキング表示と同じ（セクター・業種①は上位3分の1、業種②は上位10分の1）で、3・10・25取引日のすべてで上位を維持した場合に該当します。</p></div>'+
 '<div class="ls-fd-card"><div class="ls-tt-head"><h3>ファンダメンタルズ</h3><button type="button" class="ls-tt-clear" id="ls-fd-clear">すべて外す</button></div>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="eps"><span>年間EPS増加率が<select class="ls-fd-num ls-fd-select" data-fd-num="eps" aria-label="年間EPS増加率のしきい値"><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="epsq"><span>直近四半期EPS増加率が<select class="ls-fd-num ls-fd-select" data-fd-num="epsq" aria-label="直近四半期EPS増加率のしきい値"><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="roe"><span>ROEが<select class="ls-fd-num ls-fd-select" data-fd-num="roe" aria-label="ROEのしきい値"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
-'<p class="ls-tt-note">複数チェックはAND条件です。年間EPS増加率は3年CAGRです。</p></div>'+
+'<p class="ls-tt-note">複数チェックはAND条件です。年間EPS増加率は3年CAGR、直近四半期EPS増加率は前年同期比です。</p></div>'+
 '<div class="ls-tt-card"><div class="ls-tt-head"><h3>トレンドテンプレート</h3><button type="button" class="ls-tt-clear" id="ls-tt-clear">すべて外す</button></div>'+
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt1" disabled><span>株価が150日・200日移動平均線より上</span></label>'+
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt2" disabled><span>150日MAが200日MAより上</span></label>'+
@@ -242,6 +243,7 @@ function fdMatches(r){
   if(!i.checked)continue;
   if(i.value==="roe"){const v=roeValue(r);if(!finite(v)||v<fdNum("roe"))return false;}
   if(i.value==="eps"){const v=epsValue(r,"annual");if(!finite(v)||v<fdNum("eps"))return false;}
+  if(i.value==="epsq"){const v=epsValue(r,"eps");if(!finite(v)||v<fdNum("epsq"))return false;}
  }
  return true;
 }
