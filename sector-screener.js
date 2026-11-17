@@ -26,10 +26,6 @@ panel.innerHTML=
 '<p>'+(market==="jp"?"JPXの東証プライム・スタンダード・グロース上場内国普通株式を対象にしています。上場銘柄一覧は月次更新、価格・出来高は負荷を分散して順次収集します。":"S&P500構成銘柄＋米国上場主要株・ADRを約1,800銘柄まで段階的に収録します。初期の監視銘柄も維持します。価格・出来高は日次バッチで順次取得します（全上場銘柄は網羅しません）。moomoo APIから企業名・時価総額・PER・直近年度EPSを一括取得し、EPS成長率・ROEは順次更新します。移動平均線・RS指数・ベータ等の履歴由来指標は既存の株価フィードを継続します。")+'価格面の候補とCAN-SLIM確認済みを混同せず、業績・機関保有は未確認のまま扱います。</p>'+
 '<p class="ls-method">N：52週終値高値から15%以内 ／ S：上昇日かつ出来高が前20日平均の1.3倍以上 ／ L：RS指数レーティング80以上かつセクターETFを60日で上回る。C：直近EPS成長25%以上＋売上20%以上、A：3年EPS年平均成長20%以上、I：機関保有増加。Mは市場概況で別途判断。</p></div>'+
 '<div class="ls-market" id="ls-market">M：市場全体の地合いは <a href="./index.html">市場概況</a> で確認。DD・FTDはIBD公式判定ではありません。</div>'+
-'<fieldset class="ls-sector-fieldset"><legend>対象セクター（複数選択可）</legend><div class="ls-sector-toolbar">'+
-'<button type="button" id="ls-sector-all">すべて選択</button><button type="button" id="ls-sector-none">すべて解除</button><span id="ls-sector-count" aria-live="polite">セクターを読み込み中...</span></div>'+
-'<div class="ls-sector-options" id="ls-sector" role="group" aria-label="対象セクター"></div><p class="ls-sector-legend"><span><span class="ls-sector-leader-marker" aria-hidden="true"></span>上位3分の1を維持</span><span><span class="ls-sector-laggard-marker" aria-hidden="true"></span>下位3分の1を維持</span><span>※直近3・10・25取引日すべて</span></p></fieldset>'+
-
 '<div class="ls-guidance-tiles" aria-label="EPS・ROEのスクリーニング参考基準">'+
 '<div class="ls-guidance-tile ls-guidance-eps">年間のEPSの増加率が25～50％以上の銘柄を選ぶ<span>（大化け銘柄の株式の初期上昇段階における平均の年間EPSの増加は36％であった）</span></div>'+
 '<div class="ls-guidance-tile ls-guidance-roe">過去50年で急成長を遂げたほぼ全銘柄が、最低でも17％のROEを示していた</div>'+
@@ -155,23 +151,11 @@ window.leaderScreenerSetIndustry=function(id,value){
  if(!colFilters||!value)return false;
  return colFilters.setChoices(id,[value]);
 };
-// Called from the sector analysis section: keep only the given TOPIX-17 sector.
-window.leaderScreenerSetSector=function(key){
- const boxes=Array.from(get("ls-sector").querySelectorAll('input[type="checkbox"]'));
- if(!boxes.length||!key)return false;
- let found=false;
- boxes.forEach(function(b){b.checked=b.value===key;if(b.checked)found=true;});
- if(!found){boxes.forEach(function(b){b.checked=true;});return false;}
- filterChanged();
- return true;
-};
-function selectedSectors(){return new Set(Array.from(get("ls-sector").querySelectorAll('input[type="checkbox"]:checked'),function(item){return item.value}))}
 function values(){
- const sectors=selectedSectors(),search="";
+ const search="";
  const rs=0,high=100,roeChoice="",roeMin=null,order="rs";
  const marketType="";
  let items=base.filter(function(r){
-  if(!sectors.has(r.sector))return false;
   if(marketType&&r.market!==marketType)return false;
   if(search&&!((r.name+" "+r.ticker+" "+r.sector_name+" "+(r.industry_name||"")+" "+industryLabel(r)).toLowerCase().includes(search)))return false;
   if(rs>0&&(!finite(r.rs_universe_pct)||r.rs_universe_pct<rs))return false;
@@ -262,16 +246,14 @@ function rowHtml(r){
  '</tr>';
 }
 function render(){
- const selected=selectedSectors(),items=values(),ready=base.filter(function(r){return Boolean(r.asof)}).length;
+ const items=values(),ready=base.filter(function(r){return Boolean(r.asof)}).length;
  const leaders=base.filter(isLeader).length,total=base.length;
- const sectorTotal=get("ls-sector").querySelectorAll('input[type="checkbox"]').length;
- get("ls-sector-count").textContent=selected.size+" / "+sectorTotal+" セクター選択中";
  const maxPage=Math.max(0,Math.ceil(items.length/PAGE_SIZE)-1);
  currentPage=Math.min(Math.max(0,currentPage),maxPage);
  const begin=currentPage*PAGE_SIZE;
  const portion=items.slice(begin,begin+PAGE_SIZE);
  const coverage=total?Math.round(ready/total*1000)/10:0;
- let stats="対象 "+selected.size+"セクター／"+label+" "+total.toLocaleString("ja-JP")+"銘柄／価格取得済み "+ready.toLocaleString("ja-JP")+"件（"+coverage+"%）";
+ let stats=label+" "+total.toLocaleString("ja-JP")+"銘柄／価格取得済み "+ready.toLocaleString("ja-JP")+"件（"+coverage+"%）";
  stats+="／未取得 "+(total-ready).toLocaleString("ja-JP")+"件／EPS成長率取得済み "+base.filter(r=>epsValue(r,"eps")!==null).length+"件／ROE取得済み "+base.filter(r=>roeValue(r)!==null).length+"件／時価総額取得済み "+base.filter(r=>marketCapJPY(r)!==null).length+"件／RS指数算出 "+base.filter(r=>finite(r.rs_universe_pct)).length+"件／暫定リーダー候補 "+leaders+"件／絞り込み "+items.length+"件";
  if(market==="jp"&&!universeMeta)stats+="／JPX全銘柄の初回取り込み待ち（暫定表示）";
  if(market==="jp"&&universeMeta?.reference_date){
@@ -319,9 +301,6 @@ window.stockDashboardPrivateEPS={
  },
  clear(){privateEps.clear();if(base.length)render();}
 };
-get("ls-sector").addEventListener("change",filterChanged);
-get("ls-sector-all").addEventListener("click",function(){get("ls-sector").querySelectorAll('input[type="checkbox"]').forEach(function(input){input.checked=true});filterChanged()});
-get("ls-sector-none").addEventListener("click",function(){get("ls-sector").querySelectorAll('input[type="checkbox"]').forEach(function(input){input.checked=false});filterChanged()});
 get("ls-prev").addEventListener("click",function(){if(currentPage>0){currentPage--;render()}});
 get("ls-next").addEventListener("click",function(){currentPage++;render()});
 Promise.all([
@@ -346,23 +325,6 @@ Promise.all([
   });
  }
  updatedAt=d.updated_at?d.updated_at.slice(0,16).replace("T"," ")+" UTC":null;
- const sectors=new Map(base.map(function(r){return [r.sector,r.sector_name]}));
- Array.from(sectors.entries()).forEach(function(entry){
-  const option=document.createElement("label");option.className="ls-sector-option";
-  const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.value=entry[0];checkbox.checked=true;
-  const text=document.createElement("span");text.textContent=entry[1];
-  option.appendChild(checkbox);
-  if(consistentSectorLeaders.has(entry[0])||consistentSectorLaggards.has(entry[0])){
-   const strong=consistentSectorLeaders.has(entry[0]);
-   const detail="3・10・25取引日すべてで"+(strong?"上位":"下位")+"3分の1";
-   const dot=document.createElement("span");
-   dot.className=strong?"ls-sector-leader-marker":"ls-sector-laggard-marker";
-   dot.setAttribute("role","img");dot.setAttribute("aria-label",detail);
-   dot.title=detail;
-   option.appendChild(dot);
-  }
-  option.appendChild(text);get("ls-sector").appendChild(option);
- });
  if(marketData){
   let count=null;
   if(market==="us")count=marketData.rows&&marketData.rows[0]&&marketData.rows[0].sp500&&marketData.rows[0].sp500.dd_count;

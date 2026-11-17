@@ -474,7 +474,6 @@ root.createLeaderColumnFilters=function(ctx){
  });
  get("ls-reset-all").addEventListener("click",()=>{
   filters.clear();sort=null;close();
-  get("ls-sector").querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=true);
   onChange();
  });
  get("ls-filter-chips").addEventListener("click",e=>{
@@ -504,8 +503,7 @@ root.createLeaderColumnFilters=function(ctx){
   });
   if(sort){const def=defs.find(d=>d.id===sort.id);chips.push('<span>並び順: '+H(def.label)+' '+(sort.direction==="asc"?"昇順":"降順")+'</span>');}
   get("ls-filter-chips").innerHTML=chips.join("");
-  const oldDefault=!get("ls-sector").querySelector('input[type="checkbox"]:not(:checked)');
-  get("ls-reset-all").disabled=!chips.length&&oldDefault;
+  get("ls-reset-all").disabled=!chips.length;
  }
  return {matches:r=>matches(defs,filters,r),sortActive:()=>!!sort,compare:(a,b)=>{
   const d=sort&&defs.find(x=>x.id===sort.id);return d?compare(d,a,b,sort.direction):0;

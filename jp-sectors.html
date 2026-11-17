@@ -722,8 +722,9 @@ window.fineDisplay=display;window.fineSortColumns=sortSectorColumns;
 })();
 </script>
 <script>
-// Clicking a sector / industry name in the analysis sections jumps to the
-// leader screener with that sector / industry applied as the only filter.
+// Clicking an industry name in the analysis sections jumps to the leader
+// screener with that industry applied as the only filter. Sector names
+// jump to the screener without a filter (the sector picker was removed).
 document.addEventListener('click',function(e){
  const el=e.target.closest('[data-ind-jump]');
  if(!el)return;
@@ -734,7 +735,7 @@ document.addEventListener('click',function(e){
  let tries=0;
  const apply=function(){
   const ok=kind==='sector'
-   ?(window.leaderScreenerSetSector&&window.leaderScreenerSetSector(name))
+   ?true
    :(window.leaderScreenerSetIndustry&&window.leaderScreenerSetIndustry(kind,name));
   if(ok){
    const panel=document.getElementById('leader-screener-panel');
