@@ -19,7 +19,7 @@ function industryLabel(r){
  return market==="us"&&window.StockIndustryJA?window.StockIndustryJA.display(original):original;
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?20:24;
+const totalColumns=market==="us"?21:25;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 let ind1Leaders=new Set(),ind2Leaders=new Set();
 panel.innerHTML=
@@ -36,6 +36,7 @@ panel.innerHTML=
 '<div class="ls-fd-card"><div class="ls-tt-head"><h3>ファンダメンタルズ</h3><button type="button" class="ls-tt-clear" id="ls-fd-clear">すべて外す</button></div>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="eps"><span>年間EPS増加率が<select class="ls-fd-num ls-fd-select" data-fd-num="eps" aria-label="年間EPS増加率のしきい値"><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="epsq"><span>EPS増加率（前年同期比）が<select class="ls-fd-num ls-fd-select" data-fd-num="epsq" aria-label="EPS増加率（前年同期比）のしきい値"><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="sales"><span>売上高増加率（前年同期比）が<select class="ls-fd-num ls-fd-select" data-fd-num="sales" aria-label="売上高増加率（前年同期比）のしきい値"><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="roe"><span>ROEが<select class="ls-fd-num ls-fd-select" data-fd-num="roe" aria-label="ROEのしきい値"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
 '<p class="ls-tt-note">複数チェックはAND条件です。年間EPS増加率は3年CAGRです。</p></div>'+
 '<div class="ls-tt-card"><div class="ls-tt-head"><h3>トレンドテンプレート</h3><button type="button" class="ls-tt-clear" id="ls-tt-clear">すべて外す</button></div>'+
@@ -70,10 +71,11 @@ panel.innerHTML=
 '<th title="最新の発表済み四半期EPSの前年同期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>直近四半期</th>'+
 '<th title="最新から1つ前の四半期EPSの前年同期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>1四半期前</th>'+
 '<th title="過去3年間の年間EPS平均成長率（CAGR）。取得可能な年間EPSの3年CAGR。取得元の自動算出値または確認済みの手入力から表示。">年間EPS増加率<br>3年CAGR</th>'+
+'<th title="最新の発表済み四半期売上高の前年同期比増加率。">売上高増加率<br>直近四半期</th>'+
 '<th title="最新の通期ROE。原則として親会社帰属年間純利益÷期首期末平均自己資本×100。取得できなければ—。">ROE<br>（%）</th>'+
 '</tr></thead><tbody id="ls-body"><tr><td colspan="'+totalColumns+'">データを読み込んでいます...</td></tr></tbody></table></div>'+
 '<div class="ls-pagination"><button type="button" id="ls-prev" disabled>前の100件</button><span id="ls-page-label" aria-live="polite"></span><button type="button" id="ls-next" disabled>次の100件</button></div>'+
-'<p class="ls-foot">EPS増加率の直近2四半期は各四半期の前年同期比（YoY）で、直前四半期比（QoQ）ではありません。年間EPS増加率は過去3年のCAGRです。米国株のEPS成長率はyfinance由来の四半期・年間データから取得可能な範囲で段階的に自動算出します。生のEPS数値は表示せず、算出した成長率だけを掲載します。Yahoo Financeには個人利用・再配布に関する制限があり、公開掲載の許諾を保証するものではありません。取得できない数値は「—」です。日本株EPSもyfinanceの取得可能な四半期・年間データから段階的に自動算出します。未取得銘柄は「—」で表示します。時価総額は円表示です。米国株はNasdaq系のUSD建てスナップショットを取得日付きのUSD/JPYレートで換算する概算値です。日本株はJPY建ての取得可能な時価総額を段階的に表示します。為替や株価の時点が一致するとは限りません。ROEは直近通期の親会社帰属純利益／期首期末平均自己資本を基本とし、財務データがなければ「—」です。<br>指標の注意：ベータ値は市場との日次リターン共分散から計算し、シャープレシオは日次リターンの平均÷標準偏差×√252で算出します（無リスク金利0%、株価変動ベース、配当除外）。取得可能な直近最大252日・最低120日を使用し、日本株の比較市場は1306.T（TOPIX連動ETF）、米国株は^GSPC（S&P500）です。<br>RS指数（1〜99）は63・126・189・252営業日の騰落率を40%・20%・20%・20%で加重し、直近の株価取得済み銘柄の中で順位化するIBD参考方式です。公式IBD RS Ratingではなく、取得対象が全上場株を網羅していないため「99＝米国株全体の99%を上回る」とはまだ言えません。米国株の「S&amp;P500比」は同じ加重騰落率の差（％ポイント）です。セクター内順位も株価取得済み銘柄内だけです。高値は直近最大252取引日の終値を使用。ETFとの比較は約60取引日の参考値です。新製品・経営陣・ベース形成・投資家保有の質・市場トレンドの確認を省略して「合格」とはしません。</p>';
+'<p class="ls-foot">EPS増加率の直近2四半期は各四半期の前年同期比（YoY）で、直前四半期比（QoQ）ではありません。売上高増加率（直近四半期）も前年同期比です。年間EPS増加率は過去3年のCAGRです。米国株のEPS成長率はyfinance由来の四半期・年間データから取得可能な範囲で段階的に自動算出します。生のEPS数値は表示せず、算出した成長率だけを掲載します。Yahoo Financeには個人利用・再配布に関する制限があり、公開掲載の許諾を保証するものではありません。取得できない数値は「—」です。日本株EPSもyfinanceの取得可能な四半期・年間データから段階的に自動算出します。未取得銘柄は「—」で表示します。時価総額は円表示です。米国株はNasdaq系のUSD建てスナップショットを取得日付きのUSD/JPYレートで換算する概算値です。日本株はJPY建ての取得可能な時価総額を段階的に表示します。為替や株価の時点が一致するとは限りません。ROEは直近通期の親会社帰属純利益／期首期末平均自己資本を基本とし、財務データがなければ「—」です。<br>指標の注意：ベータ値は市場との日次リターン共分散から計算し、シャープレシオは日次リターンの平均÷標準偏差×√252で算出します（無リスク金利0%、株価変動ベース、配当除外）。取得可能な直近最大252日・最低120日を使用し、日本株の比較市場は1306.T（TOPIX連動ETF）、米国株は^GSPC（S&P500）です。<br>RS指数（1〜99）は63・126・189・252営業日の騰落率を40%・20%・20%・20%で加重し、直近の株価取得済み銘柄の中で順位化するIBD参考方式です。公式IBD RS Ratingではなく、取得対象が全上場株を網羅していないため「99＝米国株全体の99%を上回る」とはまだ言えません。米国株の「S&amp;P500比」は同じ加重騰落率の差（％ポイント）です。セクター内順位も株価取得済み銘柄内だけです。高値は直近最大252取引日の終値を使用。ETFとの比較は約60取引日の参考値です。新製品・経営陣・ベース形成・投資家保有の質・市場トレンドの確認を省略して「合格」とはしません。</p>';
 const get=function(id){return document.getElementById(id)};
 // Use the same daily price-return ranking and completeness requirements as the observation tab.
 function calculateConsistentSectorBands(data,divisor){
@@ -135,6 +137,11 @@ function epsProvenance(r,key){
  return "未取得・計算不能";
 }
 function roeValue(r){return finite(r.roe_pct)?r.roe_pct:null}
+function salesValue(r){return finite(r.sales_q_latest_yoy_pct)?r.sales_q_latest_yoy_pct:null}
+function salesProvenance(r){
+ if(salesValue(r)!==null)return String(r.sales_source||"Yahoo Finance via yfinance (calculated sales growth)")+"｜決算期末 "+String(r.sales_q_latest_end||"未確認");
+ return "未取得・計算不能";
+}
 function roeProvenance(r){
  if(!finite(r.roe_pct))return "ROE未取得";
  return String(r.roe_source||"決算書由来")+
@@ -166,7 +173,7 @@ function isLeader(r){
  return finite(r.rs_universe_pct)&&r.rs_universe_pct>=80&&finite(r.high52_distance_pct)&&r.high52_distance_pct<=15&&finite(relative(r))&&relative(r)>0;
 }
 const colFilters=window.createLeaderColumnFilters?window.createLeaderColumnFilters({
- panel,market,get,H,numeric,finite,relative,epsValue,roeValue,onChange:filterChanged,getRows:()=>base,marketCapJPY
+ panel,market,get,H,numeric,finite,relative,epsValue,roeValue,salesValue,onChange:filterChanged,getRows:()=>base,marketCapJPY
 }):null;
 // Called from the industry analysis sections: jump here filtered by one industry.
 window.leaderScreenerSetIndustry=function(id,value){
@@ -244,6 +251,7 @@ function fdMatches(r){
   if(i.value==="roe"){const v=roeValue(r);if(!finite(v)||v<fdNum("roe"))return false;}
   if(i.value==="eps"){const v=epsValue(r,"annual");if(!finite(v)||v<fdNum("eps"))return false;}
   if(i.value==="epsq"){const v=epsValue(r,"eps");if(!finite(v)||v<fdNum("epsq"))return false;}
+  if(i.value==="sales"){const v=salesValue(r);if(!finite(v)||v<fdNum("sales"))return false;}
  }
  return true;
 }
@@ -418,6 +426,7 @@ function rowHtml(r){
  '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"previous_eps"))+'">'+cellStrong(epsPrevious,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"annual"))+'">'+cellStrong(annualEpsCagr,"%")+'</td>'+
+ '<td title="'+H(salesProvenance(r))+'">'+cellStrong(salesValue(r),"%")+'</td>'+
  '<td title="'+H(roeProvenance(r))+'">'+cellStrong(roe,"%")+'</td>'+
  '</tr>';
 }

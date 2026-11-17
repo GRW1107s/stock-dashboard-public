@@ -22,9 +22,10 @@ import sys
 import time
 
 from jp_fundamentals import (GROWTH, NET_INCOME_LABELS, EQUITY_LABELS, SOURCE,
-                             annual_roe, calculate_growth, eps_rows, finite,
-                             normalize_jp_ticker, pick_rows, quote_metrics,
-                             select_jp_batch, _norm)
+                             SALES_SOURCE,
+                             annual_roe, calculate_growth, calculate_sales_growth,
+                             eps_rows, finite, normalize_jp_ticker, pick_rows,
+                             quote_metrics, revenue_rows, select_jp_batch, _norm)
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / "sector-leaders.json"
@@ -99,6 +100,7 @@ def fetch_one(yf, row):
             quarterly = _label_map(asset.get_income_stmt(freq="quarterly"))
             annual = _label_map(asset.get_income_stmt(freq="yearly"))
             values = calculate_growth(eps_rows(quarterly), eps_rows(annual))
+            values.update(calculate_sales_growth(revenue_rows(quarterly)))
             had_data = bool(quarterly) or bool(annual)
             # Failure in a secondary statement must not discard EPS data.
             roe_calc = {}
@@ -192,6 +194,7 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
                               refresh_days=refresh_days)
     today = date.today().isoformat()
     complete = updated = processed = rate_limited = fin_updated = empty = 0
+    sales_updated = 0
     errors = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for offset in range(0, len(attempt), workers * 5):
@@ -208,6 +211,7 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
                 if had_data:
                     row["eps_yfinance_attempted_at"] = today
                     row["eps_yfinance_empty_attempts"] = 0
+                    row["sales_attempted_at"] = today
                 else:
                     # Yahoo returned nothing at all: do not mark the ticker
                     # attempted, so the next run retries it. After three
@@ -217,6 +221,7 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
                     row["eps_yfinance_empty_attempts"] = streak
                     if streak >= 3:
                         row["eps_yfinance_attempted_at"] = today
+                        row["sales_attempted_at"] = today
                     empty += 1
                 row["jp_financials_attempted_at"] = today
                 if metrics:
@@ -235,6 +240,12 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
                     row["eps_basis"] = "diluted if available; otherwise basic"
                     complete += 1
                     updated += count
+                if values.get("sales_q_latest_yoy_pct") is not None:
+                    row["sales_q_latest_yoy_pct"] = values["sales_q_latest_yoy_pct"]
+                    if values.get("sales_q_latest_end"):
+                        row["sales_q_latest_end"] = values["sales_q_latest_end"]
+                    row["sales_source"] = SALES_SOURCE
+                    sales_updated += 1
                 if processed % 200 == 0:
                     print(f"JP_FUNDAMENTALS_PROGRESS processed={processed}/{len(attempt)} "
                           f"with_growth={complete} errors={len(errors)}", flush=True)
@@ -254,6 +265,8 @@ def enrich_jp_fundamentals(data, limit, *, workers=4, force_missing=False,
         "empty_this_run": empty,
         "rate_limited_this_run": rate_limited,
         "with_latest_yoy": sum(isinstance(r.get(GROWTH[0]), (int, float)) for r in stocks),
+        "with_sales_yoy": sum(isinstance(r.get("sales_q_latest_yoy_pct"), (int, float)) for r in stocks),
+        "sales_updated_this_run": sales_updated,
         "with_previous_yoy": sum(isinstance(r.get(GROWTH[1]), (int, float)) for r in stocks),
         "with_annual_cagr": sum(isinstance(r.get(GROWTH[2]), (int, float)) for r in stocks),
         "with_roe": sum(finite(r.get("roe_pct")) is not None for r in stocks),

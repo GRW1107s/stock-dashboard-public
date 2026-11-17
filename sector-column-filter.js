@@ -254,7 +254,7 @@ function setupColumnResize(panel,market,headings,ids){
 }
 root.LeaderColumnFiltersCore={matches,compare,industryOptions,normalizeColumnOrder,moveColumnOrder};
 root.createLeaderColumnFilters=function(ctx){
- const {panel,market,get,H,numeric,finite,relative,epsValue,roeValue,reviewStatus,onChange,getRows,marketCapJPY}=ctx;
+ const {panel,market,get,H,numeric,finite,relative,epsValue,roeValue,salesValue,reviewStatus,onChange,getRows,marketCapJPY}=ctx;
  const defs=[
   {id:"sector",label:"セクター",kind:"multi",get:r=>r.sector_name||r.sector||""},
   {id:"industry",label:market==="jp"?"業種①":"業種",kind:"multi",get:r=>r.industry_name||""},
@@ -291,6 +291,7 @@ root.createLeaderColumnFilters=function(ctx){
   {id:"eps",label:"直近四半期EPS成長率",kind:"number",unit:"%",get:r=>epsValue(r,"eps")},
   {id:"epsPrev",label:"1四半期前EPS成長率",kind:"number",unit:"%",get:r=>epsValue(r,"previous_eps")},
   {id:"epsAnnual",label:"年間EPS成長率3年",kind:"number",unit:"%",get:r=>epsValue(r,"annual")},
+  {id:"sales",label:"直近四半期売上高増加率",kind:"number",unit:"%",get:r=>salesValue(r)},
   {id:"roe",label:"ROE",kind:"number",unit:"%",get:r=>roeValue(r)}
  ];
  const filters=new Map(),buttons=new Map();

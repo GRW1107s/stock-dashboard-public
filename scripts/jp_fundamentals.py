@@ -18,6 +18,7 @@ import re
 
 GROWTH = ("eps_q_latest_yoy_pct", "eps_q_prev_yoy_pct", "eps_annual_3y_cagr_pct")
 SOURCE = "Yahoo Finance via yfinance (calculated EPS growth)"
+SALES_SOURCE = "Yahoo Finance via yfinance (calculated sales growth)"
 ROE_SOURCE = "Yahoo Finance annual income / average parent shareholders equity"
 ROE_FALLBACK_SOURCE = "Yahoo Finance quote summary trailing ROE (not audited annual formula)"
 
@@ -64,6 +65,13 @@ def eps_rows(label_map):
     return rows if rows else pick_rows(label_map, EPS_LABELS[1])
 
 
+REVENUE_LABELS = ("Total Revenue", "Operating Revenue", "Revenue")
+
+
+def revenue_rows(label_map):
+    return pick_rows(label_map, REVENUE_LABELS)
+
+
 def _find_year_prior(rows, current, years=1):
     """Match the closest like-for-like fiscal quarter/year, allowing 53-week years."""
     target_year = current[0].year - years
@@ -98,6 +106,17 @@ def calculate_growth(quarterly_eps, annual_eps):
         "eps_q_latest_end": latest[0].isoformat() if latest else None,
         "eps_q_prev_end": previous[0].isoformat() if previous else None,
         "eps_annual_end": last_annual[0].isoformat() if last_annual else None,
+    }
+
+
+def calculate_sales_growth(quarterly_revenue):
+    """Latest reported quarter revenue vs the like-for-like quarter one year
+    earlier (YoY). Only the derived percentage and the period end persist."""
+    q = quarterly_revenue
+    latest = q[0] if q else None
+    return {
+        "sales_q_latest_yoy_pct": _yoy(latest, _find_year_prior(q, latest)) if latest else None,
+        "sales_q_latest_end": latest[0].isoformat() if latest else None,
     }
 
 
@@ -166,9 +185,12 @@ def select_batch(stocks, cursor, limit, *, today=None, refresh_days=60):
         if not checked and row.get("eps_source") == SOURCE:
             checked = row.get("eps_fetched_at")
         checked = checked if isinstance(checked, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", checked) else ""
-        if checked >= cutoff:
+        sales_checked = row.get("sales_attempted_at")
+        sales_checked = sales_checked if isinstance(sales_checked, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", sales_checked) else ""
+        if checked >= cutoff and sales_checked >= cutoff:
             missing_yahoo = (any(row.get(key) is None for key in GROWTH)
-                             or row.get("roe_pct") is None)
+                             or row.get("roe_pct") is None
+                             or row.get("sales_q_latest_yoy_pct") is None)
             if missing_yahoo and not isinstance(row.get("eps_yfinance_empty_attempts"), int):
                 pass  # legacy stamp from an empty Yahoo response: retry once
             else:
