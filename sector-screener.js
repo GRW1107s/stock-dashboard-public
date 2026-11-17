@@ -21,17 +21,34 @@ function industryLabel(r){
 const PAGE_SIZE=100;
 const totalColumns=market==="us"?19:23;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
+let ind1Leaders=new Set(),ind2Leaders=new Set();
 panel.innerHTML=
 '<div class="ls-intro"><h2>セクター別 リーダー銘柄スクリーニング（試作版）</h2>'+
 '<p>'+(market==="jp"?"JPXの東証プライム・スタンダード・グロース上場内国普通株式を対象にしています。上場銘柄一覧は月次更新、価格・出来高は負荷を分散して順次収集します。":"S&P500構成銘柄＋米国上場主要株・ADRを約1,800銘柄まで段階的に収録します。初期の監視銘柄も維持します。価格・出来高は日次バッチで順次取得します（全上場銘柄は網羅しません）。moomoo APIから企業名・時価総額・PER・直近年度EPSを一括取得し、EPS成長率・ROEは順次更新します。移動平均線・RS指数・ベータ等の履歴由来指標は既存の株価フィードを継続します。")+'価格面の候補とCAN-SLIM確認済みを混同せず、業績・機関保有は未確認のまま扱います。</p>'+
 '<p class="ls-method">N：52週終値高値から15%以内 ／ S：上昇日かつ出来高が前20日平均の1.3倍以上 ／ L：RS指数レーティング80以上かつセクターETFを60日で上回る。C：直近EPS成長25%以上＋売上20%以上、A：3年EPS年平均成長20%以上、I：機関保有増加。Mは市場概況で別途判断。</p></div>'+
 '<div class="ls-market" id="ls-market">M：市場全体の地合いは <a href="./index.html">市場概況</a> で確認。DD・FTDはIBD公式判定ではありません。</div>'+
+'<div class="ls-tt-row">'+
+'<div class="ls-rk-card"><div class="ls-tt-head"><h3>強さランキング（3・10・25日）</h3><button type="button" class="ls-tt-clear" id="ls-rk-clear">すべて外す</button></div>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-rk-input" value="sector"><span>セクターが上位を維持</span></label>'+
+(market==="jp"?'<label class="ls-tt-item"><input type="checkbox" class="ls-rk-input" value="ind1"><span>業種①が上位を維持</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-rk-input" value="ind2"><span>業種②が上位を維持</span></label>':'')+
+'<p class="ls-tt-note">複数チェックはAND条件です。上位の目安は各ランキング表示と同じ（セクター・業種①は上位3分の1、業種②は上位10分の1）で、3・10・25取引日のすべてで上位を維持した場合に該当します。</p></div>'+
+'<div class="ls-tt-card"><div class="ls-tt-head"><h3>トレンドテンプレート</h3><button type="button" class="ls-tt-clear" id="ls-tt-clear">すべて外す</button></div>'+
+'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt1" disabled><span>株価が150日・200日移動平均線より上</span></label>'+
+'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt2" disabled><span>150日MAが200日MAより上</span></label>'+
+'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt3" disabled><span>200日MAが少なくとも1か月上昇</span></label>'+
+'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt4" disabled><span>50日MAが150日・200日MAより上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt5"><span>株価が50日MAより上</span></label>'+
+'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt6" disabled><span>52週安値から30%以上上昇</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt7"><span>52週高値から25%以内</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt8"><span>RS Ratingが70以上（望ましくは80〜90以上）</span></label>'+
+'<p class="ls-tt-note">チェックした項目はすべて満たす銘柄だけに絞り込まれます。グレーの項目は必要データ（150日MAなど）を収集中です。</p></div>'+
 '<div class="ls-guidance-tiles" aria-label="EPS・ROEのスクリーニング参考基準">'+
 '<div class="ls-guidance-tile ls-guidance-eps">年間のEPSの増加率が25～50％以上の銘柄を選ぶ<span>（大化け銘柄の株式の初期上昇段階における平均の年間EPSの増加は36％であった）</span></div>'+
 '<div class="ls-guidance-tile ls-guidance-roe">過去50年で急成長を遂げたほぼ全銘柄が、最低でも17％のROEを示していた</div>'+
 '<div class="ls-guidance-tile ls-guidance-slowdown">過去３年間のEPSの増加率が30％というすばらしい記録を持つ企業でも、直近の数四半期のEPSの増加率が10～15％ほどに減速している銘柄は、完全に成長が止まったバリュー株だと言える</div>'+
 '<div class="ls-guidance-tile ls-guidance-industry-leader">業界内で上位２～３銘柄を狙う<span>上位企業は規模が最大であるとか、だれもが知っているブランドという意味ではない。最高の四半期EPS増加率、年間EPS増加を示し、ROEも最大で、利益率や売上増加率もずば抜けていて、株価の動きも活発な企業のことである</span></div>'+
-'</div>'+
+'</div></div>'+
 '<p class="ls-stat" id="ls-stat">データを読み込んでいます...</p>'+
 '<div class="ls-table-wrap"><table class="ls-table"><thead><tr>'+
 '<th>セクター</th>'+
@@ -54,7 +71,7 @@ panel.innerHTML=
 '<p class="ls-foot">EPS増加率の直近2四半期は各四半期の前年同期比（YoY）で、直前四半期比（QoQ）ではありません。年間EPS増加率は過去3年のCAGRです。米国株のEPS成長率はyfinance由来の四半期・年間データから取得可能な範囲で段階的に自動算出します。生のEPS数値は表示せず、算出した成長率だけを掲載します。Yahoo Financeには個人利用・再配布に関する制限があり、公開掲載の許諾を保証するものではありません。取得できない数値は「—」です。日本株EPSもyfinanceの取得可能な四半期・年間データから段階的に自動算出します。未取得銘柄は「—」で表示します。時価総額は円表示です。米国株はNasdaq系のUSD建てスナップショットを取得日付きのUSD/JPYレートで換算する概算値です。日本株はJPY建ての取得可能な時価総額を段階的に表示します。為替や株価の時点が一致するとは限りません。ROEは直近通期の親会社帰属純利益／期首期末平均自己資本を基本とし、財務データがなければ「—」です。<br>指標の注意：ベータ値は市場との日次リターン共分散から計算し、シャープレシオは日次リターンの平均÷標準偏差×√252で算出します（無リスク金利0%、株価変動ベース、配当除外）。取得可能な直近最大252日・最低120日を使用し、日本株の比較市場は1306.T（TOPIX連動ETF）、米国株は^GSPC（S&P500）です。<br>RS指数（1〜99）は63・126・189・252営業日の騰落率を40%・20%・20%・20%で加重し、直近の株価取得済み銘柄の中で順位化するIBD参考方式です。公式IBD RS Ratingではなく、取得対象が全上場株を網羅していないため「99＝米国株全体の99%を上回る」とはまだ言えません。米国株の「S&amp;P500比」は同じ加重騰落率の差（％ポイント）です。セクター内順位も株価取得済み銘柄内だけです。高値は直近最大252取引日の終値を使用。ETFとの比較は約60取引日の参考値です。新製品・経営陣・ベース形成・投資家保有の質・市場トレンドの確認を省略して「合格」とはしません。</p>';
 const get=function(id){return document.getElementById(id)};
 // Use the same daily price-return ranking and completeness requirements as the observation tab.
-function calculateConsistentSectorBands(data){
+function calculateConsistentSectorBands(data,divisor){
  const sectors=Object.keys(data?.names||{});
  const rows=Array.isArray(data?.rows)?data.rows.slice().sort((a,b)=>b.date.localeCompare(a.date)):[];
  const empty=()=>({leaders:new Set(),laggards:new Set()});
@@ -70,7 +87,7 @@ function calculateConsistentSectorBands(data){
   }).filter(Boolean).sort((a,b)=>b.ret-a.ret||a.key.localeCompare(b.key));
  });
  if(ranks.some(rank=>rank.length!==sectors.length))return empty();
- const cutoff=Math.ceil(sectors.length/3);
+ const cutoff=Math.ceil(sectors.length/(divisor||3));
  function intersection(group){
   const second=new Set(group(ranks[1]).map(item=>item.key));
   const third=new Set(group(ranks[2]).map(item=>item.key));
@@ -156,6 +173,49 @@ window.leaderScreenerSetSector=function(value){
  if(!colFilters||!value)return false;
  return colFilters.setChoices("sector",[value]);
 };
+// Trend template checkboxes (left half of the screener header). Only the
+// criteria the current data can judge are enabled; the rest stay disabled
+// until their data (150-day MA etc.) is collected.
+const TT_KEY="stock-dashboard-tt-filter-v1";
+const ttInputs=Array.from(panel.querySelectorAll(".ls-tt-input"));
+try{const savedTt=JSON.parse(localStorage.getItem(TT_KEY)||"[]");ttInputs.forEach(function(i){if(!i.disabled)i.checked=savedTt.includes(i.value);});}catch(e){}
+function ttMatches(r){
+ for(const i of ttInputs){
+  if(i.disabled||!i.checked)continue;
+  if(i.value==="tt5"&&r.ma50_position!=="above")return false;
+  if(i.value==="tt7"&&(!finite(r.high52_distance_pct)||r.high52_distance_pct>25))return false;
+  if(i.value==="tt8"&&(!finite(r.rs_universe_pct)||r.rs_universe_pct<70))return false;
+ }
+ return true;
+}
+function ttChanged(){
+ try{localStorage.setItem(TT_KEY,JSON.stringify(ttInputs.filter(i=>i.checked&&!i.disabled).map(i=>i.value)));}catch(e){}
+ filterChanged();
+}
+ttInputs.forEach(i=>i.addEventListener("change",ttChanged));
+const ttClearBtn=panel.querySelector("#ls-tt-clear");
+if(ttClearBtn)ttClearBtn.addEventListener("click",function(){ttInputs.forEach(i=>{i.checked=false;});ttChanged();});
+// Strength-ranking checkboxes (left column): sector / industry bands that
+// stay in the top group across the 3/10/25-session rankings. AND conditions.
+const RK_KEY="stock-dashboard-rk-filter-v1";
+const rkInputs=Array.from(panel.querySelectorAll(".ls-rk-input"));
+try{const savedRk=JSON.parse(localStorage.getItem(RK_KEY)||"[]");rkInputs.forEach(function(i){i.checked=savedRk.includes(i.value);});}catch(e){}
+function rkMatches(r){
+ for(const i of rkInputs){
+  if(!i.checked)continue;
+  if(i.value==="sector"&&!consistentSectorLeaders.has(r.sector))return false;
+  if(i.value==="ind1"&&!ind1Leaders.has(r.industry_name))return false;
+  if(i.value==="ind2"&&!ind2Leaders.has(r.industry_fine_en))return false;
+ }
+ return true;
+}
+function rkChanged(){
+ try{localStorage.setItem(RK_KEY,JSON.stringify(rkInputs.filter(i=>i.checked).map(i=>i.value)));}catch(e){}
+ filterChanged();
+}
+rkInputs.forEach(i=>i.addEventListener("change",rkChanged));
+const rkClearBtn=panel.querySelector("#ls-rk-clear");
+if(rkClearBtn)rkClearBtn.addEventListener("click",function(){rkInputs.forEach(i=>{i.checked=false;});rkChanged();});
 function values(){
  const search="";
  const rs=0,high=100,roeChoice="",roeMin=null,order="rs";
@@ -167,6 +227,8 @@ function values(){
   if(high<100&&(!finite(r.high52_distance_pct)||r.high52_distance_pct>high))return false;
   if(roeChoice==="missing"){if(roeValue(r)!==null)return false;}
   else if(roeMin!==null&&(!finite(roeValue(r))||roeValue(r)<roeMin))return false;
+  if(!ttMatches(r))return false;
+  if(!rkMatches(r))return false;
   if(colFilters&&!colFilters.matches(r))return false;
   return true;
  });
@@ -313,7 +375,8 @@ Promise.all([
  fetch(market==="jp"?"./jp-sectors.json":"./sectors.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
  fetch("./data.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
  market==="jp"?fetch("./jp-yahoo-industries.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}):Promise.resolve(null),
- market==="jp"?fetch("./jp-industries-fine.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}):Promise.resolve(null)
+ market==="jp"?fetch("./jp-industries-fine.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}):Promise.resolve(null),
+ market==="jp"?fetch("./jp-industries.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null}):Promise.resolve(null)
 ]).then(function(all){
  const d=all[0];history=all[1];marketData=all[2];universeMeta=d.jp_master||null;
  usdJpy=finite(d.usd_jpy&&d.usd_jpy.rate)&&d.usd_jpy.rate>0?d.usd_jpy.rate:null;
@@ -321,6 +384,10 @@ Promise.all([
  const strength=calculateConsistentSectorBands(history);
  consistentSectorLeaders=strength.leaders;
  consistentSectorLaggards=strength.laggards;
+ if(market==="jp"){
+  if(all[5])ind1Leaders=calculateConsistentSectorBands(all[5]).leaders;
+  if(all[4])ind2Leaders=calculateConsistentSectorBands(all[4],10).leaders;
+ }
  base=(d[market]||[]).filter(function(r){return r&&r.ticker&&r.sector});
  if(market==="jp"&&all[3]&&all[3].tickers){
   const fineNames=(all[4]&&all[4].names)||{};
