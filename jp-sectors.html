@@ -128,6 +128,9 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-block{border:1px solid #d7e0ea;border-radius:10px;padding:12px 14px;background:#fff}
 .bt-block.buy{border-top:4px solid #16a34a}
 .bt-block.sell{border-top:4px solid #dc2626}
+.bt-block.market{border-top:4px solid #2563eb;grid-column:1/-1}
+.bt-group{font-size:12px;font-weight:700;color:#64748b;margin:10px 0 2px}
+.bt-num{width:58px;margin:0 4px;padding:3px 6px;border:1px solid #b7c8db;border-radius:6px;font-size:13px}
 .bt-block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .bt-block-head h3{margin:0;font-size:15px}
 .bt-clear{border:1px solid #d7e0ea;background:#f8fafc;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
@@ -142,7 +145,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 </style>
 <section id="backtest-panel" aria-label="バックテスト">
 <h2 class="period-rankings-title" style="margin-top:30px">バックテスト</h2>
-<p class="bt-note">買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。実行機能とデータは次の段階で接続します（この画面はUIのみ）。</p>
+<p class="bt-note">買い・売り・市場動向の条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。実行機能とデータは次の段階で接続します（この画面はUIのみ）。</p>
 <div class="bt-settings">
 <label>対象<select id="bt-universe"><option value="all">日本株 全銘柄</option><option value="prime">プライムのみ</option><option value="standard">スタンダードのみ</option><option value="growth">グロースのみ</option></select></label>
 <label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
@@ -158,6 +161,15 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="eps25"><span>EPS増加率（直近四半期）が25%以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="roe17"><span>ROEが17%以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="sector"><span>所属セクターが上位を維持（緑丸）</span></label>
+<p class="bt-group">トレンドテンプレート</p>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt1"><span>株価が150日・200日移動平均線より上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt2"><span>150日MAが200日MAより上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt3"><span>200日MAが少なくとも1か月上昇</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt4"><span>50日MAが150日・200日MAより上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt5"><span>株価が50日MAより上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt6"><span>52週安値から30%以上上昇</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt7"><span>52週高値から25%以内</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt8"><span>RS Ratingが70以上（望ましくは80〜90以上）</span></label>
 </div>
 <div class="bt-block sell">
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
@@ -167,6 +179,12 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="rs70"><span>RS指数が70以下に低下</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="high25"><span>52週高値から25%以上下落</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="dd3"><span>出来高を伴う下落日（DD）が3日出る</span></label>
+</div>
+<div class="bt-block market">
+<div class="bt-block-head"><h3>市場動向</h3><button type="button" class="bt-clear" data-bt-clear="market">すべて外す</button></div>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ftd"><span>FTD（フォロースルーデー）が発生</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD数（買い集め日）が<input type="number" class="bt-num" data-bt-num="ad" min="0" max="25" step="1" value="3">日以上（直近25取引日）</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD数（売り抜け日）が<input type="number" class="bt-num" data-bt-num="dd" min="0" max="25" step="1" value="5">日以下（直近25取引日）</span></label>
 </div>
 </div>
 <p class="bt-summary" id="bt-summary"></p>
@@ -179,26 +197,34 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   if(!panel)return;
   const KEY='stock-dashboard-backtest-v1';
   const boxes=Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt]'));
+  const nums=Array.from(panel.querySelectorAll('input[data-bt-num]'));
   const summary=document.getElementById('bt-summary');
   const universe=document.getElementById('bt-universe');
   const period=document.getElementById('bt-period');
   function save(){
     const state={buy:boxes.filter(b=>b.dataset.bt==='buy'&&b.checked).map(b=>b.value),
                  sell:boxes.filter(b=>b.dataset.bt==='sell'&&b.checked).map(b=>b.value),
+                 market:boxes.filter(b=>b.dataset.bt==='market'&&b.checked).map(b=>b.value),
+                 nums:Object.fromEntries(nums.map(n=>[n.dataset.btNum,n.value])),
                  universe:universe.value,period:period.value};
     try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
-    const nb=state.buy.length,ns=state.sell.length;
-    summary.textContent='買い条件 '+nb+'件 / 売り条件 '+ns+'件 を選択中'+(nb===0?'（買い条件が未選択です）':'');
+    summary.textContent='買い条件 '+state.buy.length+'件 / 売り条件 '+state.sell.length+'件 / 市場条件 '+state.market.length+'件 を選択中'+(state.buy.length===0?'（買い条件が未選択です）':'');
   }
   try{
     const saved=JSON.parse(localStorage.getItem(KEY)||'null');
     if(saved){
       boxes.forEach(b=>{b.checked=(saved[b.dataset.bt]||[]).includes(b.value);});
+      nums.forEach(n=>{if(saved.nums&&saved.nums[n.dataset.btNum]!==undefined)n.value=saved.nums[n.dataset.btNum];});
       if(saved.universe)universe.value=saved.universe;
       if(saved.period)period.value=saved.period;
     }
   }catch(e){}
   boxes.forEach(b=>b.addEventListener('change',save));
+  nums.forEach(n=>{
+    n.addEventListener('click',e=>e.stopPropagation());
+    n.addEventListener('change',save);
+    n.addEventListener('input',save);
+  });
   universe.addEventListener('change',save);
   period.addEventListener('change',save);
   panel.querySelectorAll('[data-bt-clear]').forEach(btn=>btn.addEventListener('click',()=>{
