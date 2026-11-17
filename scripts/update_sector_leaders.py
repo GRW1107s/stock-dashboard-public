@@ -364,6 +364,7 @@ def obtain(symbol, market):
                 mean_volume = sum(previous_vols) / len(previous_vols) if len(previous_vols) >= 15 else None
                 rvol = round(volumes[-1] / mean_volume, 3) if volumes[-1] is not None and mean_volume and mean_volume > 0 else None
                 ceiling = max(prices[-252:])
+                floor = min(prices[-252:])
                 daily_returns = {
                     days[i][0]: prices[i] / prices[i - 1] - 1
                     for i in range(1, len(days)) if prices[i - 1] > 0
@@ -385,6 +386,7 @@ def obtain(symbol, market):
                     "return_189d": pct(close, prices[-190]) if len(prices) >= 190 else None,
                     "return_252d": pct(close, prices[-253]) if len(prices) >= 253 else None,
                     "high52_distance_pct": round(100 * (ceiling - close) / ceiling, 2) if ceiling else None,
+                    "low52_rise_pct": round(100 * (close - floor) / floor, 2) if floor else None,
                     "rvol20": rvol,
                     "observed_sessions": len(days),
                 }
@@ -554,6 +556,7 @@ def main():
     )
     output["method"] = {
         "high52_distance_pct": "Distance from highest available daily closing price of last up to 252 sessions",
+        "low52_rise_pct": "Rise from lowest available daily closing price of last up to 252 sessions",
         "rvol20": "Last completed volume divided by mean volume of prior 20 sessions",
         "market_cap": "Nasdaq-screener-derived market cap snapshots for US listings, USD, as-of collection date. Not a real-time valuation. For JP, only show if a verified capitalisation feed with date/currency is available.",
         "rs_universe_pct": "IBD-inspired proxy 1–99 percentile rank of 0.4*63d+0.2*126d+0.2*189d+0.2*252d price returns among fresh eligible stocks in the current market universe. Not IBD's proprietary rating, and not a percentile across all listed stocks.",

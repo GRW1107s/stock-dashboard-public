@@ -19,7 +19,7 @@ function industryLabel(r){
  return market==="us"&&window.StockIndustryJA?window.StockIndustryJA.display(original):original;
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?19:23;
+const totalColumns=market==="us"?20:24;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 let ind1Leaders=new Set(),ind2Leaders=new Set();
 panel.innerHTML=
@@ -39,7 +39,7 @@ panel.innerHTML=
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt3" disabled><span>200日MAが少なくとも1か月上昇</span></label>'+
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt4" disabled><span>50日MAが150日・200日MAより上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt5"><span>株価が50日MAより上</span></label>'+
-'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt6" disabled><span>52週安値から30%以上上昇</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt6"><span>52週安値から30%以上上昇</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt7"><span>52週高値から25%以内</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt8"><span>RS指数が<select class="ls-tt-select" id="ls-tt-rs" aria-label="RS指数のしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>'+
 '<p class="ls-tt-note">チェックした項目はすべて満たす銘柄だけに絞り込まれます。グレーの項目は必要データ（150日MAなど）を収集中です。</p></div>'+
@@ -58,7 +58,7 @@ panel.innerHTML=
 '<th title="直近最大252取引日の株価騰落率を年率換算したシャープレシオ。無リスク金利0%、最低120日。配当は含みません。">シャープレシオ</th>'+
 (market==="us"?'<th title="63/126/189/252営業日の加重騰落率から、S&P500指数（^GSPC）の同期間の加重騰落率を引いた値。+ならS&P500より強い">S&amp;P500比<br>加重pp</th>':'')+
 '<th>セクター内<br>60日順位</th>'+
-'<th>60日騰落率</th><th>同ETF比<br>60日</th><th>52週高値<br>からの下落</th>'+
+'<th>60日騰落率</th><th>同ETF比<br>60日</th><th>52週高値<br>からの下落</th><th>52週安値<br>からの上昇</th>'+
 
 (market==="us"?'<th class="ls-ma-col" title="終値が50日単純移動平均より上なら○、下または同値なら✕。未算出は—。">50MA</th><th class="ls-ma-col" title="終値が200日単純移動平均より上なら○、下または同値なら✕。未算出は—。">200MA</th>':'')+
 '<th>出来高<br>対20日平均</th>'+
@@ -187,6 +187,7 @@ function ttMatches(r){
  for(const i of ttInputs){
   if(i.disabled||!i.checked)continue;
   if(i.value==="tt5"&&r.ma50_position!=="above")return false;
+  if(i.value==="tt6"&&(!finite(r.low52_rise_pct)||r.low52_rise_pct<30))return false;
   if(i.value==="tt7"&&(!finite(r.high52_distance_pct)||r.high52_distance_pct>25))return false;
   if(i.value==="tt8"&&(!finite(r.rs_universe_pct)||r.rs_universe_pct<Number(ttRsSelect?ttRsSelect.value:70)))return false;
  }
@@ -310,7 +311,7 @@ function rowHtml(r){
  (market==="us"?'<td title="S&P500指数（^GSPC）に対する加重騰落率の差">'+cellStrong(r.rs_sp500_delta_pp,"pp")+'</td>':'')+
  '<td>'+H(r.sector_rank||"—")+(r.sector_count?'/'+H(r.sector_count):"")+'</td>'+
  '<td>'+cellStrong(r.return_60d,"%")+'</td><td>'+cellStrong(v,"pp")+'</td>'+
- '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td>'+(market==="us"?maCell(r,50)+maCell(r,200):"")+'<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+
+ '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td><td>'+H(plain(r.low52_rise_pct,"%"))+'</td>'+(market==="us"?maCell(r,50)+maCell(r,200):"")+'<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+
  '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"previous_eps"))+'">'+cellStrong(epsPrevious,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"annual"))+'">'+cellStrong(annualEpsCagr,"%")+'</td>'+
