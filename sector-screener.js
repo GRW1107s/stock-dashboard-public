@@ -151,6 +151,11 @@ window.leaderScreenerSetIndustry=function(id,value){
  if(!colFilters||!value)return false;
  return colFilters.setChoices(id,[value]);
 };
+// Called from the sector analysis section: jump here filtered by one sector.
+window.leaderScreenerSetSector=function(value){
+ if(!colFilters||!value)return false;
+ return colFilters.setChoices("sector",[value]);
+};
 function values(){
  const search="";
  const rs=0,high=100,roeChoice="",roeMin=null,order="rs";

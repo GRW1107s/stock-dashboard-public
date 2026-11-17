@@ -186,7 +186,7 @@ function renderRankings() {
         ? '<span class="rank-laggard-marker" role="img" aria-label="3・10・25日のすべてで下位3分の1" title="3・10・25日のすべてで下位3分の1"></span>'
         : '';
       const vsTopix = v.diff === null ? '—' : 'TOPIX比 ' + (v.diff > 0 ? '+' : '') + v.diff.toFixed(2) + 'pp';
-      return `<div class="rank-entry ind-jump" data-sector="${v.key}" data-ind-jump="sector" data-ind-name="${v.key}" title="クリックでこのセクターの銘柄スクリーニング"><span class="rank-position">${i + 1}</span><span class="rank-name" title="${v.name}（${v.key}）">${leaderMarker}<span class="rank-name-text">${v.name}（${v.key}）</span>${shift}</span><span class="rank-return ${cls(v.ret)}">${fmt(v.ret)}</span><span class="rank-spy">${vsTopix}</span></div>`;
+      return `<div class="rank-entry ind-jump" data-sector="${v.key}" data-ind-jump="sector" data-ind-name="${v.name}" title="クリックでこのセクターの銘柄スクリーニング"><span class="rank-position">${i + 1}</span><span class="rank-name" title="${v.name}（${v.key}）">${leaderMarker}<span class="rank-name-text">${v.name}（${v.key}）</span>${shift}</span><span class="rank-return ${cls(v.ret)}">${fmt(v.ret)}</span><span class="rank-spy">${vsTopix}</span></div>`;
     }).join('') : '<p class="muted">期間内のデータが不足しています</p>';
     return `<section class="rank-panel" data-period="${period}"><div class="rank-header"><h2>直近${period}取引日 強さランキング</h2><p class="rank-note">ETF累積騰落率順｜TOPIX比は同期間との差</p></div>${entries}</section>`;
   }
@@ -255,7 +255,7 @@ function drawRankingArrows() {
   }
 }
 window.addEventListener('resize', () => requestAnimationFrame(drawRankingArrows));
-function renderSummary(){const selected=rows.slice(0,25);const aligned=selected.concat(Array.from({length:25-selected.length},()=>null));const dates=aligned.map(r=>`<span class="history-date">${r?r.date.slice(5).replace('-','/'):'—'}</span>`).join('');const head=`<div class="history-row"><strong class="history-date-label">日本日付</strong><div class="blocks">${dates}</div></div>`;const lines=keys().map(k=>{const squares=aligned.map(r=>{const v=r?.sectors?.[k];const kind=v?.judge==='ftd'?'ftd':v?.dd_number?'sell':['buy','sell'].includes(v?.judge)?v.judge:'';const title=`${r?.date||'—'} ${k} DD ${v?.dd_count??'—'}件 変動率${fmt(v?.change)} 出来高${fmt(v?.volume)} TOPIX比${hasNum(v?.vs_topix)?v.vs_topix.toFixed(2)+'pp':'—'}`;return `<span class="block ${kind} ${v?.dd_number?'dd-numbered dd-highlight':''}" title="${title}">${historyMark(v)}</span>`}).join('');return `<div class="history-row"><strong class="ind-jump" data-ind-jump="sector" data-ind-name="${k}" title="クリックでこのセクターの銘柄スクリーニング">${names[k]}（${k}）</strong><div class="blocks">${squares}</div></div>`}).join('');document.getElementById('histories').innerHTML=head+lines}
+function renderSummary(){const selected=rows.slice(0,25);const aligned=selected.concat(Array.from({length:25-selected.length},()=>null));const dates=aligned.map(r=>`<span class="history-date">${r?r.date.slice(5).replace('-','/'):'—'}</span>`).join('');const head=`<div class="history-row"><strong class="history-date-label">日本日付</strong><div class="blocks">${dates}</div></div>`;const lines=keys().map(k=>{const squares=aligned.map(r=>{const v=r?.sectors?.[k];const kind=v?.judge==='ftd'?'ftd':v?.dd_number?'sell':['buy','sell'].includes(v?.judge)?v.judge:'';const title=`${r?.date||'—'} ${k} DD ${v?.dd_count??'—'}件 変動率${fmt(v?.change)} 出来高${fmt(v?.volume)} TOPIX比${hasNum(v?.vs_topix)?v.vs_topix.toFixed(2)+'pp':'—'}`;return `<span class="block ${kind} ${v?.dd_number?'dd-numbered dd-highlight':''}" title="${title}">${historyMark(v)}</span>`}).join('');return `<div class="history-row"><strong class="ind-jump" data-ind-jump="sector" data-ind-name="${names[k]}" title="クリックでこのセクターの銘柄スクリーニング">${names[k]}（${k}）</strong><div class="blocks">${squares}</div></div>`}).join('');document.getElementById('histories').innerHTML=head+lines}
 function priceCell(v){if(!v)return '<span class="na">—</span>';return `<div class="price ${cls(v.change)}">${fmt(v.change)}</div><div class="vol">(${fmt(v.volume)})</div>`}
 
 /* Table sorting is independent of the existing ranking, summary and DD history. */
@@ -279,7 +279,7 @@ function drawSectorTable(){
  const ordered=sectorColumnKeys;
  document.getElementById('sector-cols').innerHTML='<col class="date-col">'+ordered.map(()=>'<col class="price-col"><col class="judge-col">').join('');
  document.getElementById('headrow').innerHTML='<th rowspan="2" class="date">日本日付</th>'+
-  ordered.map(k=>'<th colspan="2"><span class="ind-jump" data-ind-jump="sector" data-ind-name="'+k+'" title="クリックでこのセクターの銘柄スクリーニング">'+names[k]+'（'+k+'）</span></th>').join('');
+  ordered.map(k=>'<th colspan="2"><span class="ind-jump" data-ind-jump="sector" data-ind-name="'+names[k]+'" title="クリックでこのセクターの銘柄スクリーニング">'+names[k]+'（'+k+'）</span></th>').join('');
  document.getElementById('subhead').innerHTML=ordered.map(()=>'<th title="変動率（出来高前日比）">変動率(量)</th><th title="判定">判定</th>').join('');
  const view=visibleTableDays?rows.slice(0,visibleTableDays):rows;
  document.getElementById('body').innerHTML=view.length?view.map(rowHtml).join(''):
@@ -724,9 +724,8 @@ window.fineDisplay=display;window.fineSortColumns=sortSectorColumns;
 })();
 </script>
 <script>
-// Clicking an industry name in the analysis sections jumps to the leader
-// screener with that industry applied as the only filter. Sector names
-// jump to the screener without a filter (the sector picker was removed).
+// Clicking a sector or industry name in the analysis sections jumps to
+// the leader screener with that sector / industry applied as the filter.
 document.addEventListener('click',function(e){
  const el=e.target.closest('[data-ind-jump]');
  if(!el)return;
@@ -737,7 +736,7 @@ document.addEventListener('click',function(e){
  let tries=0;
  const apply=function(){
   const ok=kind==='sector'
-   ?true
+   ?(window.leaderScreenerSetSector&&window.leaderScreenerSetSector(name))
    :(window.leaderScreenerSetIndustry&&window.leaderScreenerSetIndustry(kind,name));
   if(ok){
    const panel=document.getElementById('leader-screener-panel');

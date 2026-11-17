@@ -222,7 +222,7 @@ root.LeaderColumnFiltersCore={matches,compare,industryOptions,normalizeColumnOrd
 root.createLeaderColumnFilters=function(ctx){
  const {panel,market,get,H,numeric,finite,relative,epsValue,roeValue,reviewStatus,onChange,getRows,marketCapJPY}=ctx;
  const defs=[
-  {id:"sector",label:"セクター",kind:"text",get:r=>r.sector_name||r.sector||""},
+  {id:"sector",label:"セクター",kind:"multi",get:r=>r.sector_name||r.sector||""},
   {id:"industry",label:market==="jp"?"業種①":"業種",kind:"multi",get:r=>r.industry_name||""},
   ...(market==="jp"?[{id:"industry2",label:"業種②",kind:"multi",get:r=>r.industry_fine_ja||""}]:[]),
   {id:"name",label:"候補銘柄",kind:"text",get:r=>[r.name,r.ticker,r.market].filter(Boolean).join(" ")},
