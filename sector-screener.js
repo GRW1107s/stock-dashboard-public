@@ -33,6 +33,10 @@ panel.innerHTML=
 (market==="jp"?'<label class="ls-tt-item"><input type="checkbox" class="ls-rk-input" value="ind1"><span>業種①が上位を維持</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-rk-input" value="ind2"><span>業種②が上位を維持</span></label>':'')+
 '<p class="ls-tt-note">複数チェックはAND条件です。上位の目安は各ランキング表示と同じ（セクター・業種①は上位3分の1、業種②は上位10分の1）で、3・10・25取引日のすべてで上位を維持した場合に該当します。</p></div>'+
+'<div class="ls-fd-card"><div class="ls-tt-head"><h3>ファンダメンタルズ</h3><button type="button" class="ls-tt-clear" id="ls-fd-clear">すべて外す</button></div>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="roe"><span>ROEが<input type="number" class="ls-fd-num" data-fd-num="roe" min="0" max="100" step="1" value="17">%以上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="eps"><span>年間EPS増加率が<input type="number" class="ls-fd-num" data-fd-num="eps" min="0" max="200" step="1" value="25">%以上</span></label>'+
+'<p class="ls-tt-note">複数チェックはAND条件です。年間EPS増加率は3年CAGRです。</p></div>'+
 '<div class="ls-tt-card"><div class="ls-tt-head"><h3>トレンドテンプレート</h3><button type="button" class="ls-tt-clear" id="ls-tt-clear">すべて外す</button></div>'+
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt1" disabled><span>株価が150日・200日移動平均線より上</span></label>'+
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt2" disabled><span>150日MAが200日MAより上</span></label>'+
@@ -222,6 +226,30 @@ function rkChanged(){
 rkInputs.forEach(i=>i.addEventListener("change",rkChanged));
 const rkClearBtn=panel.querySelector("#ls-rk-clear");
 if(rkClearBtn)rkClearBtn.addEventListener("click",function(){rkInputs.forEach(i=>{i.checked=false;});rkChanged();});
+// Fundamentals checkboxes: ROE / annual EPS growth (3y CAGR) thresholds. AND.
+const FD_KEY="stock-dashboard-fd-filter-v1";
+const fdInputs=Array.from(panel.querySelectorAll(".ls-fd-input"));
+const fdNums=Array.from(panel.querySelectorAll(".ls-fd-num"));
+function fdNum(name){const el=fdNums.find(n=>n.dataset.fdNum===name);const v=el?Number(el.value):NaN;return finite(v)?v:0;}
+try{const savedFd=JSON.parse(localStorage.getItem(FD_KEY)||"null");
+ if(savedFd){fdInputs.forEach(function(i){i.checked=(savedFd.v||[]).includes(i.value);});
+ fdNums.forEach(function(n){if(savedFd.nums&&savedFd.nums[n.dataset.fdNum]!==undefined)n.value=savedFd.nums[n.dataset.fdNum];});}}catch(e){}
+function fdMatches(r){
+ for(const i of fdInputs){
+  if(!i.checked)continue;
+  if(i.value==="roe"){const v=roeValue(r);if(!finite(v)||v<fdNum("roe"))return false;}
+  if(i.value==="eps"){const v=epsValue(r,"annual");if(!finite(v)||v<fdNum("eps"))return false;}
+ }
+ return true;
+}
+function fdChanged(){
+ try{localStorage.setItem(FD_KEY,JSON.stringify({v:fdInputs.filter(i=>i.checked).map(i=>i.value),nums:Object.fromEntries(fdNums.map(n=>[n.dataset.fdNum,n.value]))}));}catch(e){}
+ filterChanged();
+}
+fdInputs.forEach(i=>i.addEventListener("change",fdChanged));
+fdNums.forEach(n=>{n.addEventListener("click",function(e){e.stopPropagation();});n.addEventListener("change",fdChanged);n.addEventListener("input",fdChanged);});
+const fdClearBtn=panel.querySelector("#ls-fd-clear");
+if(fdClearBtn)fdClearBtn.addEventListener("click",function(){fdInputs.forEach(i=>{i.checked=false;});fdChanged();});
 function values(){
  const search="";
  const rs=0,high=100,roeChoice="",roeMin=null,order="rs";
@@ -235,6 +263,7 @@ function values(){
   else if(roeMin!==null&&(!finite(roeValue(r))||roeValue(r)<roeMin))return false;
   if(!ttMatches(r))return false;
   if(!rkMatches(r))return false;
+  if(!fdMatches(r))return false;
   if(colFilters&&!colFilters.matches(r))return false;
   return true;
  });
