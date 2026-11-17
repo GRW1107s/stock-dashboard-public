@@ -199,7 +199,7 @@ function fmtVolShares(v){
   return String(Math.round(v));
 }
 function idxCells(v,key){
-  if(!v)return '<td colspan="4"><span class="na">—</span></td>';
+  if(!v)return '<td colspan="5"><span class="na">—</span></td>';
   const d=deltaOf(v);
   let volShares=null;
   if(key==='prime'||key==='standard'||key==='growth'){if(hasNum(v.shares_10000))volShares=v.shares_10000*10000;}
@@ -208,18 +208,19 @@ function idxCells(v,key){
   return '<td><div class="price">'+fmtClose(v.close)+'</div></td>'
     +'<td><div class="'+cls(d)+'">'+fmtDelta(d)+'</div></td>'
     +'<td><div class="price '+cls(v.change)+'">'+fmt(v.change)+'</div></td>'
-    +'<td>'+(vs?'<div>'+vs+'</div><div class="vol">('+fmt(v.volume)+')</div>':'<span class="na">—</span>')+'</td>';
+    +'<td>'+(vs?'<div>'+vs+'</div>':'<span class="na">—</span>')+'</td>'
+    +'<td><div class="vol">'+(hasNum(v.volume)?fmt(v.volume):'—')+'</div></td>';
 }
 function renderMarket(m){
   const layout=TAB_COLS[m].filter(x=>x==='date-us'||x==='date-jp'||visibleCols.has(x));
-  const units=layout.flatMap(x=>x.startsWith('date')?[2]:[1,1,1,1]);
+  const units=layout.flatMap(x=>x.startsWith('date')?[2]:[1,1,1,1,1]);
   const totalUnits=units.reduce((a,b)=>a+b,0);
   document.getElementById('cols-'+m).innerHTML=units.map(u=>'<col style="width:'+(u/totalUnits*100)+'%">').join('');
   const totalCols=units.length;
-  document.getElementById('table-'+m).style.minWidth=(totalCols*54)+'px';
+  document.getElementById('table-'+m).style.minWidth=(totalCols*64)+'px';
   document.getElementById('wrap-'+m).style.overflowX='auto';
-  document.getElementById('headrow-'+m).innerHTML=layout.map(x=>x==='date-us'?'<th rowspan="2" class="dayhead">米国日付</th>':x==='date-jp'?'<th rowspan="2" class="dayhead jpdate">日本日付</th>':'<th colspan="4">'+IDX_LABEL[x]+'</th>').join('');
-  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(()=>'<th>終値</th><th>変化値</th><th>変動率</th><th>出来高 (変動率)</th>').join('');
+  document.getElementById('headrow-'+m).innerHTML=layout.map(x=>x==='date-us'?'<th rowspan="2" class="dayhead">米国日付</th>':x==='date-jp'?'<th rowspan="2" class="dayhead jpdate">日本日付</th>':'<th colspan="5">'+IDX_LABEL[x]+'</th>').join('');
+  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(()=>'<th>終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th>').join('');
   const view=rows.slice(0,25);
   document.getElementById('body-'+m).innerHTML=view.length?view.map(r=>{
     const tse=tseByDate.get(r.japan_date)||{};
