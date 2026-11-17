@@ -158,7 +158,11 @@ function setupColumnResize(panel,market,headings,ids){
  const ADD_ID="__add",ADD_WIDTH=36;
  const minFor=(th,id)=>id==="name"?135:(th&&th.classList.contains("ls-ma-col")?50:58);
  const clamp=(th,id,v)=>Math.max(minFor(th,id),Math.min(650,Math.round(v)));
- let done=false;
+ let done=false,drawRef=null;
+ // Hidden columns (panel.__lsHiddenCols, owned by the visibility block in
+ // createLeaderColumnFilters) are drawn with width 0 so the table total
+ // shrinks to match. Redraw when the hidden set changes.
+ panel.addEventListener("ls:hidden-changed",()=>{if(drawRef)drawRef();});
  function init(){
   if(done||table.getBoundingClientRect().width<100)return false;
   done=true;
@@ -190,13 +194,15 @@ function setupColumnResize(panel,market,headings,ids){
   table.insertBefore(group,table.querySelector("thead"));
   table.style.tableLayout="fixed";
   function draw(){
+   const hid=panel.__lsHiddenCols;
    let total=0;
    for(const [id,col] of colById){
-    const w=id===ADD_ID?ADD_WIDTH:(widths.get(id)||58);
+    const w=id===ADD_ID?ADD_WIDTH:((hid&&hid.has(id))?0:(widths.get(id)||58));
     col.style.width=w+"px";total+=w;
    }
    table.style.width=total+"px";table.style.minWidth=total+"px";
   }
+  drawRef=draw;
   function persist(){
    try{localStorage.setItem(key,JSON.stringify(Object.fromEntries(widths)));}catch(e){}
   }
@@ -323,6 +329,7 @@ root.createLeaderColumnFilters=function(ctx){
  const hiddenKey="stock-dashboard-screener-hidden-v1-"+market;
  let hidden=new Set();
  try{hidden=new Set((JSON.parse(localStorage.getItem(hiddenKey)||"[]")||[]).filter(id=>defs.some(d=>d.id===id)));}catch(e){}
+ panel.__lsHiddenCols=hidden;
  const visStyle=document.createElement("style");
  panel.appendChild(visStyle);
  const addTh=document.createElement("th");
@@ -346,9 +353,16 @@ root.createLeaderColumnFilters=function(ctx){
  addMenu.setAttribute("role","dialog");addMenu.setAttribute("aria-label","追加する列");
  panel.appendChild(addMenu);
  function applyHidden(){
-  visStyle.textContent=[...hidden].map(id=>'th[data-ls-column-id="'+id+'"],td[data-ls-column-id="'+id+'"]{display:none!important}col[data-ls-column-id="'+id+'"]{visibility:collapse}').join("");
+  // Keep the cells in the table grid (no display:none, no column
+  // visibility:collapse): removing cells shifts later columns into the
+  // wrong colgroup slots in some engines, which made the NEXT column
+  // vanish instead. The resize draw gives hidden columns width 0 and the
+  // cells are only made invisible, so every column keeps its own slot in
+  // every browser.
+  visStyle.textContent=[...hidden].map(id=>'th[data-ls-column-id="'+id+'"],td[data-ls-column-id="'+id+'"]{visibility:hidden!important;padding-left:0!important;padding-right:0!important}').join("");
   try{localStorage.setItem(hiddenKey,JSON.stringify([...hidden]));}catch(e){}
   addButton.title=hidden.size?"非表示の列を追加（"+hidden.size+"列）":"非表示の列はありません";
+  panel.dispatchEvent(new Event("ls:hidden-changed"));
  }
  function closeAddMenu(){addMenu.hidden=true;}
  function openAddMenu(anchor){
