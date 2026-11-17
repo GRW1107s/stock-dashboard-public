@@ -146,39 +146,62 @@ function setupColumnOrder(panel,market,headings,defs){
  return {applyRows};
 }
 
-/* Column widths are draggable and remembered in this browser for each market. */
-function setupColumnResize(panel,market,headings){
+/* Column widths are draggable and remembered in this browser for each
+   market. Widths are keyed by stable column ID (not position), so column
+   reordering or adding/removing columns never misaligns a width with the
+   wrong column. Dragging uses window-level pointer tracking. */
+function setupColumnResize(panel,market,headings,ids){
  const table=panel.querySelector("table.ls-table");
- if(!table||!headings.length)return;
- const key="stock-dashboard-screener-widths-v1-"+market;
+ if(!table||!headings.length||!ids||ids.length!==headings.length)return;
+ const key="stock-dashboard-screener-widths-v2-"+market;
+ const legacyKey="stock-dashboard-screener-widths-v1-"+market;
+ const ADD_ID="__add",ADD_WIDTH=36;
+ const minFor=(th,id)=>id==="name"?135:(th&&th.classList.contains("ls-ma-col")?50:58);
+ const clamp=(th,id,v)=>Math.max(minFor(th,id),Math.min(650,Math.round(v)));
  let done=false;
  function init(){
   if(done||table.getBoundingClientRect().width<100)return false;
   done=true;
-  const defaultWidths=Array.from(headings,th=>Math.ceil(th.getBoundingClientRect().width));
-  const minimums=Array.from(headings,th=>th.classList.contains("ls-ma-col")?50:th.classList.contains("ls-name-heading")?135:58);
+  const thById=new Map(),defaults=new Map();
+  Array.from(headings).forEach((th,i)=>{
+   thById.set(ids[i],th);
+   defaults.set(ids[i],clamp(th,ids[i],Math.ceil(th.getBoundingClientRect().width)||58));
+  });
   let stored=null;
   try{stored=JSON.parse(localStorage.getItem(key)||"null");}catch(e){}
-  const widths=defaultWidths.map((width,i)=>{
-   const saved=Array.isArray(stored)&&stored.length===headings.length?stored[i]:null;
-   return typeof saved==="number"&&Number.isFinite(saved)?Math.max(minimums[i],Math.min(650,saved)):Math.max(minimums[i],width);
-  });
-  const group=document.createElement("colgroup");
-  const columns=widths.map((_,i)=>{const col=document.createElement("col");col.dataset.lsColumnId=headings[i].dataset.lsColumnId||String(i);group.appendChild(col);return col;});
-  if(table.querySelector("thead th.ls-add-col")){
-   const col=document.createElement("col");col.dataset.lsColumnId="__add";columns.push(col);widths.push(36);
+  if(!stored||typeof stored!=="object"||Array.isArray(stored)){
+   try{const legacy=JSON.parse(localStorage.getItem(legacyKey)||"null");
+    if(Array.isArray(legacy)&&legacy.length===ids.length){
+     stored={};ids.forEach((id,i)=>{if(typeof legacy[i]==="number"&&Number.isFinite(legacy[i]))stored[id]=legacy[i];});
+    }}catch(e){}
   }
-   const positions=[...table.querySelectorAll("thead th")].map(th=>th.dataset.lsColumnId);
-   for(const id of positions){const col=columns.find(c=>c.dataset.lsColumnId===id);if(col)group.appendChild(col);}
+  const widths=new Map(ids.map(id=>{
+   const saved=stored&&typeof stored[id]==="number"&&Number.isFinite(stored[id])?stored[id]:null;
+   return [id,saved===null?defaults.get(id):clamp(thById.get(id),id,saved)];
+  }));
+  const group=document.createElement("colgroup");
+  const colById=new Map();
+  for(const id of ids){
+   const col=document.createElement("col");col.dataset.lsColumnId=id;colById.set(id,col);group.appendChild(col);
+  }
+  const addCol=document.createElement("col");addCol.dataset.lsColumnId=ADD_ID;colById.set(ADD_ID,addCol);group.appendChild(addCol);
+  const positions=[...table.querySelectorAll("thead th")].map(th=>th.dataset.lsColumnId).filter(Boolean);
+  for(const id of positions){const col=colById.get(id);if(col)group.appendChild(col);}
   table.insertBefore(group,table.querySelector("thead"));
   table.style.tableLayout="fixed";
   function draw(){
-   columns.forEach((col,i)=>col.style.width=widths[i]+"px");
-   const total=widths.reduce((sum,v)=>sum+v,0)+"px";
-   table.style.width=total;table.style.minWidth=total;
+   let total=0;
+   for(const [id,col] of colById){
+    const w=id===ADD_ID?ADD_WIDTH:(widths.get(id)||58);
+    col.style.width=w+"px";total+=w;
+   }
+   table.style.width=total+"px";table.style.minWidth=total+"px";
   }
-  function persist(){try{localStorage.setItem(key,JSON.stringify(widths.slice(0,headings.length)));}catch(e){}}
-  Array.from(headings).forEach((th,i)=>{
+  function persist(){
+   try{localStorage.setItem(key,JSON.stringify(Object.fromEntries(widths)));}catch(e){}
+  }
+  for(const id of ids){
+   const th=thById.get(id);if(!th)continue;
    th.classList.add("ls-resizable-heading");
    const grip=document.createElement("span");
    grip.className="ls-column-resize-handle";
@@ -188,27 +211,32 @@ function setupColumnResize(panel,market,headings){
    grip.setAttribute("tabindex","0");
    grip.title="ドラッグで幅を調整・自動保存。ダブルクリックで元に戻す";
    th.appendChild(grip);
-   let startX=null,oldWidth=0;
    grip.addEventListener("pointerdown",e=>{
-    if(e.button!==0||!e.isPrimary)return;
+    if(e.button!==0||e.isPrimary===false)return;
     e.preventDefault();e.stopPropagation();
-    startX=e.clientX;oldWidth=widths[i];grip.setPointerCapture(e.pointerId);
+    const startX=e.clientX,startWidth=widths.get(id),pointerId=e.pointerId;
+    function move(ev){
+     if(ev.pointerId!==pointerId)return;
+     widths.set(id,clamp(th,id,startWidth+(ev.clientX-startX)));
+     draw();
+    }
+    function up(ev){
+     if(ev.pointerId!==pointerId)return;
+     window.removeEventListener("pointermove",move,true);
+     window.removeEventListener("pointerup",up,true);
+     window.removeEventListener("pointercancel",up,true);
+     persist();
+    }
+    window.addEventListener("pointermove",move,true);
+    window.addEventListener("pointerup",up,true);
+    window.addEventListener("pointercancel",up,true);
    });
-   grip.addEventListener("pointermove",e=>{
-    if(startX===null)return;
-    widths[i]=Math.max(minimums[i],Math.min(650,oldWidth+Math.round(e.clientX-startX)));
-    draw();
-   });
-   function finish(){if(startX!==null){startX=null;persist();}}
-   grip.addEventListener("pointerup",finish);
-   grip.addEventListener("pointercancel",finish);
-   grip.addEventListener("lostpointercapture",finish);
-   grip.addEventListener("dblclick",e=>{e.preventDefault();e.stopPropagation();widths[i]=Math.max(minimums[i],defaultWidths[i]);draw();persist();});
+   grip.addEventListener("dblclick",e=>{e.preventDefault();e.stopPropagation();widths.set(id,defaults.get(id));draw();persist();});
    grip.addEventListener("keydown",e=>{
     if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
-    e.preventDefault();widths[i]=Math.max(minimums[i],Math.min(650,widths[i]+(e.key==="ArrowRight"?10:-10)));draw();persist();
+    e.preventDefault();widths.set(id,clamp(th,id,(widths.get(id)||58)+(e.key==="ArrowRight"?10:-10)));draw();persist();
    });
-  });
+  }
   draw();
   return true;
  }
@@ -286,7 +314,7 @@ root.createLeaderColumnFilters=function(ctx){
   b.addEventListener("click",()=>{if(active===def.id&&!popup.hidden){close();return;}open(def,b);});
   th.appendChild(b);buttons.set(def.id,b);
  });
- setupColumnResize(panel,market,headings);
+ setupColumnResize(panel,market,headings,defs.map(d=>d.id));
  const columnOrder=setupColumnOrder(panel,market,headings,defs);
  // Column visibility: right-click a heading and press the menu button to
  // hide the column; the "列を追加" toolbar button (or the "+" heading at

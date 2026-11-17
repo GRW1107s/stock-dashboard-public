@@ -164,7 +164,7 @@
 
 /* Mouse and keyboard column resizing; header remains sticky. */
 .leader-screen table.ls-table thead th.ls-resizable-heading{padding-right:9px;position:sticky;overflow:visible}
-.leader-screen .ls-column-resize-handle{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;touch-action:none;z-index:4;border-left:1px solid transparent;background:transparent}
+.leader-screen .ls-column-resize-handle{position:absolute;top:0;right:0;width:10px;height:100%;cursor:col-resize;touch-action:none;z-index:4;border-left:1px solid transparent;background:transparent}
 .leader-screen .ls-column-resize-handle:hover,.leader-screen .ls-column-resize-handle:focus-visible{border-left-color:#2563eb;background:rgba(37,99,235,.12);outline:0}
 .leader-screen table.ls-table tbody td{overflow:hidden;text-overflow:ellipsis}
 
@@ -188,6 +188,7 @@
 .leader-screen .ls-rk-card{border:1px solid #d7e0ea;border-top:4px solid #2563eb;border-radius:5px;padding:12px 14px;background:#fff}
 .leader-screen .ls-fd-card{border:1px solid #d7e0ea;border-top:4px solid #d97706;border-radius:5px;padding:12px 14px;background:#fff}
 .leader-screen .ls-fd-num{width:58px;margin:0 4px;padding:3px 6px;border:1px solid #b7c8db;border-radius:6px;font-size:13px}
+.leader-screen .ls-fd-select{width:64px;padding:3px 4px;background:#fff}
 .leader-screen .ls-tt-row .ls-guidance-tiles{grid-template-columns:1fr;margin:0}
 .leader-screen .ls-tt-card{border:1px solid #d7e0ea;border-top:4px solid #16a34a;border-radius:5px;padding:12px 14px;background:#fff}
 .leader-screen .ls-tt-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
