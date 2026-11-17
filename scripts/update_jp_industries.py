@@ -276,6 +276,14 @@ def main():
     industries = [n for n in ORDER if n in enriched]
     industries += [n for n in membership if n not in industries and n in enriched]
     dates = calendar[::-1][:PUBLISH]
+    # Never publish trailing sessions no industry could price (e.g. Yahoo
+    # serving member bars late): an all-null latest row breaks the
+    # front-end strength rankings. Lag one session instead.
+    covered = set()
+    for name in industries:
+        covered.update(enriched.get(name, {}))
+    if covered:
+        dates = [d for d in dates if d <= max(covered)]
     rows = []
     for day in dates:
         values = {name: enriched.get(name, {}).get(day) for name in industries}
