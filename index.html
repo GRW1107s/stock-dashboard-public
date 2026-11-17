@@ -10,6 +10,10 @@
 .market-table th,.market-table td{padding:4px 1px;overflow:hidden;text-overflow:ellipsis}.market-table thead tr:nth-child(2) th:nth-child(even){font-size:9px;letter-spacing:-.5px}
 .market-table .day{font-size:12px}
 #table-jp thead tr:nth-child(2) th,#table-us thead tr:nth-child(2) th{font-size:12px;letter-spacing:normal}
+#table-jp td,#table-us td{font-size:12px}
+.idx-start{border-left:1px solid #d7e0ea}
+#table-jp thead th[data-idx],#table-us thead th[data-idx]{cursor:grab;touch-action:none}
+#table-jp thead th.drop-hint,#table-us thead th.drop-hint{box-shadow:inset 3px 0 0 #2563eb}
 .market-table .dot{width:16px;height:16px;font-size:11px}
 .market-table .ftd{font-size:8px;padding:1px 2px}
 .market-table thead tr:nth-child(2) th.judge-heading{font-size:9px}
@@ -111,7 +115,22 @@ const specs=[['sp500','S&P500'],['nasdaq','NASDAQ総合'],['nasdaq100','NASDAQ10
 const JP_KEYS=new Set(['nikkei','prime','standard','growth']);
 const NO_VOL=new Set(['vix','nikkei_vi']);
 const IDX_LABEL={sp500:'S&P500',nasdaq:'NASDAQ総合',nasdaq100:'NASDAQ100',dow:'ダウ',vix:'VIX',nikkei:'日経225',prime:'東証P',standard:'東証S',growth:'東証G',nikkei_vi:'日経VI'};
-const TAB_COLS={jp:['date-us','nasdaq100','sp500','nasdaq','date-jp','nikkei','prime','standard','growth','nikkei_vi'],us:['date-us','sp500','nasdaq','nasdaq100','dow','vix']};
+const TAB_COLS={jp:['date-us','nasdaq100','sp500','nasdaq','date-jp','nikkei','prime','standard','growth','nikkei_vi'],us:['date-us','nasdaq100','sp500','nasdaq','dow','vix']};
+const DEFAULT_ORDER={jp:['nasdaq100','sp500','nasdaq','nikkei','prime','standard','growth','nikkei_vi'],us:['nasdaq100','sp500','nasdaq','dow','vix']};
+let colOrder={jp:DEFAULT_ORDER.jp.slice(),us:DEFAULT_ORDER.us.slice()};
+try{const s=JSON.parse(localStorage.getItem('stock-dashboard-market-order-v1')||'null');if(s)for(const m of ['jp','us']){if(Array.isArray(s[m])){const valid=s[m].filter(k=>DEFAULT_ORDER[m].includes(k));colOrder[m]=valid.concat(DEFAULT_ORDER[m].filter(k=>!valid.includes(k)));}}}catch(e){}
+function saveOrder(){try{localStorage.setItem('stock-dashboard-market-order-v1',JSON.stringify(colOrder))}catch(e){}}
+function orderedLayout(m){
+  const pos=k=>{const i=colOrder[m].indexOf(k);return i<0?999:i};
+  const out=[];let seg=[];
+  const flush=()=>{seg.sort((a,b)=>pos(a)-pos(b));out.push(...seg);seg=[]};
+  for(const x of TAB_COLS[m]){if(x.startsWith('date')){flush();out.push(x);}else seg.push(x);}
+  flush();return out;
+}
+function orderPairs(m,pairs){
+  const pos=k=>{const i=colOrder[m].indexOf(k);return i<0?999:i};
+  return pairs.slice().sort((a,b)=>pos(a[0])-pos(b[0]));
+}
 const ALL_IDX=Object.keys(IDX_LABEL);
 let visibleCols=new Set(ALL_IDX);
 try{const saved=JSON.parse(localStorage.getItem('overviewVisibleCols')||'null');if(Array.isArray(saved)&&saved.length)visibleCols=new Set(saved.filter(k=>ALL_IDX.includes(k)));}catch(e){}
@@ -168,7 +187,7 @@ function renderSummary(){
   };
   document.getElementById('histories-us').innerHTML=
     dateLine('米国日付','date')+
-    specs.slice(0,4).filter(([k])=>visibleCols.has(k)).map(judgmentLine).join('');
+    orderPairs('us',specs.slice(0,4)).filter(([k])=>visibleCols.has(k)).map(judgmentLine).join('');
   const jpAll=[...tseByDate.values()].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
   const jpPad=jpAll.concat(Array.from({length:25-jpAll.length},()=>null));
   const jpLine=([key,name])=>{
@@ -182,9 +201,9 @@ function renderSummary(){
   };
   document.getElementById('histories-jp').innerHTML=
     dateLine('米国日付','date')+
-    ['nasdaq100','sp500','nasdaq'].filter(k=>visibleCols.has(k)).map(k=>judgmentLine([k,IDX_LABEL[k]])).join('')+
+    orderPairs('jp',['nasdaq100','sp500','nasdaq'].map(k=>[k,IDX_LABEL[k]])).filter(([k])=>visibleCols.has(k)).map(judgmentLine).join('')+
     historyLine('日本日付',jpPad.map(t=>t?.date||null),'history-divider')+
-    specs.slice(4).filter(([k])=>visibleCols.has(k)).map(jpLine).join('');
+    orderPairs('jp',specs.slice(4)).filter(([k])=>visibleCols.has(k)).map(jpLine).join('');
 }
 function fmtClose(v){return hasNum(v)?v.toLocaleString('ja-JP',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}
 function fmtDelta(v){return hasNum(v)?(v>0?'+':'')+v.toLocaleString('ja-JP',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}
@@ -202,9 +221,9 @@ function fmtVolShares(v){
 }
 function idxCells(v,key){
   const noVol=NO_VOL.has(key);
-  if(!v)return '<td colspan="'+(noVol?3:5)+'"><span class="na">—</span></td>';
+  if(!v)return '<td class="idx-start" colspan="'+(noVol?3:5)+'"><span class="na">—</span></td>';
   const d=deltaOf(v);
-  let cells='<td><div class="price">'+fmtClose(v.close)+'</div></td>'
+  let cells='<td class="idx-start"><div class="price">'+fmtClose(v.close)+'</div></td>'
     +'<td><div class="'+cls(d)+'">'+fmtDelta(d)+'</div></td>'
     +'<td><div class="price '+cls(v.change)+'">'+fmt(v.change)+'</div></td>';
   if(noVol)return cells;
@@ -216,8 +235,50 @@ function idxCells(v,key){
     +'<td>'+(vs?'<div>'+vs+'</div>':'<span class="na">—</span>')+'</td>'
     +'<td><div>'+(hasNum(v.volume)?fmt(v.volume):'—')+'</div></td>';
 }
+function attachIdxDrag(m){
+  const head=document.getElementById('headrow-'+m);
+  head.querySelectorAll('th[data-idx]').forEach(th=>{
+    th.addEventListener('pointerdown',e=>{
+      e.preventDefault();
+      const srcKey=th.dataset.idx,srcSeg=th.dataset.seg;
+      let target=null,after=false,dragging=false;
+      try{th.setPointerCapture(e.pointerId);}catch(err){}
+      const move=ev=>{
+        if(Math.abs(ev.clientX-e.clientX)>6)dragging=true;
+        if(!dragging)return;
+        const el=document.elementFromPoint(ev.clientX,ev.clientY);
+        const t=el&&el.closest?el.closest('th[data-idx]'):null;
+        head.querySelectorAll('th[data-idx]').forEach(x=>x.classList.remove('drop-hint'));
+        if(t&&t.dataset.seg===srcSeg&&t.dataset.idx!==srcKey){
+          target=t.dataset.idx;
+          const r=t.getBoundingClientRect();
+          after=ev.clientX>r.left+r.width/2;
+          t.classList.add('drop-hint');
+        }else target=null;
+      };
+      const up=()=>{
+        th.removeEventListener('pointermove',move);
+        th.removeEventListener('pointerup',up);
+        th.removeEventListener('pointercancel',up);
+        head.querySelectorAll('th[data-idx]').forEach(x=>x.classList.remove('drop-hint'));
+        if(dragging&&target){
+          const ord=colOrder[m].filter(k=>k!==srcKey);
+          let idx=ord.indexOf(target);
+          if(after)idx+=1;
+          ord.splice(idx,0,srcKey);
+          colOrder[m]=ord;saveOrder();
+          renderMarket(m);renderSummary();
+        }
+      };
+      th.addEventListener('pointermove',move);
+      th.addEventListener('pointerup',up);
+      th.addEventListener('pointercancel',up);
+    });
+  });
+}
+window.__setMarketOrder=function(m,arr){colOrder[m]=arr.slice();saveOrder();renderMarket(m);renderSummary();};
 function renderMarket(m){
-  const layout=TAB_COLS[m].filter(x=>x==='date-us'||x==='date-jp'||visibleCols.has(x));
+  const layout=orderedLayout(m).filter(x=>x==='date-us'||x==='date-jp'||visibleCols.has(x));
   const units=layout.flatMap(x=>x.startsWith('date')?[2]:NO_VOL.has(x)?[1,1,1]:[1,1,1,1,1]);
   document.getElementById('cols-'+m).innerHTML=units.map(u=>'<col style="width:'+(u*64)+'px">').join('');
   const totalCols=units.length;
@@ -225,8 +286,13 @@ function renderMarket(m){
   document.getElementById('table-'+m).style.width=(totalUnits*64)+'px';
   document.getElementById('table-'+m).style.minWidth=(totalUnits*64)+'px';
   document.getElementById('wrap-'+m).style.overflowX='auto';
-  document.getElementById('headrow-'+m).innerHTML=layout.map(x=>x==='date-us'?'<th rowspan="2" class="dayhead">米国日付</th>':x==='date-jp'?'<th rowspan="2" class="dayhead jpdate">日本日付</th>':'<th colspan="'+(NO_VOL.has(x)?3:5)+'">'+IDX_LABEL[x]+'</th>').join('');
-  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(k=>NO_VOL.has(k)?'<th>終値</th><th>変化値</th><th>変動率</th>':'<th>終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th>').join('');
+  let seg=-1;
+  document.getElementById('headrow-'+m).innerHTML=layout.map(x=>{
+    if(x==='date-us'){seg++;return '<th rowspan="2" class="dayhead">米国日付</th>';}
+    if(x==='date-jp'){seg++;return '<th rowspan="2" class="dayhead jpdate">日本日付</th>';}
+    return '<th class="idx-start" colspan="'+(NO_VOL.has(x)?3:5)+'" data-idx="'+x+'" data-seg="'+seg+'" title="ドラッグで並び替え">'+IDX_LABEL[x]+'</th>';
+  }).join('');
+  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(k=>NO_VOL.has(k)?'<th class="idx-start">終値</th><th>変化値</th><th>変動率</th>':'<th class="idx-start">終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th>').join('');
   const view=rows.slice(0,25);
   document.getElementById('body-'+m).innerHTML=view.length?view.map(r=>{
     const tse=tseByDate.get(r.japan_date)||{};
@@ -238,6 +304,7 @@ function renderMarket(m){
     }).join('')+'</tr>';
   }).join(''):'<tr><td colspan="'+totalCols+'">表示できるデータがありません</td></tr>';
   document.getElementById('status-'+m).textContent=view.length+'行表示 / 全'+rows.length+'行';
+  attachIdxDrag(m);
 }
 function renderPicker(m){
   const el=document.getElementById('picker-'+m);
