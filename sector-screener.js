@@ -41,7 +41,7 @@ panel.innerHTML=
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt5"><span>株価が50日MAより上</span></label>'+
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt6" disabled><span>52週安値から30%以上上昇</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt7"><span>52週高値から25%以内</span></label>'+
-'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt8"><span>RS Ratingが<select class="ls-tt-select" id="ls-tt-rs" aria-label="RS Ratingのしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt8"><span>RS指数が<select class="ls-tt-select" id="ls-tt-rs" aria-label="RS指数のしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>'+
 '<p class="ls-tt-note">チェックした項目はすべて満たす銘柄だけに絞り込まれます。グレーの項目は必要データ（150日MAなど）を収集中です。</p></div>'+
 '<div class="ls-guidance-tiles" aria-label="EPS・ROEのスクリーニング参考基準">'+
 '<div class="ls-guidance-tile ls-guidance-eps">年間のEPSの増加率が25～50％以上の銘柄を選ぶ<span>（大化け銘柄の株式の初期上昇段階における平均の年間EPSの増加は36％であった）</span></div>'+
