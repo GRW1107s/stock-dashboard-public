@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-16",
+ "updated_at": "2026-11-17",
  "source": "Yahoo Finance company profile (sector/industry) via yfinance",
  "tickers": {
   "1301.T": {
@@ -13360,6 +13360,1922 @@
   },
   "9997.T": {
    "industry": "Specialty Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "6533.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "6535.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "6537.T": {
+   "industry": "Personal Services",
+   "sector": "Consumer Cyclical"
+  },
+  "6538.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "6539.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "6540.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "6543.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "6544.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "6545.T": {
+   "industry": "Health Information Services",
+   "sector": "Healthcare"
+  },
+  "6546.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6547.T": {
+   "industry": "Lodging",
+   "sector": "Consumer Cyclical"
+  },
+  "6548.T": {
+   "industry": "Travel Services",
+   "sector": "Consumer Cyclical"
+  },
+  "6549.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "6551.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "6552.T": {
+   "industry": "Electronic Gaming & Multimedia",
+   "sector": "Communication Services"
+  },
+  "6554.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "6555.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "6557.T": {
+   "industry": "Medical Care Facilities",
+   "sector": "Healthcare"
+  },
+  "6558.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "6560.T": {
+   "industry": "Consulting Services",
+   "sector": "Industrials"
+  },
+  "6561.T": {
+   "industry": "Travel Services",
+   "sector": "Consumer Cyclical"
+  },
+  "6562.T": {
+   "industry": "Internet Content & Information",
+   "sector": "Communication Services"
+  },
+  "6563.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "6564.T": {
+   "industry": "Waste Management",
+   "sector": "Industrials"
+  },
+  "6566.T": {
+   "industry": "Waste Management",
+   "sector": "Industrials"
+  },
+  "6568.T": {
+   "industry": "Chemicals",
+   "sector": "Basic Materials"
+  },
+  "6570.T": {
+   "industry": "Leisure",
+   "sector": "Consumer Cyclical"
+  },
+  "6571.T": {
+   "industry": "Personal Services",
+   "sector": "Consumer Cyclical"
+  },
+  "6572.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "6573.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "6574.T": {
+   "industry": "Personal Services",
+   "sector": "Consumer Cyclical"
+  },
+  "6577.T": {
+   "industry": "Travel Services",
+   "sector": "Consumer Cyclical"
+  },
+  "6578.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "6579.T": {
+   "industry": "Internet Content & Information",
+   "sector": "Communication Services"
+  },
+  "6580.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "6584.T": {
+   "industry": "Auto Parts",
+   "sector": "Consumer Cyclical"
+  },
+  "6586.T": {
+   "industry": "Tools & Accessories",
+   "sector": "Industrials"
+  },
+  "6588.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6590.T": {
+   "industry": "Semiconductor Equipment & Materials",
+   "sector": "Technology"
+  },
+  "6592.T": {
+   "industry": "Auto Parts",
+   "sector": "Consumer Cyclical"
+  },
+  "6594.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6596.T": {
+   "industry": "Semiconductor Equipment & Materials",
+   "sector": "Technology"
+  },
+  "6597.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6599.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6612.T": {
+   "industry": "Furnishings, Fixtures & Appliances",
+   "sector": "Consumer Cyclical"
+  },
+  "6613.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6614.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6615.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6616.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6617.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6619.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6620.T": {
+   "industry": "Asset Management",
+   "sector": "Financial Services"
+  },
+  "6622.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6625.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6626.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6627.T": {
+   "industry": "Semiconductor Equipment & Materials",
+   "sector": "Technology"
+  },
+  "6629.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6630.T": {
+   "industry": "Household & Personal Products",
+   "sector": "Consumer Defensive"
+  },
+  "6632.T": {
+   "industry": "Auto Parts",
+   "sector": "Consumer Cyclical"
+  },
+  "6633.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "6634.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "6635.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6637.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6638.T": {
+   "industry": "Electronics & Computer Distribution",
+   "sector": "Technology"
+  },
+  "6643.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6644.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6645.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6647.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6648.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6651.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6652.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6653.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6654.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6656.T": {
+   "industry": "Semiconductor Equipment & Materials",
+   "sector": "Technology"
+  },
+  "6658.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6659.T": {
+   "industry": "Software - Infrastructure",
+   "sector": "Technology"
+  },
+  "6662.T": {
+   "industry": "Software - Infrastructure",
+   "sector": "Technology"
+  },
+  "6663.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6664.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6666.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6668.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6674.T": {
+   "industry": "Auto Parts",
+   "sector": "Consumer Cyclical"
+  },
+  "6675.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6676.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6677.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6678.T": {
+   "industry": "Medical Devices",
+   "sector": "Healthcare"
+  },
+  "6694.T": {
+   "industry": "Consumer Electronics",
+   "sector": "Technology"
+  },
+  "6696.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6699.T": {
+   "industry": "Auto Parts",
+   "sector": "Consumer Cyclical"
+  },
+  "6701.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "6702.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "6703.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6706.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6707.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6718.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6721.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6723.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6724.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6727.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6728.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6730.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6731.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6736.T": {
+   "industry": "Consumer Electronics",
+   "sector": "Technology"
+  },
+  "6737.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6740.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6741.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6742.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6743.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6744.T": {
+   "industry": "Security & Protection Services",
+   "sector": "Industrials"
+  },
+  "6745.T": {
+   "industry": "Building Products & Equipment",
+   "sector": "Industrials"
+  },
+  "6748.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6750.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6752.T": {
+   "industry": "Consumer Electronics",
+   "sector": "Technology"
+  },
+  "6753.T": {
+   "industry": "Consumer Electronics",
+   "sector": "Technology"
+  },
+  "6754.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6757.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6758.T": {
+   "industry": "Consumer Electronics",
+   "sector": "Technology"
+  },
+  "6762.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6763.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6768.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6769.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6770.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6771.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6772.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6775.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6776.T": {
+   "industry": "Auto Parts",
+   "sector": "Consumer Cyclical"
+  },
+  "6777.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6778.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6779.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6785.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6786.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "6787.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6788.T": {
+   "industry": "Pollution & Treatment Controls",
+   "sector": "Industrials"
+  },
+  "6794.T": {
+   "industry": "Consumer Electronics",
+   "sector": "Technology"
+  },
+  "6797.T": {
+   "industry": "Security & Protection Services",
+   "sector": "Industrials"
+  },
+  "6798.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6800.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6803.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6804.T": {
+   "industry": "Electrical Equipment & Parts",
+   "sector": "Industrials"
+  },
+  "6806.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6807.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6809.T": {
+   "industry": "Security & Protection Services",
+   "sector": "Industrials"
+  },
+  "6810.T": {
+   "industry": "Consumer Electronics",
+   "sector": "Technology"
+  },
+  "6814.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6817.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6819.T": {
+   "industry": "Leisure",
+   "sector": "Consumer Cyclical"
+  },
+  "6820.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6822.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6823.T": {
+   "industry": "Medical Devices",
+   "sector": "Healthcare"
+  },
+  "6824.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6832.T": {
+   "industry": "Semiconductors",
+   "sector": "Technology"
+  },
+  "6834.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6835.T": {
+   "industry": "Communication Equipment",
+   "sector": "Technology"
+  },
+  "6836.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6837.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6838.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "6840.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "6841.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6844.T": {
+   "industry": "Electronic Components",
+   "sector": "Technology"
+  },
+  "6845.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "6848.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "6849.T": {
+   "industry": "Medical Devices",
+   "sector": "Healthcare"
+  },
+  "6850.T": {
+   "industry": "Scientific & Technical Instruments",
+   "sector": "Technology"
+  },
+  "7694.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "7695.T": {
+   "industry": "Internet Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "8928.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8929.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8931.T": {
+   "industry": "Real Estate - Development",
+   "sector": "Real Estate"
+  },
+  "8934.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8935.T": {
+   "industry": "Real Estate - Diversified",
+   "sector": "Real Estate"
+  },
+  "8938.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8944.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8945.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8946.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8995.T": {
+   "industry": "Real Estate - Diversified",
+   "sector": "Real Estate"
+  },
+  "8996.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "8999.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "9001.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9003.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9005.T": {
+   "industry": "Department Stores",
+   "sector": "Consumer Cyclical"
+  },
+  "9006.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9007.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9008.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9009.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9010.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9012.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9017.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9020.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9021.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9022.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9023.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9024.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9025.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9028.T": {
+   "industry": "Auto & Truck Dealerships",
+   "sector": "Consumer Cyclical"
+  },
+  "9029.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9031.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9033.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9034.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9036.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9037.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9039.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9041.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9042.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9044.T": {
+   "industry": "Real Estate - Development",
+   "sector": "Real Estate"
+  },
+  "9045.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9046.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9048.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9049.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9051.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9052.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9057.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9059.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9060.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9063.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9064.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9065.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9068.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9069.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9072.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9073.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9074.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9075.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9076.T": {
+   "industry": "Trucking",
+   "sector": "Industrials"
+  },
+  "9081.T": {
+   "industry": "Railroads",
+   "sector": "Industrials"
+  },
+  "9082.T": {
+   "industry": "Auto & Truck Dealerships",
+   "sector": "Consumer Cyclical"
+  },
+  "9083.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9087.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9090.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9101.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9104.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9107.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9110.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9115.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9119.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9127.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9130.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9142.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9143.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9145.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9147.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9158.T": {
+   "industry": "Medical Care Facilities",
+   "sector": "Healthcare"
+  },
+  "9159.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9160.T": {
+   "industry": "Personal Services",
+   "sector": "Consumer Cyclical"
+  },
+  "9162.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9163.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9165.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9166.T": {
+   "industry": "Leisure",
+   "sector": "Consumer Cyclical"
+  },
+  "9168.T": {
+   "industry": "Consulting Services",
+   "sector": "Industrials"
+  },
+  "9171.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9173.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9193.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9201.T": {
+   "industry": "Airlines",
+   "sector": "Industrials"
+  },
+  "9202.T": {
+   "industry": "Airlines",
+   "sector": "Industrials"
+  },
+  "9204.T": {
+   "industry": "Airports & Air Services",
+   "sector": "Industrials"
+  },
+  "9206.T": {
+   "industry": "Airlines",
+   "sector": "Industrials"
+  },
+  "9211.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9212.T": {
+   "industry": "Specialty Chemicals",
+   "sector": "Basic Materials"
+  },
+  "9213.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9214.T": {
+   "industry": "Medical Care Facilities",
+   "sector": "Healthcare"
+  },
+  "9215.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9216.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9218.T": {
+   "industry": "Medical Care Facilities",
+   "sector": "Healthcare"
+  },
+  "9219.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9220.T": {
+   "industry": "Medical Care Facilities",
+   "sector": "Healthcare"
+  },
+  "9221.T": {
+   "industry": "Waste Management",
+   "sector": "Industrials"
+  },
+  "9222.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9225.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9227.T": {
+   "industry": "Chemicals",
+   "sector": "Basic Materials"
+  },
+  "9229.T": {
+   "industry": "Medical Care Facilities",
+   "sector": "Healthcare"
+  },
+  "9233.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9235.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9236.T": {
+   "industry": "Consulting Services",
+   "sector": "Industrials"
+  },
+  "9237.T": {
+   "industry": "Consulting Services",
+   "sector": "Industrials"
+  },
+  "9238.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9240.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9241.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9242.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9243.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9244.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9245.T": {
+   "industry": "Internet Content & Information",
+   "sector": "Communication Services"
+  },
+  "9246.T": {
+   "industry": "Consulting Services",
+   "sector": "Industrials"
+  },
+  "9247.T": {
+   "industry": "Waste Management",
+   "sector": "Industrials"
+  },
+  "9248.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9249.T": {
+   "industry": "Entertainment",
+   "sector": "Communication Services"
+  },
+  "9250.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9251.T": {
+   "industry": "Personal Services",
+   "sector": "Consumer Cyclical"
+  },
+  "9252.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9253.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9254.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9256.T": {
+   "industry": "Education & Training Services",
+   "sector": "Consumer Defensive"
+  },
+  "9257.T": {
+   "industry": "Asset Management",
+   "sector": "Financial Services"
+  },
+  "9258.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9259.T": {
+   "industry": "Grocery Stores",
+   "sector": "Consumer Defensive"
+  },
+  "9262.T": {
+   "industry": "Packaged Foods",
+   "sector": "Consumer Defensive"
+  },
+  "9264.T": {
+   "industry": "Specialty Industrial Machinery",
+   "sector": "Industrials"
+  },
+  "9265.T": {
+   "industry": "Medical Distribution",
+   "sector": "Healthcare"
+  },
+  "9267.T": {
+   "industry": "Pharmaceutical Retailers",
+   "sector": "Healthcare"
+  },
+  "9268.T": {
+   "industry": "Auto & Truck Dealerships",
+   "sector": "Consumer Cyclical"
+  },
+  "9270.T": {
+   "industry": "Specialty Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "9271.T": {
+   "industry": "Apparel Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "9272.T": {
+   "industry": "Internet Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "9273.T": {
+   "industry": "Drug Manufacturers - Specialty & Generic",
+   "sector": "Healthcare"
+  },
+  "9274.T": {
+   "industry": "Paper & Paper Products",
+   "sector": "Basic Materials"
+  },
+  "9278.T": {
+   "industry": "Specialty Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "9279.T": {
+   "industry": "Restaurants",
+   "sector": "Consumer Cyclical"
+  },
+  "9301.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9302.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9303.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9304.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9305.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9306.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9307.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9308.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9310.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9311.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9312.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9313.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9319.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9322.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9324.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9325.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9326.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9327.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9330.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9331.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9332.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9336.T": {
+   "industry": "Waste Management",
+   "sector": "Industrials"
+  },
+  "9337.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9339.T": {
+   "industry": "Education & Training Services",
+   "sector": "Consumer Defensive"
+  },
+  "9340.T": {
+   "industry": "Medical Instruments & Supplies",
+   "sector": "Healthcare"
+  },
+  "9341.T": {
+   "industry": "Medical Devices",
+   "sector": "Healthcare"
+  },
+  "9342.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "9343.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9344.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9345.T": {
+   "industry": "Education & Training Services",
+   "sector": "Consumer Defensive"
+  },
+  "9346.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9347.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "9348.T": {
+   "industry": "Computer Hardware",
+   "sector": "Technology"
+  },
+  "9351.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9353.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9355.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9360.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9361.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9362.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9363.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9364.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9365.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9366.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9367.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9368.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9369.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9376.T": {
+   "industry": "Travel Services",
+   "sector": "Consumer Cyclical"
+  },
+  "9380.T": {
+   "industry": "Marine Shipping",
+   "sector": "Industrials"
+  },
+  "9381.T": {
+   "industry": "Integrated Freight & Logistics",
+   "sector": "Industrials"
+  },
+  "9385.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9399.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9401.T": {
+   "industry": "Broadcasting",
+   "sector": "Communication Services"
+  },
+  "9404.T": {
+   "industry": "Broadcasting",
+   "sector": "Communication Services"
+  },
+  "9405.T": {
+   "industry": "Broadcasting",
+   "sector": "Communication Services"
+  },
+  "9408.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9409.T": {
+   "industry": "Broadcasting",
+   "sector": "Communication Services"
+  },
+  "9412.T": {
+   "industry": "Broadcasting",
+   "sector": "Communication Services"
+  },
+  "9413.T": {
+   "industry": "Broadcasting",
+   "sector": "Communication Services"
+  },
+  "9414.T": {
+   "industry": "Broadcasting",
+   "sector": "Communication Services"
+  },
+  "9416.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9417.T": {
+   "industry": "Software - Infrastructure",
+   "sector": "Technology"
+  },
+  "9418.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9419.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9421.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9423.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "9424.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9425.T": {
+   "industry": "Electronics & Computer Distribution",
+   "sector": "Technology"
+  },
+  "9428.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9432.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9433.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9434.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9435.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9436.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9438.T": {
+   "industry": "Health Information Services",
+   "sector": "Healthcare"
+  },
+  "9439.T": {
+   "industry": "Personal Services",
+   "sector": "Consumer Cyclical"
+  },
+  "9441.T": {
+   "industry": "Specialty Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "9444.T": {
+   "industry": "Specialty Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "9445.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9446.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9449.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9450.T": {
+   "industry": "Telecom Services",
+   "sector": "Communication Services"
+  },
+  "9466.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9467.T": {
+   "industry": "Internet Content & Information",
+   "sector": "Communication Services"
+  },
+  "9468.T": {
+   "industry": "Publishing",
+   "sector": "Communication Services"
+  },
+  "9470.T": {
+   "industry": "Education & Training Services",
+   "sector": "Consumer Defensive"
+  },
+  "9474.T": {
+   "industry": "Internet Content & Information",
+   "sector": "Communication Services"
+  },
+  "9475.T": {
+   "industry": "Publishing",
+   "sector": "Communication Services"
+  },
+  "9476.T": {
+   "industry": "Publishing",
+   "sector": "Communication Services"
+  },
+  "9478.T": {
+   "industry": "Publishing",
+   "sector": "Communication Services"
+  },
+  "9501.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9502.T": {
+   "industry": "Utilities - Diversified",
+   "sector": "Utilities"
+  },
+  "9503.T": {
+   "industry": "Utilities - Regulated Electric",
+   "sector": "Utilities"
+  },
+  "9504.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9505.T": {
+   "industry": "Utilities - Regulated Electric",
+   "sector": "Utilities"
+  },
+  "9506.T": {
+   "industry": "Utilities - Regulated Electric",
+   "sector": "Utilities"
+  },
+  "9507.T": {
+   "industry": "Utilities - Regulated Electric",
+   "sector": "Utilities"
+  },
+  "9509.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9511.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9513.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9514.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9517.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9519.T": {
+   "industry": "Utilities - Renewable",
+   "sector": "Utilities"
+  },
+  "9531.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9532.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9533.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9534.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9535.T": {
+   "industry": "Oil & Gas Integrated",
+   "sector": "Energy"
+  },
+  "9536.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9537.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9539.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9543.T": {
+   "industry": "Utilities - Regulated Gas",
+   "sector": "Utilities"
+  },
+  "9551.T": {
+   "industry": "Pollution & Treatment Controls",
+   "sector": "Industrials"
+  },
+  "9552.T": {
+   "industry": "Capital Markets",
+   "sector": "Financial Services"
+  },
+  "9553.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9554.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9556.T": {
+   "industry": "Consulting Services",
+   "sector": "Industrials"
+  },
+  "9557.T": {
+   "industry": "Internet Retail",
+   "sector": "Consumer Cyclical"
+  },
+  "9558.T": {
+   "industry": "Software - Infrastructure",
+   "sector": "Technology"
+  },
+  "9560.T": {
+   "industry": "Education & Training Services",
+   "sector": "Consumer Defensive"
+  },
+  "9561.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9562.T": {
+   "industry": "Education & Training Services",
+   "sector": "Consumer Defensive"
+  },
+  "9563.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9564.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9565.T": {
+   "industry": "Electronic Gaming & Multimedia",
+   "sector": "Communication Services"
+  },
+  "9601.T": {
+   "industry": "Entertainment",
+   "sector": "Communication Services"
+  },
+  "9602.T": {
+   "industry": "Entertainment",
+   "sector": "Communication Services"
+  },
+  "9603.T": {
+   "industry": "Travel Services",
+   "sector": "Consumer Cyclical"
+  },
+  "9605.T": {
+   "industry": "Entertainment",
+   "sector": "Communication Services"
+  },
+  "9610.T": {
+   "industry": "Staffing & Employment Services",
+   "sector": "Industrials"
+  },
+  "9612.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9616.T": {
+   "industry": "Lodging",
+   "sector": "Consumer Cyclical"
+  },
+  "9619.T": {
+   "industry": "Rental & Leasing Services",
+   "sector": "Industrials"
+  },
+  "9621.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9622.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9625.T": {
+   "industry": "Advertising Agencies",
+   "sector": "Communication Services"
+  },
+  "9627.T": {
+   "industry": "Pharmaceutical Retailers",
+   "sector": "Healthcare"
+  },
+  "9628.T": {
+   "industry": "Personal Services",
+   "sector": "Consumer Cyclical"
+  },
+  "9629.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9632.T": {
+   "industry": "Specialty Business Services",
+   "sector": "Industrials"
+  },
+  "9633.T": {
+   "industry": "Conglomerates",
+   "sector": "Industrials"
+  },
+  "9635.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "9636.T": {
+   "industry": "Entertainment",
+   "sector": "Communication Services"
+  },
+  "9639.T": {
+   "industry": "Real Estate - Diversified",
+   "sector": "Real Estate"
+  },
+  "9640.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9644.T": {
+   "industry": "Consulting Services",
+   "sector": "Industrials"
+  },
+  "9647.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9651.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9656.T": {
+   "industry": "Resorts & Casinos",
+   "sector": "Consumer Cyclical"
+  },
+  "9658.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9661.T": {
+   "industry": "Real Estate Services",
+   "sector": "Real Estate"
+  },
+  "9663.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9672.T": {
+   "industry": "Gambling",
+   "sector": "Consumer Cyclical"
+  },
+  "9678.T": {
+   "industry": "Rental & Leasing Services",
+   "sector": "Industrials"
+  },
+  "9679.T": {
+   "industry": "Insurance - Diversified",
+   "sector": "Financial Services"
+  },
+  "9682.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9684.T": {
+   "industry": "Electronic Gaming & Multimedia",
+   "sector": "Communication Services"
+  },
+  "9685.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9686.T": {
+   "industry": "Security & Protection Services",
+   "sector": "Industrials"
+  },
+  "9687.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9692.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9697.T": {
+   "industry": "Electronic Gaming & Multimedia",
+   "sector": "Communication Services"
+  },
+  "9698.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9699.T": {
+   "industry": "Rental & Leasing Services",
+   "sector": "Industrials"
+  },
+  "9701.T": {
+   "industry": "Restaurants",
+   "sector": "Consumer Cyclical"
+  },
+  "9702.T": {
+   "industry": "Software - Application",
+   "sector": "Technology"
+  },
+  "9704.T": {
+   "industry": "Lodging",
+   "sector": "Consumer Cyclical"
+  },
+  "9706.T": {
+   "industry": "Airports & Air Services",
+   "sector": "Industrials"
+  },
+  "9708.T": {
+   "industry": "Lodging",
+   "sector": "Consumer Cyclical"
+  },
+  "9709.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9713.T": {
+   "industry": "Lodging",
+   "sector": "Consumer Cyclical"
+  },
+  "9715.T": {
+   "industry": "Information Technology Services",
+   "sector": "Technology"
+  },
+  "9716.T": {
+   "industry": "Engineering & Construction",
+   "sector": "Industrials"
+  },
+  "9720.T": {
+   "industry": "Lodging",
+   "sector": "Consumer Cyclical"
+  },
+  "9722.T": {
+   "industry": "Lodging",
    "sector": "Consumer Cyclical"
   }
  }
