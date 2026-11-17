@@ -262,7 +262,7 @@ root.createLeaderColumnFilters=function(ctx){
  let sort=null,active=null;
  const toolbar=document.createElement("div");
  toolbar.className="ls-column-toolbar";
- toolbar.innerHTML='<div class="ls-column-toolbar-top"><span>列フィルター：見出しの <b>▾</b> で絞り込み。列幅は見出し右端をドラッグ、列順は見出しをドラッグ（どちらも自動保存）。見出しを右クリックで列を非表示、右端の <b>＋</b> で再表示。業種は複数選択でき、複数列はAND条件です。</span><button type="button" id="ls-reset-all">全条件を解除</button></div><div id="ls-filter-chips" class="ls-filter-chips" aria-live="polite"></div>';
+ toolbar.innerHTML='<div class="ls-column-toolbar-top"><span>列フィルター：見出しの <b>▾</b> で絞り込み。列幅は見出し右端をドラッグ、列順は見出しをドラッグ（どちらも自動保存）。見出しを右クリック→「この列を非表示」で列を非表示、再表示は「列を追加」から。業種は複数選択でき、複数列はAND条件です。</span><button type="button" id="ls-add-col-btn">列を追加</button><button type="button" id="ls-reset-all">全条件を解除</button></div><div id="ls-filter-chips" class="ls-filter-chips" aria-live="polite"></div>';
  const toolbarAnchor=panel.querySelector(".ls-controls")||panel.querySelector(".ls-sector-fieldset");
  if(toolbarAnchor)toolbarAnchor.insertAdjacentElement("afterend",toolbar);
  else panel.insertBefore(toolbar,panel.querySelector(".ls-table-wrap"));
@@ -287,8 +287,9 @@ root.createLeaderColumnFilters=function(ctx){
  });
  setupColumnResize(panel,market,headings);
  const columnOrder=setupColumnOrder(panel,market,headings,defs);
- // Column visibility: right-click a heading to hide the column; the "+"
- // heading at the right end re-adds hidden columns. Persisted per market.
+ // Column visibility: right-click a heading and press the menu button to
+ // hide the column; the "列を追加" toolbar button (or the "+" heading at
+ // the right end) re-adds hidden columns. Persisted per market.
  const headrow=panel.querySelector("table.ls-table thead tr");
  const hiddenKey="stock-dashboard-screener-hidden-v1-"+market;
  let hidden=new Set();
@@ -321,18 +322,21 @@ root.createLeaderColumnFilters=function(ctx){
   addButton.title=hidden.size?"非表示の列を追加（"+hidden.size+"列）":"非表示の列はありません";
  }
  function closeAddMenu(){addMenu.hidden=true;}
- function openAddMenu(){
+ function openAddMenu(anchor){
+  closeCtxMenu();
   const items=defs.filter(d=>hidden.has(d.id));
   addMenu.innerHTML='<div class="ls-column-pophead"><strong>列を追加</strong><button type="button" data-close="1" aria-label="閉じる">×</button></div>'+
    (items.length?items.map(d=>'<button type="button" class="ls-col-menu-item" data-add="'+H(d.id)+'">'+H(d.label)+'</button>').join("")+
    (items.length>1?'<button type="button" class="ls-col-menu-item ls-col-menu-all" data-add="__all">すべて表示</button>':""):
    '<p class="ls-col-menu-empty">非表示の列はありません</p>');
   addMenu.hidden=false;
-  const rect=addButton.getBoundingClientRect(),w=addMenu.offsetWidth;
+  const rect=(anchor||addButton).getBoundingClientRect(),w=addMenu.offsetWidth;
   addMenu.style.left=Math.round(Math.max(8,Math.min(rect.right-w,window.innerWidth-w-8)))+"px";
   addMenu.style.top=Math.round(rect.bottom+6)+"px";
  }
- addButton.addEventListener("click",()=>{if(addMenu.hidden)openAddMenu();else closeAddMenu();});
+ addButton.addEventListener("click",()=>{if(addMenu.hidden)openAddMenu(addButton);else closeAddMenu();});
+ const addColBtn=get("ls-add-col-btn");
+ if(addColBtn)addColBtn.addEventListener("click",()=>{if(addMenu.hidden)openAddMenu(addColBtn);else closeAddMenu();});
  addMenu.addEventListener("click",e=>{
   if(e.target.closest("[data-close]")){closeAddMenu();return;}
   const b=e.target.closest("[data-add]");if(!b)return;
@@ -340,18 +344,43 @@ root.createLeaderColumnFilters=function(ctx){
   applyHidden();closeAddMenu();
  });
  document.addEventListener("pointerdown",e=>{
-  if(!addMenu.hidden&&!addMenu.contains(e.target)&&e.target!==addButton&&!addButton.contains(e.target))closeAddMenu();
+  if(!addMenu.hidden&&!addMenu.contains(e.target)&&e.target!==addButton&&!addButton.contains(e.target)&&(!addColBtn||(e.target!==addColBtn&&!addColBtn.contains(e.target))))closeAddMenu();
+  if(!ctxMenu.hidden&&!ctxMenu.contains(e.target))closeCtxMenu();
  });
  if(headrow)new MutationObserver(()=>{if(headrow.lastElementChild!==addTh)headrow.appendChild(addTh);}).observe(headrow,{childList:true});
+ // Right-click menu: hiding takes a deliberate button press, so a stray
+ // right-click cannot make a column vanish without the user noticing.
+ const ctxMenu=document.createElement("div");
+ ctxMenu.className="ls-column-popup ls-col-menu";ctxMenu.hidden=true;
+ ctxMenu.setAttribute("role","dialog");ctxMenu.setAttribute("aria-label","列の操作");
+ panel.appendChild(ctxMenu);
+ let ctxDef=null;
+ function closeCtxMenu(){ctxMenu.hidden=true;ctxDef=null;}
+ function openCtxMenu(def,x,y){
+  ctxDef=def;closeAddMenu();
+  const lastVisible=defs.length-hidden.size<=1;
+  ctxMenu.innerHTML='<div class="ls-column-pophead"><strong>'+H(def.label)+'</strong><button type="button" data-close="1" aria-label="閉じる">×</button></div>'+
+   '<button type="button" class="ls-col-menu-item" data-hide="1"'+(lastVisible?' disabled':'')+'>この列を非表示</button>'+
+   (lastVisible?'<p class="ls-col-menu-empty">最後の1列は非表示にできません</p>':'');
+  ctxMenu.hidden=false;
+  const w=ctxMenu.offsetWidth;
+  ctxMenu.style.left=Math.round(Math.max(8,Math.min(x,window.innerWidth-w-8)))+"px";
+  ctxMenu.style.top=Math.round(Math.max(8,Math.min(y,window.innerHeight-140)))+"px";
+ }
+ ctxMenu.addEventListener("click",e=>{
+  if(e.target.closest("[data-close]")){closeCtxMenu();return;}
+  if(e.target.closest("[data-hide]")&&ctxDef){
+   hidden.add(ctxDef.id);
+   if(active===ctxDef.id)close();
+   closeCtxMenu();
+   applyHidden();
+  }
+ });
  defs.forEach((def,i)=>{
   const th=headings[i];if(!th)return;
   th.addEventListener("contextmenu",e=>{
    e.preventDefault();
-   if(defs.length-hidden.size<=1)return;
-   hidden.add(def.id);
-   if(active===def.id)close();
-   closeAddMenu();
-   applyHidden();
+   openCtxMenu(def,e.clientX,e.clientY);
   });
  });
  applyHidden();
