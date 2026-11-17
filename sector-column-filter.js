@@ -289,7 +289,7 @@ root.createLeaderColumnFilters=function(ctx){
   })):[]),
   {id:"volume",label:"出来高倍率",kind:"number",unit:"倍",get:r=>numeric(r.rvol20)},
   {id:"eps",label:"直近四半期EPS成長率",kind:"number",unit:"%",get:r=>epsValue(r,"eps")},
-  {id:"epsAnnualYoy",label:"当期EPS増加率",kind:"number",unit:"%",get:r=>epsValue(r,"annual_yoy")},
+  {id:"epsAnnualYoy",label:"EPS増加率（当期）",kind:"number",unit:"%",get:r=>epsValue(r,"annual_yoy")},
   {id:"epsAnnual",label:"年間EPS成長率3年",kind:"number",unit:"%",get:r=>epsValue(r,"annual")},
   {id:"sales",label:"直近四半期売上高増加率",kind:"number",unit:"%",get:r=>salesValue(r)},
   {id:"roe",label:"ROE",kind:"number",unit:"%",get:r=>roeValue(r)}
