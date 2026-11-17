@@ -641,6 +641,15 @@ def main():
     except Exception as err:
         print("JP_KABUTAN_EPS_ERROR", str(err)[:180], flush=True)
 
+    # US fundamentals enrichment: EPS/sales growth and ROE from Yahoo
+    # Finance statements, same pipeline as JP (rolling batch, 60-day
+    # refresh). A failure here must never block the price pipeline.
+    try:
+        from update_us_fundamentals import enrich_us_fundamentals
+        enrich_us_fundamentals(output, int(os.getenv("US_FUND_BATCH", "1800")))
+    except Exception as err:
+        print("US_FUNDAMENTALS_ERROR", str(err)[:180], flush=True)
+
     # JPX short positions (daily disclosure of >=0.5% holders) and JPX
     # daily margin balances by issue. Both collectors are best-effort:
     # on failure the previously stored files are merged instead.
