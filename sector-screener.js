@@ -40,15 +40,15 @@ panel.innerHTML=
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="roe"><span>ROEが<select class="ls-fd-num ls-fd-select" data-fd-num="roe" aria-label="ROEのしきい値"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
 '<p class="ls-tt-note">複数チェックはAND条件です。年間EPS増加率は3年CAGRです。</p></div>'+
 '<div class="ls-tt-card"><div class="ls-tt-head"><h3>トレンドテンプレート</h3><button type="button" class="ls-tt-clear" id="ls-tt-clear">すべて外す</button></div>'+
-'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt1" disabled><span>株価が150日・200日移動平均線より上</span></label>'+
-'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt2" disabled><span>150日MAが200日MAより上</span></label>'+
-'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt3" disabled><span>200日MAが少なくとも1か月上昇</span></label>'+
-'<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt4" disabled><span>50日MAが150日・200日MAより上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt1"><span>株価が150日・200日移動平均線より上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt2"><span>150日MAが200日MAより上</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt3"><span>200日MAが少なくとも1か月上昇</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt4"><span>50日MAが150日・200日MAより上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt5"><span>株価が50日MAより上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt6"><span>52週安値から30%以上上昇</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt7"><span>52週高値から25%以内</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt8"><span>RS指数が<select class="ls-tt-select" id="ls-tt-rs" aria-label="RS指数のしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>'+
-'<p class="ls-tt-note">チェックした項目はすべて満たす銘柄だけに絞り込まれます。グレーの項目は必要データ（150日MAなど）を収集中です。</p></div>'+
+'<p class="ls-tt-note">チェックした項目はすべて満たす銘柄だけに絞り込まれます。判定に必要なデータのない銘柄は除外されます。</p></div>'+
 '<div class="ls-guidance-tiles" aria-label="EPS・ROEのスクリーニング参考基準">'+
 '<div class="ls-guidance-tile ls-guidance-eps">年間のEPSの増加率が25～50％以上の銘柄を選ぶ<span>（大化け銘柄の株式の初期上昇段階における平均の年間EPSの増加は36％であった）</span></div>'+
 '<div class="ls-guidance-tile ls-guidance-roe">過去50年で急成長を遂げたほぼ全銘柄が、最低でも17％のROEを示していた</div>'+
@@ -198,6 +198,10 @@ try{const savedTt=JSON.parse(localStorage.getItem(TT_KEY)||"[]");
 function ttMatches(r){
  for(const i of ttInputs){
   if(i.disabled||!i.checked)continue;
+  if(i.value==="tt1"&&(r.ma150_position!=="above"||r.ma200_position!=="above"))return false;
+  if(i.value==="tt2"&&(!finite(r.ma150)||!finite(r.ma200)||r.ma150<=r.ma200))return false;
+  if(i.value==="tt3"&&(!finite(r.ma200)||!finite(r.ma200_prev)||r.ma200<=r.ma200_prev))return false;
+  if(i.value==="tt4"&&(!finite(r.ma50)||!finite(r.ma150)||!finite(r.ma200)||r.ma50<=r.ma150||r.ma50<=r.ma200))return false;
   if(i.value==="tt5"&&r.ma50_position!=="above")return false;
   if(i.value==="tt6"&&(!finite(r.low52_rise_pct)||r.low52_rise_pct<30))return false;
   if(i.value==="tt7"&&(!finite(r.high52_distance_pct)||r.high52_distance_pct>25))return false;

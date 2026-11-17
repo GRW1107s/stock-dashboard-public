@@ -31,6 +31,8 @@ JP_REFRESH_AFTER_DAYS = 4
 US_NEW_PER_RUN = 220
 US_REFRESH_PER_RUN = 100
 US_REFRESH_AFTER_DAYS = 3
+JP_TREND_PER_RUN = 1500
+US_TREND_PER_RUN = 700
 US_UNIVERSE_LIMIT = 1800
 
 SP500_MASTER_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
@@ -267,7 +269,7 @@ def pct(now, before):
     return round((now / before - 1) * 100, 3) if now and before and before > 0 else None
 
 
-def ma_snapshot(prices, periods=(20, 50, 200)):
+def ma_snapshot(prices, periods=(20, 50, 150, 200)):
     """Position of the latest completed close relative to each simple MA."""
     result = {}
     for period in periods:
@@ -283,6 +285,15 @@ def ma_snapshot(prices, periods=(20, 50, 200)):
         result[name + "_position"] = (
             "above" if close > average else "below" if close < average else "equal"
         )
+    # The 200-session MA as of 21 sessions ago, for the trend-template
+    # slope check (200MA rising for at least one month).
+    window = prices[-221:-21] if 200 in periods else []
+    result["ma200_prev"] = (
+        round(sum(window) / 200, 4)
+        if len(window) == 200
+        and all(safe_num(v) is not None and v > 0 for v in window)
+        else None
+    )
     return result
 
 
@@ -493,27 +504,42 @@ def fair_missing_order(stocks):
 
 def issue_candidates(stocks, *, new_per_run=JP_NEW_PER_RUN,
                      refresh_per_run=JP_REFRESH_PER_RUN,
-                     refresh_after_days=JP_REFRESH_AFTER_DAYS):
+                     refresh_after_days=JP_REFRESH_AFTER_DAYS,
+                     trend_per_run=JP_TREND_PER_RUN):
     """Collect unknown issues first; refresh the oldest quotes in remaining capacity."""
     missing = fair_missing_order(stocks)
     fresh = missing[:new_per_run]
+    chosen = {id(stock) for stock in fresh}
     now = datetime.now(ZoneInfo("Asia/Tokyo")).date()
+
+    def quote_age(stock):
+        try:
+            return (now - datetime.fromisoformat(stock.get("asof")).date()).days
+        except (ValueError, TypeError):
+            return 10000
+
+    # Trend-template backfill: quoted rows still missing the 52-week-low
+    # rise or the 150-day MA are fetched next, oldest quote first, ahead
+    # of the regular stale refresh, until every row carries the full set.
+    trend = [stock for stock in stocks
+             if id(stock) not in chosen and stock.get("asof")
+             and (stock.get("low52_rise_pct") is None
+                  or stock.get("ma150") is None)]
+    trend.sort(key=lambda stock: (-quote_age(stock), stock["ticker"]))
+    trend_selection = trend[:trend_per_run]
+    chosen.update(id(stock) for stock in trend_selection)
     stale = []
     for stock in stocks:
-        if stock in fresh:
+        if id(stock) in chosen:
             continue
-        date = stock.get("asof")
-        if not date:
+        if not stock.get("asof"):
             continue
-        try:
-            days = (now - datetime.fromisoformat(date).date()).days
-        except (ValueError, TypeError):
-            days = 10000
+        days = quote_age(stock)
         if days >= refresh_after_days:
             stale.append((days, stock))
     stale.sort(key=lambda item: (-item[0], item[1]["ticker"]))
     refresh_budget = refresh_per_run if missing else new_per_run + refresh_per_run
-    selection = fresh + [item for _, item in stale[:refresh_budget]]
+    selection = fresh + trend_selection + [item for _, item in stale[:refresh_budget]]
     # Existing 51 historical seed stocks retain their prior quote until scanned again.
     return selection, len(missing)
 
@@ -557,6 +583,8 @@ def main():
     output["method"] = {
         "high52_distance_pct": "Distance from highest available daily closing price of last up to 252 sessions",
         "low52_rise_pct": "Rise from lowest available daily closing price of last up to 252 sessions",
+        "ma150": "150-session simple moving average of daily closing prices",
+        "ma200_prev": "200-session simple moving average as of 21 sessions ago, for the 200MA slope (trend template)",
         "rvol20": "Last completed volume divided by mean volume of prior 20 sessions",
         "market_cap": "Nasdaq-screener-derived market cap snapshots for US listings, USD, as-of collection date. Not a real-time valuation. For JP, only show if a verified capitalisation feed with date/currency is available.",
         "rs_universe_pct": "IBD-inspired proxy 1–99 percentile rank of 0.4*63d+0.2*126d+0.2*189d+0.2*252d price returns among fresh eligible stocks in the current market universe. Not IBD's proprietary rating, and not a percentile across all listed stocks.",
@@ -718,7 +746,8 @@ def main():
     us_selected, us_missing = issue_candidates(
         current_us, new_per_run=US_NEW_PER_RUN,
         refresh_per_run=US_REFRESH_PER_RUN,
-        refresh_after_days=US_REFRESH_AFTER_DAYS)
+        refresh_after_days=US_REFRESH_AFTER_DAYS,
+        trend_per_run=US_TREND_PER_RUN)
     # S&P500 benchmark is fetched before the US ticker batch to calculate beta.
     sp500_benchmark = dict(previous.get("sp500_benchmark") or {})
     us_benchmark_returns = None
