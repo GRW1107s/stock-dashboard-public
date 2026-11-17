@@ -109,6 +109,7 @@
 </main><script>
 const specs=[['sp500','S&P500'],['nasdaq','NASDAQ総合'],['nasdaq100','NASDAQ100'],['dow','ダウ'],['nikkei','日経225'],['prime','東証P'],['standard','東証S'],['growth','東証G']];
 const JP_KEYS=new Set(['nikkei','prime','standard','growth']);
+const NO_VOL=new Set(['vix','nikkei_vi']);
 const IDX_LABEL={sp500:'S&P500',nasdaq:'NASDAQ総合',nasdaq100:'NASDAQ100',dow:'ダウ',vix:'VIX',nikkei:'日経225',prime:'東証P',standard:'東証S',growth:'東証G',nikkei_vi:'日経VI'};
 const TAB_COLS={jp:['date-us','nasdaq100','sp500','nasdaq','date-jp','nikkei','prime','standard','growth','nikkei_vi'],us:['date-us','sp500','nasdaq','nasdaq100','dow','vix']};
 const ALL_IDX=Object.keys(IDX_LABEL);
@@ -200,28 +201,32 @@ function fmtVolShares(v){
   return String(Math.round(v));
 }
 function idxCells(v,key){
-  if(!v)return '<td colspan="5"><span class="na">—</span></td>';
+  const noVol=NO_VOL.has(key);
+  if(!v)return '<td colspan="'+(noVol?3:5)+'"><span class="na">—</span></td>';
   const d=deltaOf(v);
+  let cells='<td><div class="price">'+fmtClose(v.close)+'</div></td>'
+    +'<td><div class="'+cls(d)+'">'+fmtDelta(d)+'</div></td>'
+    +'<td><div class="price '+cls(v.change)+'">'+fmt(v.change)+'</div></td>';
+  if(noVol)return cells;
   let volShares=null;
   if(key==='prime'||key==='standard'||key==='growth'){if(hasNum(v.shares_10000))volShares=v.shares_10000*10000;}
-  else if(key!=='vix'&&key!=='nikkei_vi'){if(hasNum(v.volume_value))volShares=v.volume_value;}
+  else if(hasNum(v.volume_value))volShares=v.volume_value;
   const vs=fmtVolShares(volShares);
-  return '<td><div class="price">'+fmtClose(v.close)+'</div></td>'
-    +'<td><div class="'+cls(d)+'">'+fmtDelta(d)+'</div></td>'
-    +'<td><div class="price '+cls(v.change)+'">'+fmt(v.change)+'</div></td>'
+  return cells
     +'<td>'+(vs?'<div>'+vs+'</div>':'<span class="na">—</span>')+'</td>'
     +'<td><div>'+(hasNum(v.volume)?fmt(v.volume):'—')+'</div></td>';
 }
 function renderMarket(m){
   const layout=TAB_COLS[m].filter(x=>x==='date-us'||x==='date-jp'||visibleCols.has(x));
-  const units=layout.flatMap(x=>x.startsWith('date')?[2]:[1,1,1,1,1]);
-  const totalUnits=units.reduce((a,b)=>a+b,0);
-  document.getElementById('cols-'+m).innerHTML=units.map(u=>'<col style="width:'+(u/totalUnits*100)+'%">').join('');
+  const units=layout.flatMap(x=>x.startsWith('date')?[2]:NO_VOL.has(x)?[1,1,1]:[1,1,1,1,1]);
+  document.getElementById('cols-'+m).innerHTML=units.map(u=>'<col style="width:'+(u*64)+'px">').join('');
   const totalCols=units.length;
-  document.getElementById('table-'+m).style.minWidth=(totalCols*64)+'px';
+  const totalUnits=units.reduce((a,b)=>a+b,0);
+  document.getElementById('table-'+m).style.width=(totalUnits*64)+'px';
+  document.getElementById('table-'+m).style.minWidth=(totalUnits*64)+'px';
   document.getElementById('wrap-'+m).style.overflowX='auto';
-  document.getElementById('headrow-'+m).innerHTML=layout.map(x=>x==='date-us'?'<th rowspan="2" class="dayhead">米国日付</th>':x==='date-jp'?'<th rowspan="2" class="dayhead jpdate">日本日付</th>':'<th colspan="5">'+IDX_LABEL[x]+'</th>').join('');
-  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(()=>'<th>終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th>').join('');
+  document.getElementById('headrow-'+m).innerHTML=layout.map(x=>x==='date-us'?'<th rowspan="2" class="dayhead">米国日付</th>':x==='date-jp'?'<th rowspan="2" class="dayhead jpdate">日本日付</th>':'<th colspan="'+(NO_VOL.has(x)?3:5)+'">'+IDX_LABEL[x]+'</th>').join('');
+  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(k=>NO_VOL.has(k)?'<th>終値</th><th>変化値</th><th>変動率</th>':'<th>終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th>').join('');
   const view=rows.slice(0,25);
   document.getElementById('body-'+m).innerHTML=view.length?view.map(r=>{
     const tse=tseByDate.get(r.japan_date)||{};
