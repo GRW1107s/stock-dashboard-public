@@ -41,7 +41,7 @@ panel.innerHTML=
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt5"><span>株価が50日MAより上</span></label>'+
 '<label class="ls-tt-item is-disabled"><input type="checkbox" class="ls-tt-input" value="tt6" disabled><span>52週安値から30%以上上昇</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt7"><span>52週高値から25%以内</span></label>'+
-'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt8"><span>RS Ratingが70以上（望ましくは80〜90以上）</span></label>'+
+'<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt8"><span>RS Ratingが<select class="ls-tt-select" id="ls-tt-rs" aria-label="RS Ratingのしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>'+
 '<p class="ls-tt-note">チェックした項目はすべて満たす銘柄だけに絞り込まれます。グレーの項目は必要データ（150日MAなど）を収集中です。</p></div>'+
 '<div class="ls-guidance-tiles" aria-label="EPS・ROEのスクリーニング参考基準">'+
 '<div class="ls-guidance-tile ls-guidance-eps">年間のEPSの増加率が25～50％以上の銘柄を選ぶ<span>（大化け銘柄の株式の初期上昇段階における平均の年間EPSの増加は36％であった）</span></div>'+
@@ -178,20 +178,25 @@ window.leaderScreenerSetSector=function(value){
 // until their data (150-day MA etc.) is collected.
 const TT_KEY="stock-dashboard-tt-filter-v1";
 const ttInputs=Array.from(panel.querySelectorAll(".ls-tt-input"));
-try{const savedTt=JSON.parse(localStorage.getItem(TT_KEY)||"[]");ttInputs.forEach(function(i){if(!i.disabled)i.checked=savedTt.includes(i.value);});}catch(e){}
+const ttRsSelect=panel.querySelector("#ls-tt-rs");
+try{const savedTt=JSON.parse(localStorage.getItem(TT_KEY)||"[]");
+ const savedList=Array.isArray(savedTt)?savedTt:(savedTt.v||[]);
+ ttInputs.forEach(function(i){if(!i.disabled)i.checked=savedList.includes(i.value);});
+ if(!Array.isArray(savedTt)&&savedTt.rs&&ttRsSelect)ttRsSelect.value=String(savedTt.rs);}catch(e){}
 function ttMatches(r){
  for(const i of ttInputs){
   if(i.disabled||!i.checked)continue;
   if(i.value==="tt5"&&r.ma50_position!=="above")return false;
   if(i.value==="tt7"&&(!finite(r.high52_distance_pct)||r.high52_distance_pct>25))return false;
-  if(i.value==="tt8"&&(!finite(r.rs_universe_pct)||r.rs_universe_pct<70))return false;
+  if(i.value==="tt8"&&(!finite(r.rs_universe_pct)||r.rs_universe_pct<Number(ttRsSelect?ttRsSelect.value:70)))return false;
  }
  return true;
 }
 function ttChanged(){
- try{localStorage.setItem(TT_KEY,JSON.stringify(ttInputs.filter(i=>i.checked&&!i.disabled).map(i=>i.value)));}catch(e){}
+ try{localStorage.setItem(TT_KEY,JSON.stringify({v:ttInputs.filter(i=>i.checked&&!i.disabled).map(i=>i.value),rs:ttRsSelect?ttRsSelect.value:"70"}));}catch(e){}
  filterChanged();
 }
+if(ttRsSelect){ttRsSelect.addEventListener("click",function(e){e.stopPropagation();});ttRsSelect.addEventListener("change",ttChanged);}
 ttInputs.forEach(i=>i.addEventListener("change",ttChanged));
 const ttClearBtn=panel.querySelector("#ls-tt-clear");
 if(ttClearBtn)ttClearBtn.addEventListener("click",function(){ttInputs.forEach(i=>{i.checked=false;});ttChanged();});

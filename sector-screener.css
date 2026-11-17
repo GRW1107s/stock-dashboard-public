@@ -199,3 +199,4 @@
 .leader-screen .ls-tt-item.is-disabled:hover{background:transparent}
 .leader-screen .ls-tt-note{color:#64748b;font-size:12px;margin:8px 0 0;line-height:1.55}
 @media(max-width:1000px){.leader-screen .ls-tt-row{grid-template-columns:1fr}}
+.leader-screen .ls-tt-select{margin:0 4px;padding:2px 4px;border:1px solid #b7c8db;border-radius:6px;font-size:13px;background:#fff}

@@ -96,7 +96,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261117tt"><script src="./dashboard-nav.js?v=20261117bt" defer></script><script src="./sector-column-filter.js?v=20261108colfix" defer></script><script src="./sector-screener.js?v=20261117tt" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261117rs"><script src="./dashboard-nav.js?v=20261117bt" defer></script><script src="./sector-column-filter.js?v=20261108colfix" defer></script><script src="./sector-screener.js?v=20261117rs" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>日本セクター概況｜TOPIX-17</h1><p class="sub">国内17業種の連動ETF（1617〜1633）で見る騰落率・出来高増減率・簡易判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はTOPIX-17連動ETFとTOPIX連動ETF（1306）の市場価格騰落率の差（％ポイント）。判定はETF自身の取引量に基づく独自の簡易指標で、業種全体への資金流入を示すものではありません。出来高が少ないETFでは値動きと判定が不安定になり得ます。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
@@ -131,6 +131,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-block.market{border-top:4px solid #2563eb}
 .bt-group{font-size:12px;font-weight:700;color:#64748b;margin:10px 0 2px}
 .bt-num{width:58px;margin:0 4px;padding:3px 6px;border:1px solid #b7c8db;border-radius:6px;font-size:13px}
+.bt-select{margin:0 4px;padding:2px 4px;border:1px solid #b7c8db;border-radius:6px;font-size:13px;background:#fff}
 .bt-block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .bt-block-head h3{margin:0;font-size:15px}
 .bt-clear{border:1px solid #d7e0ea;background:#f8fafc;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
@@ -169,7 +170,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="tt5"><span>株価が50日MAより上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="tt6"><span>52週安値から30%以上上昇</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="tt7"><span>52週高値から25%以内</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt8"><span>RS Ratingが70以上（望ましくは80〜90以上）</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt8"><span>RS Ratingが<select class="bt-select" id="bt-tt-rs" aria-label="RS Ratingのしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>
 </div>
 <div class="bt-block sell">
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
@@ -201,11 +202,13 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   const summary=document.getElementById('bt-summary');
   const universe=document.getElementById('bt-universe');
   const period=document.getElementById('bt-period');
+  const ttRs=document.getElementById('bt-tt-rs');
   function save(){
     const state={buy:boxes.filter(b=>b.dataset.bt==='buy'&&b.checked).map(b=>b.value),
                  sell:boxes.filter(b=>b.dataset.bt==='sell'&&b.checked).map(b=>b.value),
                  market:boxes.filter(b=>b.dataset.bt==='market'&&b.checked).map(b=>b.value),
                  nums:Object.fromEntries(nums.map(n=>[n.dataset.btNum,n.value])),
+                 ttRs:ttRs?ttRs.value:'70',
                  universe:universe.value,period:period.value};
     try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
     summary.textContent='買い条件 '+state.buy.length+'件 / 売り条件 '+state.sell.length+'件 / 市場条件 '+state.market.length+'件 を選択中'+(state.buy.length===0?'（買い条件が未選択です）':'');
@@ -215,6 +218,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
     if(saved){
       boxes.forEach(b=>{b.checked=(saved[b.dataset.bt]||[]).includes(b.value);});
       nums.forEach(n=>{if(saved.nums&&saved.nums[n.dataset.btNum]!==undefined)n.value=saved.nums[n.dataset.btNum];});
+      if(saved.ttRs&&ttRs)ttRs.value=saved.ttRs;
       if(saved.universe)universe.value=saved.universe;
       if(saved.period)period.value=saved.period;
     }
@@ -225,6 +229,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
     n.addEventListener('change',save);
     n.addEventListener('input',save);
   });
+  if(ttRs){ttRs.addEventListener('click',e=>e.stopPropagation());ttRs.addEventListener('change',save);}
   universe.addEventListener('change',save);
   period.addEventListener('change',save);
   panel.querySelectorAll('[data-bt-clear]').forEach(btn=>btn.addEventListener('click',()=>{
