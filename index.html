@@ -508,6 +508,72 @@ function ovxDownload(filename,header,lines){
  document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
+function ovxXmlEsc(s){
+ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+function ovxColName(i){
+ let s='';i++;
+ while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}
+ return s;
+}
+function ovxSheetXml(header,lines){
+ let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+ [header,...lines].forEach((r,ri)=>{
+  x+='<row r="'+(ri+1)+'">';
+  r.forEach((v,ci)=>{
+   const s=String(v??'');
+   if(/^-?\d+(\.\d+)?$/.test(s))x+='<c r="'+ovxColName(ci)+(ri+1)+'"><v>'+Number(s)+'</v></c>';
+   else if(s!=='')x+='<c r="'+ovxColName(ci)+(ri+1)+'" t="inlineStr"><is><t>'+ovxXmlEsc(s)+'</t></is></c>';
+  });
+  x+='</row>';
+ });
+ return x+'</sheetData></worksheet>';
+}
+let ovxCrcTable=null;
+function ovxCrc(data){
+ if(!ovxCrcTable){ovxCrcTable=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);ovxCrcTable[n]=c>>>0;}}
+ let crc=0xFFFFFFFF;
+ for(let i=0;i<data.length;i++)crc=ovxCrcTable[(crc^data[i])&0xFF]^(crc>>>8);
+ return (crc^0xFFFFFFFF)>>>0;
+}
+function ovxZip(files){
+ const enc=new TextEncoder();
+ const chunks=[],central=[];let offset=0;
+ for(const f of files){
+  const name=enc.encode(f.name),crc=ovxCrc(f.data);
+  const lh=new DataView(new ArrayBuffer(30));
+  lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);
+  lh.setUint32(14,crc,true);lh.setUint32(18,f.data.length,true);lh.setUint32(22,f.data.length,true);
+  lh.setUint16(26,name.length,true);
+  chunks.push(new Uint8Array(lh.buffer),name,f.data);
+  const ch=new DataView(new ArrayBuffer(46));
+  ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);
+  ch.setUint32(16,crc,true);ch.setUint32(20,f.data.length,true);ch.setUint32(24,f.data.length,true);
+  ch.setUint16(28,name.length,true);ch.setUint32(42,offset,true);
+  central.push(new Uint8Array(ch.buffer),name);
+  offset+=30+name.length+f.data.length;
+ }
+ const csize=central.reduce((a,c)=>a+c.length,0);
+ const end=new DataView(new ArrayBuffer(22));
+ end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);
+ end.setUint32(12,csize,true);end.setUint32(16,offset,true);
+ return new Blob([...chunks,...central,new Uint8Array(end.buffer)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function ovxDownloadXlsx(filename,sheetName,header,lines){
+ const enc=new TextEncoder();
+ const files=[
+  {name:'[Content_Types].xml',data:enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>')},
+  {name:'_rels/.rels',data:enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')},
+  {name:'xl/workbook.xml',data:enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+ovxXmlEsc(sheetName)+'" sheetId="1" r:id="rId1"/></sheets></workbook>')},
+  {name:'xl/_rels/workbook.xml.rels',data:enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>')},
+  {name:'xl/worksheets/sheet1.xml',data:enc.encode(ovxSheetXml(header,lines))}
+ ];
+ const url=URL.createObjectURL(ovxZip(files));
+ const a=document.createElement('a');
+ a.href=url;a.download=filename;
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
 function ovxMerged(list,tseMap){
  const header=["米国日付",...ovxHeaders(OVX_US),"日本日付",...ovxHeaders(OVX_JP)];
  const lines=list.map(r=>{
@@ -520,7 +586,7 @@ function ovxMerged(list,tseMap){
  });
  return {header,lines};
 }
-function ovxExport(btn){
+function ovxExport(btn,format){
  const tab=ovxTabLabel();
  let filename="",header=null,lines=null;
  if(tab==="日本市場"){
@@ -557,20 +623,59 @@ function ovxExport(btn){
   setTimeout(()=>{btn.textContent=old;},1400);
   return;
  }
- ovxDownload(filename,header,lines);
+ if(format==="xlsx"){
+  const sheet=tab==="日本市場"?"日本市況":tab==="米国市場"?"米国市況":(tab||"市場概況");
+  ovxDownloadXlsx(filename.replace(/\.csv$/,".xlsx"),sheet,header,lines);
+ }else{
+  ovxDownload(filename,header,lines);
+ }
+}
+function ovxMakeExportControl(){
+ const wrap=document.createElement('span');
+ wrap.className='ov-export-wrap';
+ wrap.style.cssText='position:relative;display:inline-flex;';
+ const btn=document.createElement('button');
+ btn.type='button';btn.className='ov-export-btn';
+ btn.textContent='データ出力';
+ btn.title='表示中のタブのデータをダウンロード';
+ btn.style.background='#fff';
+ const menu=document.createElement('span');
+ menu.className='ov-export-menu';
+ menu.style.cssText='display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 28px rgba(15,23,42,.16);padding:6px;z-index:60;min-width:160px;';
+ const item=(label,format)=>{
+  const b=document.createElement('button');
+  b.type='button';b.textContent=label;
+  b.style.cssText='display:block;width:100%;text-align:left;padding:8px 10px;border:0;border-radius:8px;background:#fff;color:#0f172a;font-size:12.5px;cursor:pointer;';
+  b.addEventListener('click',()=>{menu.style.display='none';ovxExport(btn,format);});
+  return b;
+ };
+ menu.appendChild(item('Excelで出力（.xlsx）','xlsx'));
+ menu.appendChild(item('CSVで出力（.csv）','csv'));
+ btn.addEventListener('click',e=>{e.stopPropagation();menu.style.display=menu.style.display==='none'?'block':'none';});
+ document.addEventListener('click',()=>{menu.style.display='none';});
+ wrap.appendChild(btn);wrap.appendChild(menu);
+ return wrap;
 }
 function ovxAddButton(){
- const nav=document.querySelector('.stock-dashboard-subtabs');
- if(!nav)return !!document.getElementById('ov-export-btn');
- if(document.getElementById('ov-export-btn'))return true;
- const btn=document.createElement('button');
- btn.type='button';btn.id='ov-export-btn';
- btn.textContent='データ出力';
- btn.title='表示中のタブのデータをCSVでダウンロード';
- btn.style.marginLeft='auto';btn.style.background='#fff';
- btn.addEventListener('click',()=>ovxExport(btn));
- nav.appendChild(btn);
- return true;
+ let added=false;
+ document.querySelectorAll('.history-title').forEach(title=>{
+  if(title.querySelector('.ov-export-wrap'))return;
+  added=true;
+  const group=document.createElement('span');
+  group.style.cssText='display:inline-flex;align-items:center;gap:10px;';
+  const note=title.querySelector('.muted');
+  if(note)group.appendChild(note);
+  group.appendChild(ovxMakeExportControl());
+  title.appendChild(group);
+ });
+ document.querySelectorAll('.past-tools,.hist-tools').forEach(bar=>{
+  if(bar.querySelector('.ov-export-wrap'))return;
+  added=true;
+  const ctl=ovxMakeExportControl();
+  ctl.style.marginLeft='auto';
+  bar.appendChild(ctl);
+ });
+ return !added;
 }
 let ovxTries=0;
 const ovxIv=setInterval(()=>{
