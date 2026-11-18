@@ -616,6 +616,21 @@ def main():
         print(f'VIX: {len(vix)} sessions')
     except Exception as exc:
         print('WARNING VIX ingestion failed:', repr(exc))
+    # US 10-year Treasury yield (^TNX): level (%) + daily change only,
+    # same treatment as VIX (no judge / DD tracking).
+    tnx = {}
+    try:
+        raw_tnx = us_prices('^TNX')
+        tnx_days = sorted(raw_tnx)
+        for i, day in enumerate(tnx_days):
+            close = numeric(raw_tnx[day].get('close'))
+            prev = numeric(raw_tnx[tnx_days[i - 1]].get('close')) if i else None
+            if close is not None:
+                tnx[day] = {'close': round(close, 2),
+                            'change': round((close / prev - 1) * 100, 4) if prev else None}
+        print(f'TNX: {len(tnx)} sessions')
+    except Exception as exc:
+        print('WARNING TNX ingestion failed:', repr(exc))
     nikkei = {}
     try:
         yahoo_prices = {}
@@ -694,7 +709,7 @@ def main():
         rows_all.append({'date': day, 'japan_date': japan,
                          'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
                          'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
-                         'vix': vix.get(day)})
+                         'vix': vix.get(day), 'tnx': tnx.get(day)})
     rows = rows_all[:PUBLISH_SESSIONS]
     if len(rows) < 25:
         raise ValueError('US market history insufficient')
@@ -729,7 +744,7 @@ def main():
                 'latest': valid_tse_days[-1] if valid_tse_days else None}
     print('TSE DD COVERAGE:', coverage)
     result = {'updated_at': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
-              'source': {'us': 'Yahoo Finance unofficial', 'vix': 'Yahoo Finance unofficial (^VIX)', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
+              'source': {'us': 'Yahoo Finance unofficial', 'vix': 'Yahoo Finance unofficial (^VIX)', 'tnx': 'Yahoo Finance unofficial (^TNX)', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
                          'japan_indices': 'stock-marketdata.com index history',
                          'japan_volume': 'stock-marketdata.com', 'nikkei225': 'Yahoo Finance unofficial',
                          'nikkei_vi': 'Nikkei Indexes official daily CSV'},

@@ -113,10 +113,10 @@
 </main><script>
 const specs=[['sp500','S&P500'],['nasdaq','NASDAQ総合'],['nasdaq100','NASDAQ100'],['dow','ダウ'],['nikkei','日経225'],['prime','東証P'],['standard','東証S'],['growth','東証G']];
 const JP_KEYS=new Set(['nikkei','prime','standard','growth']);
-const NO_VOL=new Set(['vix','nikkei_vi']);
-const IDX_LABEL={sp500:'S&P500',nasdaq:'NASDAQ総合',nasdaq100:'NASDAQ100',dow:'ダウ',vix:'VIX',nikkei:'日経225',prime:'東証P',standard:'東証S',growth:'東証G',nikkei_vi:'日経VI'};
-const TAB_COLS={jp:['date-us','nasdaq100','sp500','nasdaq','date-jp','nikkei','prime','standard','growth','nikkei_vi'],us:['date-us','nasdaq100','sp500','nasdaq','dow','vix']};
-const DEFAULT_ORDER={jp:['nasdaq100','sp500','nasdaq','nikkei','prime','standard','growth','nikkei_vi'],us:['nasdaq100','sp500','nasdaq','dow','vix']};
+const NO_VOL=new Set(['vix','nikkei_vi','tnx']);
+const IDX_LABEL={sp500:'S&P500',nasdaq:'NASDAQ総合',nasdaq100:'NASDAQ100',dow:'ダウ',vix:'VIX',tnx:'米国10年債',nikkei:'日経225',prime:'東証P',standard:'東証S',growth:'東証G',nikkei_vi:'日経VI'};
+const TAB_COLS={jp:['date-us','nasdaq100','sp500','nasdaq','date-jp','nikkei','prime','standard','growth','nikkei_vi'],us:['date-us','nasdaq100','sp500','nasdaq','dow','vix','tnx']};
+const DEFAULT_ORDER={jp:['nasdaq100','sp500','nasdaq','nikkei','prime','standard','growth','nikkei_vi'],us:['nasdaq100','sp500','nasdaq','dow','vix','tnx']};
 let colOrder={jp:DEFAULT_ORDER.jp.slice(),us:DEFAULT_ORDER.us.slice()};
 try{const s=JSON.parse(localStorage.getItem('stock-dashboard-market-order-v1')||'null');if(s)for(const m of ['jp','us']){if(Array.isArray(s[m])){const valid=s[m].filter(k=>DEFAULT_ORDER[m].includes(k));colOrder[m]=valid.concat(DEFAULT_ORDER[m].filter(k=>!valid.includes(k)));}}}catch(e){}
 function saveOrder(){try{localStorage.setItem('stock-dashboard-market-order-v1',JSON.stringify(colOrder))}catch(e){}}
@@ -140,6 +140,7 @@ try{
   for(const m of ['jp','us'])if(!visibleCols[m].size)visibleCols[m]=new Set(tabIdx(m));
 }catch(e){}
 function saveCols(){try{localStorage.setItem('overviewVisibleCols-v2',JSON.stringify({jp:[...visibleCols.jp],us:[...visibleCols.us]}))}catch(e){}}
+try{if(!localStorage.getItem('overviewTnxAdded-v1')){visibleCols.us.add('tnx');localStorage.setItem('overviewTnxAdded-v1','1');saveCols();}}catch(e){}
 function tabIdx(m){return TAB_COLS[m].filter(x=>x!=='date-us'&&x!=='date-jp')}
 function visibleTabIdx(m){return tabIdx(m).filter(k=>visibleCols[m].has(k))}
 
@@ -471,7 +472,7 @@ if(typeof renderHist==='function'){
   return origRenderHist(list,hitKey,emptyMsg);
  };
 }
-const OVX_US=[["sp500","S&P500",1],["nasdaq","NASDAQ総合",1],["nasdaq100","NASDAQ100",1],["dow","ダウ",1],["vix","VIX",0]];
+const OVX_US=[["sp500","S&P500",1],["nasdaq","NASDAQ総合",1],["nasdaq100","NASDAQ100",1],["dow","ダウ",1],["vix","VIX",0],["tnx","米国10年債",0]];
 const OVX_JP=[["nikkei","日経225",1],["prime","東証プライム",1],["standard","東証スタンダード",1],["growth","東証グロース",1],["nikkei_vi","日経VI",0]];
 const OVX_JUDGE={buy:"買い集め",sell:"売り抜け",ftd:"FTD"};
 function ovxNum(v,digits){
