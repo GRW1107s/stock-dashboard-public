@@ -886,6 +886,15 @@ def main():
         print("SCREENER_SNAPSHOT", name, "pruned", pruned, flush=True)
     except Exception as err:
         print("SCREENER_SNAPSHOT_ERROR", str(err)[:150], flush=True)
+    # US industry analysis data (GICS Industry / Sub-Industry + Nasdaq
+    # Industry), built from the screener data just written. Best-effort,
+    # like the stores above: a failure never blocks the screener update.
+    try:
+        from update_us_industries import main as update_us_industries_main
+        update_us_industries_main()
+        print("US_INDUSTRIES_DONE", flush=True)
+    except Exception as err:
+        print("US_INDUSTRIES_ERROR", str(err)[:150], flush=True)
 
 
 if __name__ == "__main__":
