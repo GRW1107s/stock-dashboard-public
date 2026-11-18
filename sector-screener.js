@@ -69,19 +69,21 @@ panel.innerHTML=
 '<div class="ls-table-wrap"><table class="ls-table"><thead><tr>'+
 '<th>セクター</th>'+
 (market==="jp"?'<th class="ls-industry-heading" title="JPXの33業種分類を使用します。">業種①</th><th class="ls-industry-heading" title="Yahoo Financeの業種分類（細分類）です。">業種②</th>':'<th class="ls-industry-heading" title="GICS Industry（74分類）です。">業種①</th><th class="ls-industry-heading" title="GICS Sub-Industry（163分類）です。GICS対象外の銘柄はNasdaq Industryを表示します。">業種②</th>')+
-'<th>コード</th>'+'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+'<th title="時価総額による規模分類。超大型＝1兆円以上、大型＝3,000億円以上1兆円未満、中型＝500億円以上3,000億円未満、小型＝100億円以上500億円未満、超小型＝100億円未満">規模</th><th title="JPXが日々公表する空売り残高報告（発行済株式数の0.5%以上を保有する報告者の合計）。発行済株式数に対する割合">大口空売り<br>残高</th><th title="大口空売り残高割合の前公表日からの増減（％ポイント）">空売り<br>増減</th><th title="信用取引の売残高の前日比増減率（JPX銘柄別信用取引残高表）">売残<br>増減率</th><th title="信用取引の買残高の前日比増減率（JPX銘柄別信用取引残高表）">買残<br>増減率</th><th title="信用倍率＝買残高÷売残高（JPX銘柄別信用取引残高表）">信用<br>倍率</th>'+'<th title="取得済み銘柄だけのIBD方式参考RS（1〜99）。99は全上場株の99%超えを保証しません">RS指数<br>1〜99</th>'+
-'<th title="直近最大252取引日の日次株価騰落率で計算した市場ベータ。最低120日以上の比較対象が必要。米国株はS&amp;P500、日本株はTOPIX連動ETF（1306）。">ベータ値</th>'+
-'<th title="直近最大252取引日の株価騰落率を年率換算したシャープレシオ。無リスク金利0%、最低120日。配当は含みません。">シャープレシオ</th>'+
-(market==="us"?'<th title="63/126/189/252営業日の加重騰落率から、S&P500指数（^GSPC）の同期間の加重騰落率を引いた値。+ならS&P500より強い">S&amp;P500比<br>加重pp</th>':'')+
-'<th>セクター内<br>60日順位</th>'+
-'<th>60日騰落率</th><th>同ETF比<br>60日</th><th>52週高値<br>からの下落</th><th>52週安値<br>からの上昇</th>'+
-
-'<th>出来高<br>対20日平均</th>'+
+'<th>コード</th>'+'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+
+'<th title="時価総額による規模分類。超大型＝1兆円以上、大型＝3,000億円以上1兆円未満、中型＝500億円以上3,000億円未満、小型＝100億円以上500億円未満、超小型＝100億円未満">規模</th>'+
 '<th title="最新の発表済み四半期EPSの前年同期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>直近四半期</th>'+
 '<th title="最新の通期EPSの前年比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>（当期）</th>'+
 '<th title="過去3年間の年間EPS平均成長率（CAGR）。取得可能な年間EPSの3年CAGR。取得元の自動算出値または確認済みの手入力から表示。">年間EPS増加率<br>3年CAGR</th>'+
 '<th title="最新の発表済み四半期売上高の前年同期比増加率。">売上高増加率<br>直近四半期</th>'+
 '<th title="最新の通期ROE。原則として親会社帰属年間純利益÷期首期末平均自己資本×100。取得できなければ—。">ROE<br>（%）</th>'+
+'<th title="取得済み銘柄だけのIBD方式参考RS（1〜99）。99は全上場株の99%超えを保証しません">RS指数<br>1〜99</th>'+
+'<th title="直近最大252取引日の日次株価騰落率で計算した市場ベータ。最低120日以上の比較対象が必要。米国株はS&P500、日本株はTOPIX連動ETF（1306）。">ベータ値</th>'+
+'<th title="直近最大252取引日の株価騰落率を年率換算したシャープレシオ。無リスク金利0%、最低120日。配当は含みません。">シャープレシオ</th>'+
+(market==="us"?'<th title="63/126/189/252営業日の加重騰落率から、S&P500指数（^GSPC）の同期間の加重騰落率を引いた値。+ならS&P500より強い">S&P500比<br>加重pp</th>':'')+
+'<th>セクター内<br>60日順位</th>'+
+'<th>60日騰落率</th><th>同ETF比<br>60日</th><th>52週高値<br>からの下落</th><th>52週安値<br>からの上昇</th>'+
+'<th>出来高<br>対20日平均</th>'+
+'<th title="JPXが日々公表する空売り残高報告（発行済株式数の0.5%以上を保有する報告者の合計）。発行済株式数に対する割合">大口空売り<br>残高</th><th title="大口空売り残高割合の前公表日からの増減（％ポイント）">空売り<br>増減</th><th title="信用取引の売残高の前日比増減率（JPX銘柄別信用取引残高表）">売残<br>増減率</th><th title="信用取引の買残高の前日比増減率（JPX銘柄別信用取引残高表）">買残<br>増減率</th><th title="信用倍率＝買残高÷売残高（JPX銘柄別信用取引残高表）">信用<br>倍率</th>'+
 '</tr></thead><tbody id="ls-body"><tr><td colspan="'+totalColumns+'">データを読み込んでいます...</td></tr></tbody></table></div>'+
 '<div class="ls-pagination"><button type="button" id="ls-prev" disabled>前の100件</button><span id="ls-page-label" aria-live="polite"></span><button type="button" id="ls-next" disabled>次の100件</button></div>'+
 '<p class="ls-foot">EPS増加率（直近四半期）と売上高増加率（直近四半期）は前年同期比（YoY）で、直前四半期比（QoQ）ではありません。EPS増加率（当期）は最新の通期EPSの前年比です。年間EPS増加率は過去3年のCAGRです。米国株のEPS成長率はyfinance由来の四半期・年間データから取得可能な範囲で段階的に自動算出します。生のEPS数値は表示せず、算出した成長率だけを掲載します。Yahoo Financeには個人利用・再配布に関する制限があり、公開掲載の許諾を保証するものではありません。取得できない数値は「—」です。日本株EPSもyfinanceの取得可能な四半期・年間データから段階的に自動算出します。未取得銘柄は「—」で表示します。時価総額は円表示です。米国株はNasdaq系のUSD建てスナップショットを取得日付きのUSD/JPYレートで換算する概算値です。日本株はJPY建ての取得可能な時価総額を段階的に表示します。為替や株価の時点が一致するとは限りません。ROEは直近通期の親会社帰属純利益／期首期末平均自己資本を基本とし、財務データがなければ「—」です。<br>指標の注意：ベータ値は市場との日次リターン共分散から計算し、シャープレシオは日次リターンの平均÷標準偏差×√252で算出します（無リスク金利0%、株価変動ベース、配当除外）。取得可能な直近最大252日・最低120日を使用し、日本株の比較市場は1306.T（TOPIX連動ETF）、米国株は^GSPC（S&P500）です。<br>RS指数（1〜99）は63・126・189・252営業日の騰落率を40%・20%・20%・20%で加重し、直近の株価取得済み銘柄の中で順位化するIBD参考方式です。公式IBD RS Ratingではなく、取得対象が全上場株を網羅していないため「99＝米国株全体の99%を上回る」とはまだ言えません。米国株の「S&amp;P500比」は同じ加重騰落率の差（％ポイント）です。セクター内順位も株価取得済み銘柄内だけです。高値は直近最大252取引日の終値を使用。ETFとの比較は約60取引日の参考値です。新製品・経営陣・ベース形成・投資家保有の質・市場トレンドの確認を省略して「合格」とはしません。</p>';
@@ -442,19 +444,20 @@ function rowHtml(r){
  '<td>'+H(String(r.ticker||'').replace(/\.T$/,''))+'</td>'+
  '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+subName+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
- '<td>'+H(sizeFromCap(r))+'</td>'+shortCells(r)+marginCells(r)+
+ '<td>'+H(sizeFromCap(r))+'</td>'+
+ '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
+ '<td title="'+H(epsProvenance(r,"annual_yoy"))+'">'+cellStrong(epsAnnualYoy,"%")+'</td>'+
+ '<td title="'+H(epsProvenance(r,"annual"))+'">'+cellStrong(annualEpsCagr,"%")+'</td>'+
+ '<td title="'+H(salesProvenance(r))+'">'+cellStrong(salesValue(r),"%")+'</td>'+
+ '<td title="'+H(roeProvenance(r))+'">'+cellStrong(roe,"%")+'</td>'+
  '<td><strong>'+rs+'</strong></td>'+
  '<td title="'+H(riskDetails(r,"beta"))+'">'+H(plain(r.beta_252d,"",2))+'</td>'+
  '<td title="'+H(riskDetails(r,"sharpe"))+'">'+H(plain(r.sharpe_252d,"",2))+'</td>'+
  (market==="us"?'<td title="S&P500指数（^GSPC）に対する加重騰落率の差">'+cellStrong(r.rs_sp500_delta_pp,"pp")+'</td>':'')+
  '<td>'+H(r.sector_rank||"—")+(r.sector_count?'/'+H(r.sector_count):"")+'</td>'+
  '<td>'+cellStrong(r.return_60d,"%")+'</td><td>'+cellStrong(v,"pp")+'</td>'+
- '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td><td>'+H(plain(r.low52_rise_pct,"%"))+'</td>'+'<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+
- '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
- '<td title="'+H(epsProvenance(r,"annual_yoy"))+'">'+cellStrong(epsAnnualYoy,"%")+'</td>'+
- '<td title="'+H(epsProvenance(r,"annual"))+'">'+cellStrong(annualEpsCagr,"%")+'</td>'+
- '<td title="'+H(salesProvenance(r))+'">'+cellStrong(salesValue(r),"%")+'</td>'+
- '<td title="'+H(roeProvenance(r))+'">'+cellStrong(roe,"%")+'</td>'+
+ '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td><td>'+H(plain(r.low52_rise_pct,"%"))+'</td>'+
+ '<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+shortCells(r)+marginCells(r)+
  '</tr>';
 }
 function render(){

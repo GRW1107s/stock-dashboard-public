@@ -63,11 +63,28 @@ function setupColumnOrder(panel,market,headings,defs){
  const table=panel.querySelector("table.ls-table"),headrow=table&&table.querySelector("thead tr");
  if(!headrow||headings.length!==defs.length)return {applyRows(){}};
  const ids=defs.map(x=>x.id),headerById=new Map(ids.map((id,i)=>[id,headings[i]]));
- const key="stock-dashboard-screener-order-v1-"+market;
+ const key="stock-dashboard-screener-order-v2-"+market;
  let stored=null;try{stored=JSON.parse(localStorage.getItem(key)||"null");}catch(e){}
  let order=normalizeColumnOrder(ids,stored);
  const reset=document.createElement("button");reset.type="button";reset.id="ls-reset-column-order";reset.textContent="列順を初期化";
  panel.querySelector(".ls-column-toolbar-top").appendChild(reset);
+ const catById=new Map(defs.map(d=>[d.id,d.cat||"company"]));
+ const CAT_LABELS={company:"企業情報",fund:"ファンダメンタルズ",tech:"テクニカル",flow:"需給"};
+ const groupRow=document.createElement("tr");groupRow.className="ls-group-row";
+ if(headrow.parentNode)headrow.parentNode.insertBefore(groupRow,headrow);
+ function renderGroups(){
+  const hid=panel.__lsHiddenCols;
+  let html="",i=0;
+  while(i<order.length){
+   const cat=catById.get(order[i]);let j=i+1;
+   while(j<order.length&&catById.get(order[j])===cat)j++;
+   const allHidden=hid?order.slice(i,j).every(id=>hid.has(id)):false;
+   html+='<th class="ls-group-cell" colspan="'+(j-i)+'"'+(allHidden?' style="visibility:hidden"':'')+">"+CAT_LABELS[cat]+"</th>";
+   i=j;
+  }
+  groupRow.innerHTML=html+'<th class="ls-group-cell ls-group-add"></th>';
+ }
+ panel.addEventListener("ls:hidden-changed",renderGroups);
  function arrange(){
   order.forEach(id=>headrow.appendChild(headerById.get(id)));
   const group=table.querySelector("colgroup");
@@ -77,6 +94,7 @@ function setupColumnOrder(panel,market,headings,defs){
    const addCol=cols.get("__add");if(addCol)group.appendChild(addCol);
   }
   reset.disabled=order.every((id,i)=>id===ids[i]);
+  renderGroups();
  }
  function applyRows(){
   const body=table.tBodies[0];if(!body)return;
@@ -126,7 +144,7 @@ function setupColumnOrder(panel,market,headings,defs){
    }
    const under=document.elementFromPoint(e.clientX,e.clientY);
    const target=under&&under.closest("thead th.ls-column-reorderable");
-   const next=target&&target!==th&&table.contains(target)?target:null;
+   const next=target&&target!==th&&table.contains(target)&&catById.get(target.dataset.lsColumnId)===catById.get(id)?target:null;
    const right=next?e.clientX>next.getBoundingClientRect().left+next.getBoundingClientRect().width/2:false;
    if(next!==hover||right!==after)highlight(next,right);
   });
@@ -139,7 +157,7 @@ function setupColumnOrder(panel,market,headings,defs){
    if(!delta)return;
    e.preventDefault();
    const target=order.indexOf(id)+delta;
-   if(target>=0&&target<order.length){update(moveColumnOrder(order,id,order[target],delta>0));th.focus();}
+   if(target>=0&&target<order.length&&catById.get(order[target])===catById.get(id)){update(moveColumnOrder(order,id,order[target],delta>0));th.focus();}
   });
  });
  arrange();
@@ -256,36 +274,36 @@ root.LeaderColumnFiltersCore={matches,compare,industryOptions,normalizeColumnOrd
 root.createLeaderColumnFilters=function(ctx){
  const {panel,market,get,H,numeric,finite,relative,epsValue,roeValue,salesValue,reviewStatus,onChange,getRows,marketCapJPY}=ctx;
  const defs=[
-  {id:"sector",label:"セクター",kind:"multi",get:r=>r.sector_name||r.sector||""},
-  {id:"industry",label:"業種①",kind:"multi",get:market==="jp"?(r=>r.industry_name||""):(r=>r.gics_industry||"")},
-  {id:"industry2",label:"業種②",kind:"multi",get:market==="jp"?(r=>r.industry_fine_ja||""):(r=>r.gics_sub_industry||r.industry_name||"")},
-  {id:"code",label:"コード",kind:"text",get:r=>String(r.ticker||"").replace(/\.T$/,"")},
-  {id:"name",label:"候補銘柄",kind:"text",get:r=>[r.name,r.ticker,r.market].filter(Boolean).join(" ")},
-  {id:"cap",label:"時価総額",kind:"number",unit:"億円",
+  {id:"sector",cat:"company",label:"セクター",kind:"multi",get:r=>r.sector_name||r.sector||""},
+  {id:"industry",cat:"company",label:"業種①",kind:"multi",get:market==="jp"?(r=>r.industry_name||""):(r=>r.gics_industry||"")},
+  {id:"industry2",cat:"company",label:"業種②",kind:"multi",get:market==="jp"?(r=>r.industry_fine_ja||""):(r=>r.gics_sub_industry||r.industry_name||"")},
+  {id:"code",cat:"company",label:"コード",kind:"text",get:r=>String(r.ticker||"").replace(/\.T$/,"")},
+  {id:"name",cat:"company",label:"候補銘柄",kind:"text",get:r=>[r.name,r.ticker,r.market].filter(Boolean).join(" ")},
+  {id:"cap",cat:"company",label:"時価総額",kind:"number",unit:"億円",
    get:r=>{const v=marketCapJPY(r);return finite(v)?v/1e8:null;}},
-  {id:"size",label:"規模",kind:"choice",
+  {id:"size",cat:"company",label:"規模",kind:"choice",
    get:r=>{const cap=marketCapJPY(r);return !finite(cap)?"—":cap>=1e12?"超大型":cap>=3e11?"大型":cap>=5e10?"中型":cap>=1e10?"小型":"超小型";},
    options:["超大型","大型","中型","小型","超小型","—"]},
-  {id:"short",label:"大口空売り残高",kind:"number",unit:"%",get:r=>numeric(r.short_ratio)},
-   {id:"shortChg",label:"空売り増減",kind:"number",unit:"pt",get:r=>numeric(r.short_d_ratio)},
-   {id:"marginSell",label:"売残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_sell_pct)},
-   {id:"marginBuy",label:"買残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_buy_pct)},
-   {id:"marginRatio",label:"信用倍率",kind:"number",unit:"倍",get:r=>numeric(r.margin_ratio)},
-  {id:"rs",label:"RS指数",kind:"number",get:r=>numeric(r.rs_universe_pct)},
-  {id:"beta",label:"ベータ値",kind:"number",get:r=>numeric(r.beta_252d)},
-  {id:"sharpe",label:"シャープレシオ",kind:"number",get:r=>numeric(r.sharpe_252d)},
-  ...(market==="us"?[{id:"sp500",label:"S&P500比 加重",kind:"number",unit:"pp",get:r=>numeric(r.rs_sp500_delta_pp)}]:[]),
-  {id:"rank",label:"セクター内60日順位",kind:"number",unit:"位",get:r=>numeric(r.sector_rank)},
-  {id:"return60",label:"60日騰落率",kind:"number",unit:"%",get:r=>numeric(r.return_60d)},
-  {id:"etf",label:"同ETF比60日",kind:"number",unit:"pp",get:r=>relative(r)},
-  {id:"high",label:"52週高値からの距離",kind:"number",unit:"%",get:r=>numeric(r.high52_distance_pct)},
-  {id:"low52",label:"52週安値からの上昇",kind:"number",unit:"%",get:r=>numeric(r.low52_rise_pct)},
-  {id:"volume",label:"出来高倍率",kind:"number",unit:"倍",get:r=>numeric(r.rvol20)},
-  {id:"eps",label:"直近四半期EPS成長率",kind:"number",unit:"%",get:r=>epsValue(r,"eps")},
-  {id:"epsAnnualYoy",label:"EPS増加率（当期）",kind:"number",unit:"%",get:r=>epsValue(r,"annual_yoy")},
-  {id:"epsAnnual",label:"年間EPS成長率3年",kind:"number",unit:"%",get:r=>epsValue(r,"annual")},
-  {id:"sales",label:"直近四半期売上高増加率",kind:"number",unit:"%",get:r=>salesValue(r)},
-  {id:"roe",label:"ROE",kind:"number",unit:"%",get:r=>roeValue(r)}
+  {id:"eps",cat:"fund",label:"直近四半期EPS成長率",kind:"number",unit:"%",get:r=>epsValue(r,"eps")},
+  {id:"epsAnnualYoy",cat:"fund",label:"EPS増加率（当期）",kind:"number",unit:"%",get:r=>epsValue(r,"annual_yoy")},
+  {id:"epsAnnual",cat:"fund",label:"年間EPS成長率3年",kind:"number",unit:"%",get:r=>epsValue(r,"annual")},
+  {id:"sales",cat:"fund",label:"直近四半期売上高増加率",kind:"number",unit:"%",get:r=>salesValue(r)},
+  {id:"roe",cat:"fund",label:"ROE",kind:"number",unit:"%",get:r=>roeValue(r)},
+  {id:"rs",cat:"tech",label:"RS指数",kind:"number",get:r=>numeric(r.rs_universe_pct)},
+  {id:"beta",cat:"tech",label:"ベータ値",kind:"number",get:r=>numeric(r.beta_252d)},
+  {id:"sharpe",cat:"tech",label:"シャープレシオ",kind:"number",get:r=>numeric(r.sharpe_252d)},
+  ...(market==="us"?[{id:"sp500",cat:"tech",label:"S&P500比 加重",kind:"number",unit:"pp",get:r=>numeric(r.rs_sp500_delta_pp)}]:[]),
+  {id:"rank",cat:"tech",label:"セクター内60日順位",kind:"number",unit:"位",get:r=>numeric(r.sector_rank)},
+  {id:"return60",cat:"tech",label:"60日騰落率",kind:"number",unit:"%",get:r=>numeric(r.return_60d)},
+  {id:"etf",cat:"tech",label:"同ETF比60日",kind:"number",unit:"pp",get:r=>relative(r)},
+  {id:"high",cat:"tech",label:"52週高値からの距離",kind:"number",unit:"%",get:r=>numeric(r.high52_distance_pct)},
+  {id:"low52",cat:"tech",label:"52週安値からの上昇",kind:"number",unit:"%",get:r=>numeric(r.low52_rise_pct)},
+  {id:"volume",cat:"tech",label:"出来高倍率",kind:"number",unit:"倍",get:r=>numeric(r.rvol20)},
+  {id:"short",cat:"flow",label:"大口空売り残高",kind:"number",unit:"%",get:r=>numeric(r.short_ratio)},
+   {id:"shortChg",cat:"flow",label:"空売り増減",kind:"number",unit:"pt",get:r=>numeric(r.short_d_ratio)},
+   {id:"marginSell",cat:"flow",label:"売残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_sell_pct)},
+   {id:"marginBuy",cat:"flow",label:"買残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_buy_pct)},
+   {id:"marginRatio",cat:"flow",label:"信用倍率",kind:"number",unit:"倍",get:r=>numeric(r.margin_ratio)}
  ];
  const filters=new Map(),buttons=new Map();
  let sort=null,active=null;
@@ -319,7 +337,7 @@ root.createLeaderColumnFilters=function(ctx){
  // Column visibility: right-click a heading and press the menu button to
  // hide the column; the "列を追加" toolbar button (or the "+" heading at
  // the right end) re-adds hidden columns. Persisted per market.
- const headrow=panel.querySelector("table.ls-table thead tr");
+ const headrow=panel.querySelector("table.ls-table thead tr:not(.ls-group-row)");
  const hiddenKey="stock-dashboard-screener-hidden-v1-"+market;
  let hidden=new Set();
  try{hidden=new Set((JSON.parse(localStorage.getItem(hiddenKey)||"[]")||[]).filter(id=>defs.some(d=>d.id===id)));}catch(e){}
