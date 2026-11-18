@@ -17,7 +17,8 @@
     ],
     "sectors.html":[
       {label:"セクター分析",start:"h1"},
-      {label:"業種分析",start:"#industry-analysis-panel"},
+      {label:"業種分析①",start:"#us-industry-panel"},
+      {label:"業種分析②",start:"#us-fine-industry-panel"},
       {label:"銘柄スクリーニング",start:"#leader-screener-panel"}
     ],
     "us-semiconductors.html":[

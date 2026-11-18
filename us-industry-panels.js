@@ -222,6 +222,8 @@
     if (!jumper) return;
     const id = jumper.getAttribute("data-us-ind-jump");
     const name = jumper.getAttribute("data-ind-name");
+    const tabBtn = Array.from(document.querySelectorAll(".stock-dashboard-subtabs button")).find(b => b.textContent.trim() === "銘柄スクリーニング");
+    if (tabBtn) tabBtn.click();
     if (typeof root.leaderScreenerSetIndustry === "function") {
       root.leaderScreenerSetIndustry(id, name);
     }

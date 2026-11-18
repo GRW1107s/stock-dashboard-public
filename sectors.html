@@ -92,7 +92,7 @@
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261117drag"><script src="./dashboard-nav.js?v=20261108hist3" defer></script><script src="./industry-ja.js?v=20261117gics" defer></script><script src="./us-industry-panels.js?v=20261117usind" defer></script><script src="./sector-column-filter.js?v=20261117col" defer></script><script src="./sector-screener.js?v=20261117col" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日本株</a><a href="./sectors.html" aria-current="page">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261117drag"><script src="./dashboard-nav.js?v=20261118us" defer></script><script src="./industry-ja.js?v=20261117gics" defer></script><script src="./us-industry-panels.js?v=20261118us" defer></script><script src="./sector-column-filter.js?v=20261117col" defer></script><script src="./sector-screener.js?v=20261117col" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日本株</a><a href="./sectors.html" aria-current="page">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>S&P500 11セクター 日次観測</h1><p class="sub">11セクターETFの騰落率・出来高増減率・判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はETFの当日騰落率−SPYの当日騰落率（％ポイント）。判定はETFの出来高を使用した独自の簡易指標で、セクター全銘柄への資金流入を直接測定するものではありません。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
@@ -185,7 +185,7 @@ function renderRankings() {
         ? '<span class="rank-laggard-marker" role="img" aria-label="3・10・25日のすべてで下位3分の1" title="3・10・25日のすべてで下位3分の1"></span>'
         : '';
       const vsSpy = v.diff === null ? '—' : 'SPY比 ' + (v.diff > 0 ? '+' : '') + v.diff.toFixed(2) + 'pp';
-      return `<div class="rank-entry"><span class="rank-position">${i + 1}</span><span class="rank-name" title="${v.name}（${v.key}）">${leaderMarker}<span class="rank-name-text">${v.name}（${v.key}）</span>${shift}</span><span class="rank-return ${cls(v.ret)}">${fmt(v.ret)}</span><span class="rank-spy">${vsSpy}</span></div>`;
+      return `<div class="rank-entry ind-jump" data-ind-jump="sector" data-ind-name="${v.name}" title="クリックでこのセクターの銘柄スクリーニング"><span class="rank-position">${i + 1}</span><span class="rank-name" title="${v.name}（${v.key}）">${leaderMarker}<span class="rank-name-text">${v.name}（${v.key}）</span>${shift}</span><span class="rank-return ${cls(v.ret)}">${fmt(v.ret)}</span><span class="rank-spy">${vsSpy}</span></div>`;
     }).join('') : '<p class="muted">期間内のデータが不足しています</p>';
     return `<section class="rank-panel"><div class="rank-header"><h2>直近${period}取引日 強さランキング</h2><p class="rank-note">ETF累積騰落率順｜SPY比は同期間との差</p></div>${entries}</section>`;
   }
@@ -212,7 +212,7 @@ function renderRankings() {
     bridge(25, 10, rank25, rank10) +
     panel(25, rank25, null, null);
 }
-function renderSummary(){const selected=rows.slice(0,25);const aligned=selected.concat(Array.from({length:25-selected.length},()=>null));const dates=aligned.map(r=>`<span class="history-date">${r?r.date.slice(5).replace('-','/'):'—'}</span>`).join('');const head=`<div class="history-row"><strong class="history-date-label">米国日付</strong><div class="blocks">${dates}</div></div>`;const lines=keys().map(k=>{const squares=aligned.map(r=>{const v=r?.sectors?.[k];const kind=v?.judge==='ftd'?'ftd':v?.dd_number?'sell':['buy','sell'].includes(v?.judge)?v.judge:'';const title=`${r?.date||'—'} ${k} DD ${v?.dd_count??'—'}件 変動率${fmt(v?.change)} 出来高${fmt(v?.volume)} SPY比${hasNum(v?.vs_spy)?v.vs_spy.toFixed(2)+'pp':'—'}`;return `<span class="block ${kind} ${v?.dd_number?'dd-numbered dd-highlight':''}" title="${title}">${historyMark(v)}</span>`}).join('');return `<div class="history-row"><strong>${names[k]}（${k}）</strong><div class="blocks">${squares}</div></div>`}).join('');document.getElementById('histories').innerHTML=head+lines}
+function renderSummary(){const selected=rows.slice(0,25);const aligned=selected.concat(Array.from({length:25-selected.length},()=>null));const dates=aligned.map(r=>`<span class="history-date">${r?r.date.slice(5).replace('-','/'):'—'}</span>`).join('');const head=`<div class="history-row"><strong class="history-date-label">米国日付</strong><div class="blocks">${dates}</div></div>`;const lines=keys().map(k=>{const squares=aligned.map(r=>{const v=r?.sectors?.[k];const kind=v?.judge==='ftd'?'ftd':v?.dd_number?'sell':['buy','sell'].includes(v?.judge)?v.judge:'';const title=`${r?.date||'—'} ${k} DD ${v?.dd_count??'—'}件 変動率${fmt(v?.change)} 出来高${fmt(v?.volume)} SPY比${hasNum(v?.vs_spy)?v.vs_spy.toFixed(2)+'pp':'—'}`;return `<span class="block ${kind} ${v?.dd_number?'dd-numbered dd-highlight':''}" title="${title}">${historyMark(v)}</span>`}).join('');return `<div class="history-row"><strong class="ind-jump" data-ind-jump="sector" data-ind-name="${names[k]}" title="クリックでこのセクターの銘柄スクリーニング">${names[k]}（${k}）</strong><div class="blocks">${squares}</div></div>`}).join('');document.getElementById('histories').innerHTML=head+lines}
 function priceCell(v){if(!v)return '<span class="na">—</span>';return `<div class="price ${cls(v.change)}">${fmt(v.change)}</div><div class="vol">(${fmt(v.volume)})</div>`}
 
 /* Table sorting is independent of the existing ranking, summary and DD history. */
@@ -238,7 +238,7 @@ function drawSectorTable(){
  const ordered=sectorColumnKeys;
  
  document.getElementById('headrow').innerHTML='<th rowspan="2" class="date">米国日付</th>'+
-  ordered.map(k=>'<th colspan="2">'+names[k]+'（'+k+'）</th>').join('');
+  ordered.map(k=>'<th colspan="2"><span class="ind-jump" data-ind-jump="sector" data-ind-name="'+names[k]+'" title="クリックでこのセクターの銘柄スクリーニング">'+names[k]+'（'+k+'）</span></th>').join('');
  document.getElementById('subhead').innerHTML=ordered.map(()=>'<th title="変動率（出来高前日比）">変動率(量)</th><th title="判定">判定</th>').join('');
  const view=visibleTableDays?rows.slice(0,visibleTableDays):rows;
  document.getElementById('body').innerHTML=view.length?view.map(rowHtml).join(''):
@@ -268,4 +268,33 @@ fetch('./sectors.json?t='+Date.now(),{cache:'no-store'})
   document.getElementById('body').innerHTML='<tr><td colspan="23">データ読み込みに失敗しました</td></tr>';
   document.getElementById('status').textContent=String(e);
  });
+</script>
+<script>
+// Clicking a sector name in the analysis sections jumps to the leader
+// screener with that sector applied as the filter (same as jp-sectors).
+document.addEventListener('click',function(e){
+ const el=e.target.closest('[data-ind-jump]');
+ if(!el)return;
+ const kind=el.getAttribute('data-ind-jump'),name=el.getAttribute('data-ind-name');
+ if(!kind||!name)return;
+ const btn=Array.from(document.querySelectorAll('.stock-dashboard-subtabs button')).find(b=>b.textContent.trim()==='銘柄スクリーニング');
+ if(btn)btn.click();
+ let tries=0;
+ const apply=function(){
+  const ok=kind==='sector'
+   ?(window.leaderScreenerSetSector&&window.leaderScreenerSetSector(name))
+   :(window.leaderScreenerSetIndustry&&window.leaderScreenerSetIndustry(kind,name));
+  if(ok){
+   const panel=document.getElementById('leader-screener-panel');
+   if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
+   return true;
+  }
+  return false;
+ };
+ if(!apply()){
+  const timer=setInterval(function(){
+   if(apply()||++tries>40)clearInterval(timer);
+  },250);
+ }
+});
 </script></body></html>
