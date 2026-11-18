@@ -184,7 +184,15 @@ function setupColumnResize(panel,market,headings,ids){
   Array.from(headings).forEach((th,i)=>th.classList.toggle("ls-col-selected",selectedCols.has(ids[i])));
  }
  panel.addEventListener("pointerdown",e=>{
-  if(!(e.ctrlKey||e.metaKey)||e.button!==0)return;
+  if(e.button!==0)return;
+  if(!(e.ctrlKey||e.metaKey)){
+   // A plain click clears the selection, except when it starts a width
+   // drag on a grip (that drag may be the bulk adjustment itself).
+   if(selectedCols.size&&!(e.target&&e.target.closest&&e.target.closest(".ls-column-resize-handle"))){
+    selectedCols.clear();paintSelection();
+   }
+   return;
+  }
   const th=e.target&&e.target.closest?e.target.closest("th[data-ls-column-id]"):null;
   if(!th||!table.contains(th))return;
   if(e.target.closest("button,.ls-column-resize-handle"))return;
