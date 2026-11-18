@@ -257,21 +257,19 @@ root.createLeaderColumnFilters=function(ctx){
  const {panel,market,get,H,numeric,finite,relative,epsValue,roeValue,salesValue,reviewStatus,onChange,getRows,marketCapJPY}=ctx;
  const defs=[
   {id:"sector",label:"セクター",kind:"multi",get:r=>r.sector_name||r.sector||""},
-  {id:"industry",label:market==="jp"?"業種①":"業種",kind:"multi",get:r=>r.industry_name||""},
-  ...(market==="jp"?[{id:"industry2",label:"業種②",kind:"multi",get:r=>r.industry_fine_ja||""}]:[]),
+  {id:"industry",label:"業種①",kind:"multi",get:market==="jp"?(r=>r.industry_name||""):(r=>r.gics_industry||"")},
+  {id:"industry2",label:"業種②",kind:"multi",get:market==="jp"?(r=>r.industry_fine_ja||""):(r=>r.gics_sub_industry||r.industry_name||"")},
   {id:"name",label:"候補銘柄",kind:"text",get:r=>[r.name,r.ticker,r.market].filter(Boolean).join(" ")},
   {id:"cap",label:"時価総額",kind:"number",unit:"億円",
    get:r=>{const v=marketCapJPY(r);return finite(v)?v/1e8:null;}},
-  ...(market==="jp"?[{id:"size",label:"規模",kind:"choice",
+  {id:"size",label:"規模",kind:"choice",
    get:r=>{const cap=marketCapJPY(r);return !finite(cap)?"—":cap>=1e12?"超大型":cap>=3e11?"大型":cap>=5e10?"中型":cap>=1e10?"小型":"超小型";},
-   options:["超大型","大型","中型","小型","超小型","—"]}]:[]),
-  ...(market==="jp"?[
-   {id:"short",label:"大口空売り残高",kind:"number",unit:"%",get:r=>numeric(r.short_ratio)},
+   options:["超大型","大型","中型","小型","超小型","—"]},
+  {id:"short",label:"大口空売り残高",kind:"number",unit:"%",get:r=>numeric(r.short_ratio)},
    {id:"shortChg",label:"空売り増減",kind:"number",unit:"pt",get:r=>numeric(r.short_d_ratio)},
    {id:"marginSell",label:"売残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_sell_pct)},
    {id:"marginBuy",label:"買残増減率",kind:"number",unit:"%",get:r=>numeric(r.margin_buy_pct)},
-   {id:"marginRatio",label:"信用倍率",kind:"number",unit:"倍",get:r=>numeric(r.margin_ratio)}
-  ]:[]),
+   {id:"marginRatio",label:"信用倍率",kind:"number",unit:"倍",get:r=>numeric(r.margin_ratio)},
   {id:"rs",label:"RS指数",kind:"number",get:r=>numeric(r.rs_universe_pct)},
   {id:"beta",label:"ベータ値",kind:"number",get:r=>numeric(r.beta_252d)},
   {id:"sharpe",label:"シャープレシオ",kind:"number",get:r=>numeric(r.sharpe_252d)},
