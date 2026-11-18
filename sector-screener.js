@@ -233,6 +233,36 @@ function ttChanged(){
  filterChanged();
 }
 if(ttRsSelect){ttRsSelect.addEventListener("click",function(e){e.stopPropagation();});ttRsSelect.addEventListener("change",ttChanged);}
+// Called from the backtest panel's screening block: the codes of the
+// rows in the current dataset (live, or the selected as-of snapshot)
+// that satisfy ALL of the given screening conditions. Judged with the
+// same rules as this screener's own filters; a condition whose data a
+// row does not carry counts as not satisfied.
+function screenCond(r,id,rsMin){
+ if(id==="tt1"){
+  if(r.ma150_position&&r.ma200_position)return r.ma150_position==="above"&&r.ma200_position==="above";
+  return finite(r.close)&&finite(r.ma150)&&finite(r.ma200)&&r.close>r.ma150&&r.close>r.ma200;
+ }
+ if(id==="tt2")return finite(r.ma150)&&finite(r.ma200)&&r.ma150>r.ma200;
+ if(id==="tt3")return finite(r.ma200)&&finite(r.ma200_prev)&&r.ma200>r.ma200_prev;
+ if(id==="tt4")return finite(r.ma50)&&finite(r.ma150)&&finite(r.ma200)&&r.ma50>r.ma150&&r.ma50>r.ma200;
+ if(id==="tt5")return r.ma50_position==="above";
+ if(id==="tt6")return finite(r.low52_rise_pct)&&r.low52_rise_pct>=30;
+ if(id==="tt7")return finite(r.high52_distance_pct)&&r.high52_distance_pct<=25;
+ if(id==="tt8")return finite(r.rs_universe_pct)&&r.rs_universe_pct>=rsMin;
+ if(id==="sector")return consistentSectorLeaders.has(r.sector);
+ return true;
+}
+window.leaderScreenerEvalScreen=function(ids,rsMin){
+ const out=[];
+ for(const r of base){
+  if(!r||!r.ticker)continue;
+  let ok=true;
+  for(const id of ids){if(!screenCond(r,id,rsMin)){ok=false;break;}}
+  if(ok)out.push(String(r.ticker).replace(/\.T$/,""));
+ }
+ return out;
+};
 ttInputs.forEach(i=>i.addEventListener("change",ttChanged));
 const ttClearBtn=panel.querySelector("#ls-tt-clear");
 if(ttClearBtn)ttClearBtn.addEventListener("click",function(){ttInputs.forEach(i=>{i.checked=false;});ttChanged();});

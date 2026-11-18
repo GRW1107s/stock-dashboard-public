@@ -233,11 +233,27 @@
       return Promise.all(jobs).then(function () { return map; });
     }
 
+    var screenRunBtn = document.getElementById("bt-screen-run");
+    if (screenRunBtn) screenRunBtn.addEventListener("click", function () {
+      var note = document.getElementById("bt-screen-note");
+      var ids = checked("screen");
+      if (!ids.length) { if (note) note.textContent = "条件を選んでください"; return; }
+      if (typeof window.leaderScreenerEvalScreen !== "function") { if (note) note.textContent = "スクリーナーの読み込み待ちです"; return; }
+      var rsMin = parseInt((document.getElementById("bt-tt-rs") || {}).value || "70", 10);
+      var codes = window.leaderScreenerEvalScreen(ids, rsMin);
+      var input = document.getElementById("bt-symbols");
+      if (input) {
+        input.value = codes.join(", ");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (note) note.textContent = codes.length ? codes.length + "銘柄が対象に入りました" : "条件を満たす銘柄がありませんでした";
+    });
     runBtn.addEventListener("click", function () {
       var symbolsRaw = (document.getElementById("bt-symbols") || {}).value || "";
       var codes = symbolsRaw.split(/[\s,、，]+/).map(function (s) { return s.trim(); }).filter(Boolean)
         .map(function (s) { return s.replace(/\.T$/i, ""); });
-      codes = Array.from(new Set(codes)).slice(0, 10);
+      codes = Array.from(new Set(codes)).slice(0, 200);
       if (!codes.length) {
         results.innerHTML = '<p class="bt-res-note">銘柄コードを入力してから実行してください（対象セレクトだけでは実行できません）。</p>';
         return;
