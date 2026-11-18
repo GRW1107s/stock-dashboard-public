@@ -428,6 +428,29 @@ function tradingViewSymbol(r){
  return exchange?exchange+":"+usTicker:usTicker;
 }
 function tradingViewUrl(r){return "https://jp.tradingview.com/chart/?symbol="+encodeURIComponent(tradingViewSymbol(r));}
+// Backtest symbol picking (JP page only): a checkbox in the name cell
+// adds the stock to the backtest panel's symbol list. The list lives in
+// the #bt-symbols input and the backtest panel's saved state, and the
+// two are kept in sync here.
+const BT_STATE_KEY="stock-dashboard-backtest-v1";
+function btSymbolCodes(){
+ const input=document.getElementById("bt-symbols");
+ let raw=input?input.value:"";
+ if(!input){try{raw=(JSON.parse(localStorage.getItem(BT_STATE_KEY)||"null")||{}).symbols||"";}catch(e){raw="";}}
+ return String(raw||"").split(/[、,\s]+/).map(x=>x.trim()).filter(Boolean);
+}
+function btSetSymbol(code,on){
+ const set=new Set(btSymbolCodes());
+ if(on)set.add(code);else set.delete(code);
+ const value=Array.from(set).join(", ");
+ const input=document.getElementById("bt-symbols");
+ if(input)input.value=value;
+ try{const st=JSON.parse(localStorage.getItem(BT_STATE_KEY)||"null")||{};st.symbols=value;localStorage.setItem(BT_STATE_KEY,JSON.stringify(st));}catch(e){}
+}
+panel.addEventListener("change",function(e){
+ const t=e.target;
+ if(t&&t.classList&&t.classList.contains("ls-bt-check"))btSetSymbol(t.getAttribute("data-code"),t.checked);
+});
 function rowHtml(r){
  const rs=finite(r.rs_universe_pct)?String(r.rs_universe_pct):"—", v=relative(r);
  const epsLatest=epsValue(r,"eps"),epsAnnualYoy=epsValue(r,"annual_yoy");
@@ -444,7 +467,7 @@ function rowHtml(r){
  '<td class="ls-industry-name" title="'+H(industry1Title(r))+'">'+industryLeaderMarker("ind1",r.industry_name)+H(industryLabel(r)||'—')+'</td>'+
  (market==="jp"?'<td class="ls-industry-name" title="'+H(r.industry_fine_en||"業種②データ未取得")+'">'+industryLeaderMarker("ind2",r.industry_fine_en)+H(r.industry_fine_ja||'—')+'</td>':usIndustry2Cell(r))+
  '<td>'+H(String(r.ticker||'').replace(/\.T$/,''))+'</td>'+
- '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+subName+'</small></td>'+
+ '<td class="ls-name">'+(market==="jp"?'<input type="checkbox" class="ls-bt-check" data-code="'+H(String(r.ticker||'').replace(/\.T$/,''))+'" title="バックテストの対象に追加"'+(btSymbolCodes().includes(String(r.ticker||'').replace(/\.T$/,''))?" checked":"")+'>':"")+'<a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+subName+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
  '<td>'+H(sizeFromCap(r))+'</td>'+
  '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
