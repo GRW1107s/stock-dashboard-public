@@ -171,8 +171,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label>対象<select id="bt-universe"><option value="all">日本株 全銘柄</option><option value="prime">プライムのみ</option><option value="standard">スタンダードのみ</option><option value="growth">グロースのみ</option></select></label>
 <label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
 <label>銘柄コード<input type="text" id="bt-symbols" placeholder="例：7203, 6988" autocomplete="off"></label>
-<label>開始日<input type="date" id="bt-from"></label>
-<label>終了日<input type="date" id="bt-to"></label>
+<label>開始日<input type="text" id="bt-from" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
+<label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <span class="bt-hint">銘柄コードを入れると、その銘柄だけが対象になります。銘柄スクリーニングの表でチェックした銘柄もここに入ります。開始日・終了日を入れると、テスト期間より優先されます。</span>
 <button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
 </div>
@@ -249,8 +249,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
       if(saved.universe)universe.value=saved.universe;
       if(saved.period)period.value=saved.period;
       if(saved.symbols&&symbols)symbols.value=saved.symbols;
-      if(saved.from&&fromDate)fromDate.value=saved.from;
-      if(saved.to&&toDate)toDate.value=saved.to;
+      if(saved.from&&fromDate)fromDate.value=String(saved.from).replace(/-/g,'/');
+      if(saved.to&&toDate)toDate.value=String(saved.to).replace(/-/g,'/');
     }
   }catch(e){}
   boxes.forEach(b=>b.addEventListener('change',save));
@@ -265,6 +265,29 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   if(symbols){symbols.addEventListener('change',save);symbols.addEventListener('input',save);}
   if(fromDate)fromDate.addEventListener('change',save);
   if(toDate)toDate.addEventListener('change',save);
+  // Dates can be typed as yyyymmdd: digits are grouped with '/' as you
+  // type, and pressing Enter inserts a '/' at the caret.
+  [fromDate,toDate].forEach(el=>{
+    if(!el)return;
+    el.addEventListener('keydown',e=>{
+      if(e.key!=='Enter')return;
+      e.preventDefault();
+      const digits=el.value.replace(/\D/g,'');
+      const pos=el.selectionStart||0;
+      if(digits.length===0||digits.length>=8||el.value[pos-1]==='/')return;
+      el.value=el.value.slice(0,pos)+'/'+el.value.slice(el.selectionEnd||pos);
+      el.setSelectionRange(pos+1,pos+1);
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    el.addEventListener('input',()=>{
+      const raw=el.value, d=raw.replace(/\D/g,'').slice(0,8), tail=raw.endsWith('/');
+      let out=d.slice(0,4);
+      if(d.length>4||(tail&&d.length===4))out+='/'+d.slice(4,6);
+      if(d.length>6||(tail&&d.length===6))out+='/'+d.slice(6,8);
+      if(out!==raw){const atEnd=(el.selectionStart||0)>=raw.length;el.value=out;if(atEnd)el.setSelectionRange(out.length,out.length);}
+      save();
+    });
+  });
   panel.querySelectorAll('[data-bt-clear]').forEach(btn=>btn.addEventListener('click',()=>{
     boxes.filter(b=>b.dataset.bt===btn.dataset.btClear).forEach(b=>{b.checked=false;});
     save();
@@ -989,5 +1012,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261118bt2" defer></script>
+<script src="./backtest.js?v=20261118bt3" defer></script>
 </body></html>

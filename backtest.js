@@ -259,8 +259,9 @@
         return;
       }
       var ddLimit = marketAll.includes("dd") ? numOf("dd") : null;
-      var fromVal = (document.getElementById("bt-from") || {}).value || "";
-      var toVal = (document.getElementById("bt-to") || {}).value || "";
+      var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
+      var fromVal = normDate((document.getElementById("bt-from") || {}).value);
+      var toVal = normDate((document.getElementById("bt-to") || {}).value);
       var periodYears = parseInt((document.getElementById("bt-period") || {}).value || "3", 10);
 
       runBtn.disabled = true;
