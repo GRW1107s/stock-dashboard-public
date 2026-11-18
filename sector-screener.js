@@ -29,7 +29,7 @@ function usIndustry2Cell(r){
  return '<td class="ls-industry-name" title="'+H(title)+'">'+H(shown||'—')+'</td>';
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?29:25;
+const totalColumns=market==="us"?29:26;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 let ind1Leaders=new Set(),ind2Leaders=new Set();
 panel.innerHTML=
@@ -69,7 +69,7 @@ panel.innerHTML=
 '<div class="ls-table-wrap"><table class="ls-table"><thead><tr>'+
 '<th>セクター</th>'+
 (market==="jp"?'<th class="ls-industry-heading" title="JPXの33業種分類を使用します。">業種①</th><th class="ls-industry-heading" title="Yahoo Financeの業種分類（細分類）です。">業種②</th>':'<th class="ls-industry-heading" title="GICS Industry（74分類）です。">業種①</th><th class="ls-industry-heading" title="GICS Sub-Industry（163分類）です。GICS対象外の銘柄はNasdaq Industryを表示します。">業種②</th>')+
-(market==="us"?'<th>コード</th>':'')+'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+'<th title="時価総額による規模分類。超大型＝1兆円以上、大型＝3,000億円以上1兆円未満、中型＝500億円以上3,000億円未満、小型＝100億円以上500億円未満、超小型＝100億円未満">規模</th><th title="JPXが日々公表する空売り残高報告（発行済株式数の0.5%以上を保有する報告者の合計）。発行済株式数に対する割合">大口空売り<br>残高</th><th title="大口空売り残高割合の前公表日からの増減（％ポイント）">空売り<br>増減</th><th title="信用取引の売残高の前日比増減率（JPX銘柄別信用取引残高表）">売残<br>増減率</th><th title="信用取引の買残高の前日比増減率（JPX銘柄別信用取引残高表）">買残<br>増減率</th><th title="信用倍率＝買残高÷売残高（JPX銘柄別信用取引残高表）">信用<br>倍率</th>'+'<th title="取得済み銘柄だけのIBD方式参考RS（1〜99）。99は全上場株の99%超えを保証しません">RS指数<br>1〜99</th>'+
+'<th>コード</th>'+'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+'<th title="時価総額による規模分類。超大型＝1兆円以上、大型＝3,000億円以上1兆円未満、中型＝500億円以上3,000億円未満、小型＝100億円以上500億円未満、超小型＝100億円未満">規模</th><th title="JPXが日々公表する空売り残高報告（発行済株式数の0.5%以上を保有する報告者の合計）。発行済株式数に対する割合">大口空売り<br>残高</th><th title="大口空売り残高割合の前公表日からの増減（％ポイント）">空売り<br>増減</th><th title="信用取引の売残高の前日比増減率（JPX銘柄別信用取引残高表）">売残<br>増減率</th><th title="信用取引の買残高の前日比増減率（JPX銘柄別信用取引残高表）">買残<br>増減率</th><th title="信用倍率＝買残高÷売残高（JPX銘柄別信用取引残高表）">信用<br>倍率</th>'+'<th title="取得済み銘柄だけのIBD方式参考RS（1〜99）。99は全上場株の99%超えを保証しません">RS指数<br>1〜99</th>'+
 '<th title="直近最大252取引日の日次株価騰落率で計算した市場ベータ。最低120日以上の比較対象が必要。米国株はS&amp;P500、日本株はTOPIX連動ETF（1306）。">ベータ値</th>'+
 '<th title="直近最大252取引日の株価騰落率を年率換算したシャープレシオ。無リスク金利0%、最低120日。配当は含みません。">シャープレシオ</th>'+
 (market==="us"?'<th title="63/126/189/252営業日の加重騰落率から、S&P500指数（^GSPC）の同期間の加重騰落率を引いた値。+ならS&P500より強い">S&amp;P500比<br>加重pp</th>':'')+
@@ -433,7 +433,7 @@ function rowHtml(r){
  return '<tr><td class="ls-sector-name">'+sectorMarker(r.sector)+H(r.sector_name)+'</td>'+
  '<td class="ls-industry-name" title="'+H(industry1Title(r))+'">'+industryLeaderMarker("ind1",r.industry_name)+H(industryLabel(r)||'—')+'</td>'+
  (market==="jp"?'<td class="ls-industry-name" title="'+H(r.industry_fine_en||"業種②データ未取得")+'">'+industryLeaderMarker("ind2",r.industry_fine_en)+H(r.industry_fine_ja||'—')+'</td>':usIndustry2Cell(r))+
- (market==="us"?'<td>'+H(r.ticker||'')+'</td>':'')+
+ '<td>'+H(String(r.ticker||'').replace(/\.T$/,''))+'</td>'+
  '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+H(r.ticker)+(r.market?' ｜ '+H(r.market):'')+(r.asof?' ｜ '+H(r.asof):' ｜ 履歴未取得')+H(mmQuote)+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
  '<td>'+H(sizeFromCap(r))+'</td>'+shortCells(r)+marginCells(r)+
