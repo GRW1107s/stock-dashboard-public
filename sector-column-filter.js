@@ -72,16 +72,35 @@ function setupColumnOrder(panel,market,headings,defs){
  const CAT_LABELS={company:"企業情報",fund:"ファンダメンタルズ",tech:"テクニカル",flow:"需給"};
  const groupRow=document.createElement("tr");groupRow.className="ls-group-row";
  if(headrow.parentNode)headrow.parentNode.insertBefore(groupRow,headrow);
+ const boundaryStyle=document.createElement("style");
+ panel.appendChild(boundaryStyle);
  function renderGroups(){
   const hid=panel.__lsHiddenCols;
+  // Thin vertical line at each category boundary: the last visible
+  // column of every category except the final one gets a right border,
+  // and so does every group header cell except the last.
+  const visible=order.filter(id=>!(hid&&hid.has(id)));
+  const bounds=[];
+  for(let k=0;k<visible.length;k++){
+   if(k===visible.length-1||catById.get(visible[k+1])!==catById.get(visible[k]))bounds.push(visible[k]);
+  }
+  bounds.pop();
+  boundaryStyle.textContent=bounds.map(id=>'th[data-ls-column-id="'+id+'"],td[data-ls-column-id="'+id+'"]{border-right:1px solid #64748b}').join("");
   let html="",i=0;
+  const runs=[];
   while(i<order.length){
    const cat=catById.get(order[i]);let j=i+1;
    while(j<order.length&&catById.get(order[j])===cat)j++;
-   const allHidden=hid?order.slice(i,j).every(id=>hid.has(id)):false;
-   html+='<th class="ls-group-cell" colspan="'+(j-i)+'"'+(allHidden?' style="visibility:hidden"':'')+">"+CAT_LABELS[cat]+"</th>";
+   runs.push([cat,i,j]);
    i=j;
   }
+  runs.forEach(([cat,a,b],idx)=>{
+   const allHidden=hid?order.slice(a,b).every(id=>hid.has(id)):false;
+   const styles=[];
+   if(allHidden)styles.push("visibility:hidden");
+   if(idx<runs.length-1)styles.push("border-right:1px solid #64748b");
+   html+='<th class="ls-group-cell" colspan="'+(b-a)+'"'+(styles.length?' style="'+styles.join(";")+'"':'')+">"+CAT_LABELS[cat]+"</th>";
+  });
   groupRow.innerHTML=html+'<th class="ls-group-cell ls-group-add"></th>';
  }
  panel.addEventListener("ls:hidden-changed",renderGroups);
