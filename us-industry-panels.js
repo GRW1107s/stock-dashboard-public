@@ -211,6 +211,19 @@
         renderSummary();
         bindControls();
         drawTable();
+        if (window.AsofDate) {
+          const allRows = rows;
+          AsofDate.addDates(allRows.map(r => r.date));
+          const applyAsof = () => {
+            rows = AsofDate.sliceDesc(allRows);
+            renderRankings();
+            renderSummary();
+            drawTable();
+            AsofDate.setEffective(cfg.asofKey, AsofDate.effective(allRows));
+          };
+          AsofDate.onChange(applyAsof);
+          if (AsofDate.get()) applyAsof();
+        }
       })
       .catch(() => {});
     root.addEventListener("resize", () => requestAnimationFrame(() => drawArrows()));
@@ -231,11 +244,11 @@
   });
 
   createPanel({
-    url: "./us-industries.json", jumpId: "industry", divisor: 3, bandLabel: "上位3分の1",
+    url: "./us-industries.json", jumpId: "industry", divisor: 3, asofKey: "industry", bandLabel: "上位3分の1",
     ids: { rankings: "us-ind-period-rankings", histories: "us-ind-histories", cols: "us-ind-sector-cols", headrow: "us-ind-headrow", subhead: "us-ind-subhead", body: "us-ind-body", status: "us-ind-status", controls: "us-ind-controls", legendCount: "us-ind-legend-count" }
   });
   createPanel({
-    url: "./us-industries-fine.json", jumpId: "industry2", divisor: 10, bandLabel: "上位10分の1",
+    url: "./us-industries-fine.json", jumpId: "industry2", divisor: 10, asofKey: "fine", bandLabel: "上位10分の1",
     ids: { rankings: "us-fine-period-rankings", histories: "us-fine-histories", cols: "us-fine-sector-cols", headrow: "us-fine-headrow", subhead: "us-fine-subhead", body: "us-fine-body", status: "us-fine-status", controls: "us-fine-controls", legendCount: "us-fine-legend-count" }
   });
 })(typeof window !== "undefined" ? window : globalThis);

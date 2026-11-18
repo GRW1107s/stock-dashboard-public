@@ -12,6 +12,7 @@ const plain=function(n,suffix,dec){return finite(n)?n.toFixed(dec===undefined?1:
 const inputVal=function(id){return document.getElementById(id).value};
 const numeric=function(v){if(v===null||v===undefined||String(v).trim()==="")return null;const n=Number(v);return Number.isFinite(n)?n:null};
 let base=[],history=null,marketData=null,updatedAt=null,currentPage=0,universeMeta=null;
+let asofNote="";
 let usdJpy=null,usdJpyAsOf=null;
 const privateEps=new Map();
 function industryLabel(r){
@@ -33,6 +34,7 @@ const totalColumns=market==="us"?27:26;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 let ind1Leaders=new Set(),ind2Leaders=new Set();
 panel.innerHTML=
+'<div class="asof-bar"><label>データ日付 <select class="asof-select" aria-label="データ日付"></select></label><span class="asof-eff" data-asof-eff="screener"></span></div>'+
 '<div class="ls-intro"><h2>セクター別 リーダー銘柄スクリーニング（試作版）</h2>'+
 '<p>'+(market==="jp"?"JPXの東証プライム・スタンダード・グロース上場内国普通株式を対象にしています。上場銘柄一覧は月次更新、価格・出来高は負荷を分散して順次収集します。":"S&P500構成銘柄＋米国上場主要株・ADRを約1,800銘柄まで段階的に収録します。初期の監視銘柄も維持します。価格・出来高は日次バッチで順次取得します（全上場銘柄は網羅しません）。moomoo APIから企業名・時価総額・PER・直近年度EPSを一括取得し、EPS成長率・ROEは順次更新します。移動平均線・RS指数・ベータ等の履歴由来指標は既存の株価フィードを継続します。")+'価格面の候補とCAN-SLIM確認済みを混同せず、業績・機関保有は未確認のまま扱います。</p>'+
 '<p class="ls-method">N：52週終値高値から15%以内 ／ S：上昇日かつ出来高が前20日平均の1.3倍以上 ／ L：RS指数レーティング80以上かつセクターETFを60日で上回る。C：直近EPS成長25%以上＋売上20%以上、A：3年EPS年平均成長20%以上、I：機関保有増加。Mは市場概況で別途判断。</p></div>'+
@@ -483,6 +485,7 @@ function render(){
  if(updatedAt)stats+="／取得処理 "+updatedAt;
  stats+="／業種取得済み "+base.filter(r=>Boolean(r.industry_name)).length+"件";
  if(market==="jp")stats+="／業種②取得済み "+base.filter(r=>Boolean(r.industry_fine_ja)).length+"件";
+ if(asofNote)stats=asofNote+"／"+stats;
  get("ls-stat").textContent=stats;
  if(colFilters)colFilters.refresh();
  get("ls-body").innerHTML=portion.length?portion.map(rowHtml).join(""):'<tr><td colspan="'+totalColumns+'">該当する銘柄がありません。選択条件または株価取得状況をご確認ください。</td></tr>';
@@ -516,6 +519,61 @@ window.stockDashboardPrivateEPS={
  },
  clear(){privateEps.clear();if(base.length)render();}
 };
+
+function initScreenerAsof(all){
+ const liveBase=base;
+ const liveSec={leaders:consistentSectorLeaders,laggards:consistentSectorLaggards};
+ const liveInd1=market==="jp"?{leaders:ind1Leaders}:null;
+ const liveInd2=market==="jp"?{leaders:ind2Leaders}:null;
+ let archiveDates=[];const snapCache={};
+ function sliceData(data){
+  if(!data)return null;
+  const sorted=Array.isArray(data.rows)?data.rows.slice().sort(function(a,b){return b.date.localeCompare(a.date)}):[];
+  return {names:data.names||{},rows:AsofDate.sliceDesc(sorted)};
+ }
+ function applyBands(date){
+  if(!date){
+   consistentSectorLeaders=liveSec.leaders;consistentSectorLaggards=liveSec.laggards;
+   if(liveInd1)ind1Leaders=liveInd1.leaders;
+   if(liveInd2)ind2Leaders=liveInd2.leaders;
+   return;
+  }
+  const sec=calculateConsistentSectorBands(sliceData(history));
+  consistentSectorLeaders=sec.leaders;consistentSectorLaggards=sec.laggards;
+  if(market==="jp"){
+   if(all[5])ind1Leaders=calculateConsistentSectorBands(sliceData(all[5])).leaders;
+   if(all[4])ind2Leaders=calculateConsistentSectorBands(sliceData(all[4]),10).leaders;
+  }
+ }
+ function asofApply(date){
+  if(!date){
+   base=liveBase;asofNote="";applyBands("");AsofDate.setEffective("screener","");currentPage=0;render();
+   return;
+  }
+  const target=archiveDates.find(function(d){return d<=date});
+  if(!target){
+   base=[];asofNote="指定日（"+date+"）のスナップショットはまだありません"+(archiveDates.length?"（最古："+archiveDates[archiveDates.length-1]+"）":"（スナップショットはまだ蓄積されていません）");
+   applyBands(date);AsofDate.setEffective("screener",null);currentPage=0;render();
+   return;
+  }
+  function useSnap(snap){
+   const fields=snap.fields||[];
+   base=(snap[market]||[]).map(function(vals){const o={};fields.forEach(function(f,i){o[f]=vals[i]});return o}).filter(function(r){return r&&r.ticker&&r.sector});
+   asofNote=target+"時点のスナップショットを表示中";
+   applyBands(date);AsofDate.setEffective("screener",target);currentPage=0;render();
+  }
+  if(snapCache[target]){useSnap(snapCache[target]);return}
+  fetch("./screener-archive/"+target+".json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(snap){
+   if(snap){snapCache[target]=snap;useSnap(snap)}
+   else{base=[];asofNote=target+"のスナップショットを読み込めませんでした";currentPage=0;render()}
+  }).catch(function(){base=[];asofNote=target+"のスナップショットを読み込めませんでした";currentPage=0;render()});
+ }
+ AsofDate.onChange(asofApply);
+ fetch("./screener-archive/index.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(idx){
+  if(idx&&Array.isArray(idx.dates)){archiveDates=idx.dates.slice().sort().reverse();AsofDate.addDates(archiveDates)}
+  if(AsofDate.get())asofApply(AsofDate.get());
+ }).catch(function(){});
+}
 get("ls-prev").addEventListener("click",function(){if(currentPage>0){currentPage--;render()}});
 get("ls-next").addEventListener("click",function(){currentPage++;render()});
 Promise.all([
@@ -552,5 +610,6 @@ Promise.all([
   if(finite(count))get("ls-market").innerHTML="M：市場概況で確認するDD参考値 "+count+"件。<a href='./index.html'>市場概況へ</a>。DD・FTDは簡易判定で、トレンド確定を意味しません。";
  }
  render();
+ if(window.AsofDate)initScreenerAsof(all);
 }).catch(function(e){get("ls-stat").textContent="候補データを読み込めません："+String(e);get("ls-body").innerHTML='<tr><td colspan="'+totalColumns+'">スクリーニングデータは未配信です。</td></tr>'});
 })();

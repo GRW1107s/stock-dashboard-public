@@ -101,7 +101,16 @@ def write_snapshot(root, output, *, today=None):
     cutoff = (today - timedelta(days=RETENTION_DAYS)).isoformat()
     pruned = 0
     for old in folder.glob("*.json"):
-        if old.stem < cutoff:
+        if old.name != "index.json" and old.stem < cutoff:
             old.unlink()
             pruned += 1
+    # Date index for the dashboard's as-of selector (newest first).
+    dates = sorted(
+        (item.stem for item in folder.glob("*.json")
+         if re.fullmatch(r"\d{4}-\d{2}-\d{2}", item.stem)),
+        reverse=True)
+    (folder / "index.json").write_text(
+        json.dumps({"dates": dates, "updated_at": today.isoformat()},
+                   ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8")
     return path.name, pruned

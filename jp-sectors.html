@@ -14,6 +14,7 @@
 /* Keep original striped rows and marker colors; no judgment-cell fill. */
 .sector-table tbody td:nth-child(2n+3){background-color:transparent;box-shadow:none}
 
+.asof-bar{display:flex;align-items:center;gap:10px;margin:14px 0 2px;font-size:13px;color:#334155}.asof-bar select{margin-left:4px;padding:4px 7px;border:1px solid #b7c8db;border-radius:6px;background:#fff;font-size:13px}.asof-eff{font-size:12px;color:#2563eb}
 .period-rankings-title{font-size:14px;margin:12px 0 6px}.period-rankings{display:grid;grid-template-columns:minmax(0,1fr) 66px minmax(0,1fr) 66px minmax(0,1fr);gap:0;margin:10px 0 12px}
 .rank-panel{background:#fff;border:1px solid #e1e7ef;border-radius:8px;padding:8px;min-width:0}
 .rank-header{height:70px}.rank-panel h2{font-size:12px;margin:0 0 6px}.rank-note{font-size:10px;color:#64748b;margin:0;line-height:1.5}
@@ -96,16 +97,18 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261118sel"><script src="./dashboard-nav.js?v=20261117bt" defer></script><script src="./sector-column-filter.js?v=20261118line" defer></script><script src="./sector-screener.js?v=20261118grp" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261118sel"><script src="./dashboard-nav.js?v=20261117bt" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./sector-column-filter.js?v=20261118line" defer></script><script src="./sector-screener.js?v=20261118asof" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>日本セクター概況｜TOPIX-17</h1><p class="sub">国内17業種の連動ETF（1617〜1633）で見る騰落率・出来高増減率・簡易判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はTOPIX-17連動ETFとTOPIX連動ETF（1306）の市場価格騰落率の差（％ポイント）。判定はETF自身の取引量に基づく独自の簡易指標で、業種全体への資金流入を示すものではありません。出来高が少ないETFでは値動きと判定が不安定になり得ます。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
+<div class="asof-bar"><label>データ日付 <select class="asof-select" aria-label="データ日付"></select></label><span class="asof-eff" data-asof-eff="sector"></span></div>
 <h2 class="period-rankings-title">セクター強さランキング（3・10・25取引日）</h2><p class="rank-leader-legend"><span class="rank-legend-item"><span class="rank-leader-marker" aria-hidden="true"></span>上位3分の1（上位6位）を維持</span><span class="rank-legend-item"><span class="rank-laggard-marker" aria-hidden="true"></span>下位3分の1（下位6位）を維持</span><span>※直近3・10・25取引日のすべてで該当</span></p><section class="period-rankings" id="period-rankings" aria-label="3・10・25取引日のセクター強さランキング"></section>
 
 <section class="history"><div class="history-title"><strong>直近25取引日の判定履歴</strong><span class="muted">左：新しい → 右：古い</span></div><div class="history-scroll"><div class="history-matrix" id="histories"></div></div><div class="legend"><span><i class="square buy"></i>買い集め</span><span><i class="square sell"></i>売り抜け</span><span><i class="square ftd"></i>FTD</span><span><i class="square"></i>通常・未判定</span></div></section>
 <div class="controls"><button class="active" onclick="display(25,this)">25取引日</button><button onclick="display(90,this)">90取引日</button><button onclick="display(0,this)">すべて</button><label class="sector-sort" for="sector-sort">列の並び <select id="sector-sort" onchange="sortSectorColumns(this.value)"><option value="1">直近1取引日｜強い順</option><option value="3">直近3取引日｜強い順</option><option value="10">直近10取引日｜強い順</option><option value="25">直近25取引日｜強い順</option><option value="original">元の並び</option></select></label><span class="sector-sort-note">株価騰落率の累積で降順。データ不足は右端</span></div>
 <div class="table-wrap"><table class="sector-table"><colgroup id="sector-cols"></colgroup><thead><tr id="headrow"><th rowspan="2" class="date">日本日付</th></tr><tr id="subhead"></tr></thead><tbody id="body"><tr><td>読み込み中...</td></tr></tbody></table></div><p class="info" id="status"></p><p class="info">※ 1617〜1633（NEXT FUNDS TOPIX-17連動ETF）、ベンチマークは1306（TOPIX連動ETF）。約250取引日を計算用に取得し、最新200取引日を公開。最新日のデータは日本市場の引け後に反映されます。</p>
-<section id="industry-analysis-panel" aria-label="業種分析"><h2 class="period-rankings-title" style="margin-top:30px">業種分析①｜東証33業種</h2><h2 class="period-rankings-title">業種強さランキング（3・10・25取引日）</h2><p class="rank-leader-legend"><span class="rank-legend-item"><span class="rank-leader-marker" aria-hidden="true"></span>上位3分の1（上位11位）を維持</span><span class="rank-legend-item"><span class="rank-laggard-marker" aria-hidden="true"></span>下位3分の1（下位11位）を維持</span><span>※直近3・10・25取引日のすべてで該当</span></p><section class="period-rankings" id="ind-period-rankings" aria-label="3・10・25取引日のセクター強さランキング"></section>
+<section id="industry-analysis-panel" aria-label="業種分析"><div class="asof-bar"><label>データ日付 <select class="asof-select" aria-label="データ日付"></select></label><span class="asof-eff" data-asof-eff="industry"></span></div>
+<h2 class="period-rankings-title" style="margin-top:30px">業種分析①｜東証33業種</h2><h2 class="period-rankings-title">業種強さランキング（3・10・25取引日）</h2><p class="rank-leader-legend"><span class="rank-legend-item"><span class="rank-leader-marker" aria-hidden="true"></span>上位3分の1（上位11位）を維持</span><span class="rank-legend-item"><span class="rank-laggard-marker" aria-hidden="true"></span>下位3分の1（下位11位）を維持</span><span>※直近3・10・25取引日のすべてで該当</span></p><section class="period-rankings" id="ind-period-rankings" aria-label="3・10・25取引日のセクター強さランキング"></section>
 
 <section class="history"><div class="history-title"><strong>直近25取引日の判定履歴</strong><span class="muted">左：新しい → 右：古い</span></div><div class="history-scroll"><div class="history-matrix" id="ind-histories"></div></div><div class="legend"><span><i class="square buy"></i>買い集め</span><span><i class="square sell"></i>売り抜け</span><span><i class="square ftd"></i>FTD</span><span><i class="square"></i>通常・未判定</span></div></section>
 <div class="controls ind-controls"><button class="active" onclick="indDisplay(25,this)">25取引日</button><button onclick="indDisplay(90,this)">90取引日</button><button onclick="indDisplay(0,this)">すべて</button><label class="sector-sort" for="ind-sector-sort">列の並び <select id="ind-sector-sort" onchange="indSortColumns(this.value)"><option value="1">直近1取引日｜強い順</option><option value="3">直近3取引日｜強い順</option><option value="10">直近10取引日｜強い順</option><option value="25">直近25取引日｜強い順</option><option value="original">元の並び</option></select></label><span class="sector-sort-note">株価騰落率の累積で降順。データ不足は右端</span></div>
@@ -113,7 +116,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 
 
 </section>
-<section id="fine-industry-panel" aria-label="業種分析"><h2 class="period-rankings-title" style="margin-top:30px">業種分析②｜Yahoo細分類</h2><h2 class="period-rankings-title">業種強さランキング（3・10・25取引日）</h2><p class="rank-leader-legend"><span class="rank-legend-item"><span class="rank-leader-marker" aria-hidden="true"></span>上位10分の1を維持</span><span class="rank-legend-item"><span class="rank-laggard-marker" aria-hidden="true"></span>下位3分の1を維持</span><span>※直近3・10・25取引日のすべてで該当</span></p><section class="period-rankings" id="fine-period-rankings" aria-label="3・10・25取引日のセクター強さランキング"></section>
+<section id="fine-industry-panel" aria-label="業種分析"><div class="asof-bar"><label>データ日付 <select class="asof-select" aria-label="データ日付"></select></label><span class="asof-eff" data-asof-eff="fine"></span></div>
+<h2 class="period-rankings-title" style="margin-top:30px">業種分析②｜Yahoo細分類</h2><h2 class="period-rankings-title">業種強さランキング（3・10・25取引日）</h2><p class="rank-leader-legend"><span class="rank-legend-item"><span class="rank-leader-marker" aria-hidden="true"></span>上位10分の1を維持</span><span class="rank-legend-item"><span class="rank-laggard-marker" aria-hidden="true"></span>下位3分の1を維持</span><span>※直近3・10・25取引日のすべてで該当</span></p><section class="period-rankings" id="fine-period-rankings" aria-label="3・10・25取引日のセクター強さランキング"></section>
 <section class="history"><div class="history-title"><strong>直近25取引日の判定履歴</strong><span class="muted">左：新しい → 右：古い</span></div><div class="history-scroll"><div class="history-matrix" id="fine-histories"></div></div><div class="legend"><span><i class="square buy"></i>買い集め</span><span><i class="square sell"></i>売り抜け</span><span><i class="square ftd"></i>FTD</span><span><i class="square"></i>通常・未判定</span></div></section>
 <div class="controls fine-controls"><button class="active" onclick="fineDisplay(25,this)">25取引日</button><button onclick="fineDisplay(90,this)">90取引日</button><button onclick="fineDisplay(0,this)">すべて</button><label class="sector-sort" for="fine-sector-sort">列の並び <select id="fine-sector-sort" onchange="fineSortColumns(this.value)"><option value="1">直近1取引日｜強い順</option><option value="3">直近3取引日｜強い順</option><option value="10">直近10取引日｜強い順</option><option value="25">直近25取引日｜強い順</option><option value="original">元の並び</option></select></label><span class="sector-sort-note">株価騰落率の累積で降順。データ不足は右端</span></div>
 <div class="table-wrap"><table class="sector-table"><colgroup id="fine-sector-cols"></colgroup><thead><tr id="fine-headrow"><th rowspan="2" class="date">日本日付</th></tr><tr id="fine-subhead"></tr></thead><tbody id="fine-body"><tr><td>読み込み中...</td></tr></tbody></table></div><p class="info" id="fine-status"></p><p class="info">※ 業種の所属銘柄はYahoo Financeの業種分類に基づきます（公式の業種区分ではありません）。指数は構成銘柄を浮動株時価総額加重で計算した参考値、出来高は構成銘柄の合計で、東証の公式業種別指数ではありません。ベンチマークは1306（TOPIX連動ETF）。約250取引日を計算用に取得し、最新200取引日を公開。最新日のデータは日本市場の引け後に反映されます。</p>
@@ -513,6 +517,13 @@ fetch('./jp-sectors.json?t='+Date.now(),{cache:'no-store'})
   document.getElementById('sector-sort').value=sectorSortPeriod;
   renderRankings();renderSummary();
   display(25,document.querySelector('.controls button'));
+  if(window.AsofDate){
+   const allRows=rows;
+   AsofDate.addDates(allRows.map(r=>r.date));
+   const applyAsof=function(){rows=AsofDate.sliceDesc(allRows);renderRankings();renderSummary();drawSectorTable();AsofDate.setEffective('sector',AsofDate.effective(allRows));};
+   AsofDate.onChange(applyAsof);
+   if(AsofDate.get())applyAsof();
+  }
  })
  .catch(e=>{
   document.getElementById('body').innerHTML='<tr><td colspan="35">データ読み込みに失敗しました</td></tr>';
@@ -724,6 +735,13 @@ fetch('./jp-industries.json?t='+Date.now(),{cache:'no-store'})
   document.getElementById('ind-sector-sort').value=sectorSortPeriod;
   renderRankings();renderSummary();
   display(25,document.querySelector('.ind-controls button'));
+  if(window.AsofDate){
+   const allRows=rows;
+   AsofDate.addDates(allRows.map(r=>r.date));
+   const applyAsof=function(){rows=AsofDate.sliceDesc(allRows);renderRankings();renderSummary();drawSectorTable();AsofDate.setEffective('industry',AsofDate.effective(allRows));};
+   AsofDate.onChange(applyAsof);
+   if(AsofDate.get())applyAsof();
+  }
  })
  .catch(e=>{
   document.getElementById('ind-body').innerHTML='<tr><td colspan="67">データ読み込みに失敗しました</td></tr>';
@@ -923,6 +941,13 @@ fetch('./jp-industries-fine.json?t='+Date.now(),{cache:'no-store'})
   document.getElementById('fine-sector-sort').value=sectorSortPeriod;
   renderRankings();renderSummary();
   display(25,document.querySelector('.fine-controls button'));
+  if(window.AsofDate){
+   const allRows=rows;
+   AsofDate.addDates(allRows.map(r=>r.date));
+   const applyAsof=function(){rows=AsofDate.sliceDesc(allRows);renderRankings();renderSummary();drawSectorTable();AsofDate.setEffective('fine',AsofDate.effective(allRows));};
+   AsofDate.onChange(applyAsof);
+   if(AsofDate.get())applyAsof();
+  }
  })
  .catch(e=>{
   document.getElementById('fine-body').innerHTML='<tr><td colspan="301">データ読み込みに失敗しました</td></tr>';
