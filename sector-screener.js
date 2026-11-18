@@ -430,11 +430,18 @@ function rowHtml(r){
  const epsLatest=epsValue(r,"eps"),epsAnnualYoy=epsValue(r,"annual_yoy");
  const annualEpsCagr=epsValue(r,"annual"),roe=roeValue(r);
  const mmQuote=market==="us"&&finite(r.moomoo_close)&&r.moomoo_quote_asof?" ｜ moomoo $"+r.moomoo_close.toFixed(2)+" ("+r.moomoo_quote_asof+")":"";
+ // JP rows show the code in its own column, so the name cell's sub-line
+ // omits it there (market / asof only). US keeps the ticker in the sub-line.
+ const subParts=[];
+ if(market!=="jp"&&r.ticker)subParts.push(H(r.ticker));
+ if(r.market)subParts.push(H(r.market));
+ subParts.push(r.asof?H(r.asof):'履歴未取得');
+ const subName=subParts.join(' ｜ ')+H(mmQuote);
  return '<tr><td class="ls-sector-name">'+sectorMarker(r.sector)+H(r.sector_name)+'</td>'+
  '<td class="ls-industry-name" title="'+H(industry1Title(r))+'">'+industryLeaderMarker("ind1",r.industry_name)+H(industryLabel(r)||'—')+'</td>'+
  (market==="jp"?'<td class="ls-industry-name" title="'+H(r.industry_fine_en||"業種②データ未取得")+'">'+industryLeaderMarker("ind2",r.industry_fine_en)+H(r.industry_fine_ja||'—')+'</td>':usIndustry2Cell(r))+
  '<td>'+H(String(r.ticker||'').replace(/\.T$/,''))+'</td>'+
- '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+H(r.ticker)+(r.market?' ｜ '+H(r.market):'')+(r.asof?' ｜ '+H(r.asof):' ｜ 履歴未取得')+H(mmQuote)+'</small></td>'+
+ '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+subName+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
  '<td>'+H(sizeFromCap(r))+'</td>'+shortCells(r)+marginCells(r)+
  '<td><strong>'+rs+'</strong></td>'+
