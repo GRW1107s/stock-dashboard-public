@@ -648,7 +648,17 @@ def main():
             print('WARNING Nikkei official ingestion failed:', repr(exc))
         if not merged:
             raise ValueError('No Nikkei 225 data from any source')
+        # Yahoo reports volume 0 for the latest session until it finalises
+        # overnight. Enrich with the raw value (the DD chain needs the day
+        # present), then mask the displayed volume fields so the page shows
+        # a gap instead of a bogus 0 / -100% day.
+        zero_volume_days = {day for day, rec in merged.items()
+                            if not rec.get('volume')}
         nikkei = enrich_jp_index(merged)
+        for day in zero_volume_days:
+            if day in nikkei:
+                nikkei[day]['volume_value'] = None
+                nikkei[day]['volume'] = None
         print(f'NIKKEI 225: {len(nikkei)} sessions')
     except Exception as exc:
         print('WARNING Nikkei 225 ingestion failed:', repr(exc))
