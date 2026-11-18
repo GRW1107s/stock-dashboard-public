@@ -135,7 +135,9 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-block{border:1px solid #d7e0ea;border-radius:10px;padding:12px 14px;background:#fff}
 .bt-block.buy{border-top:4px solid #16a34a}
 .bt-block.sell{border-top:4px solid #dc2626}
-.bt-block.market{border-top:4px solid #2563eb}
+.bt-block.screen{border:1px solid #bfdbfe;border-top:4px solid #2563eb;background:#f4f8fd}
+.bt-block.screen h3{color:#1d4ed8}
+.bt-group-row{display:flex;justify-content:space-between;align-items:center}
 .bt-group{font-size:12px;font-weight:700;color:#64748b;margin:10px 0 2px}
 .bt-num{width:58px;margin:0 4px;padding:3px 6px;border:1px solid #b7c8db;border-radius:6px;font-size:13px}
 .bt-select{margin:0 4px;padding:2px 4px;border:1px solid #b7c8db;border-radius:6px;font-size:13px;background:#fff}
@@ -175,12 +177,6 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
 </div>
 <div class="bt-grid">
-<div class="bt-block market">
-<div class="bt-block-head"><h3>市場動向</h3><button type="button" class="bt-clear" data-bt-clear="market">すべて外す</button></div>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="ftd"><span>FTD（フォロースルーデー）が発生</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD（買い集め日）が<select class="bt-select" data-bt-num="ad" aria-label="ADのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>日以上（直近25取引日）</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD（売り抜け日）が<select class="bt-select" data-bt-num="dd" aria-label="DDのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>以下（直近25取引日）</span></label>
-</div>
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="tt1"><span>株価が150日・200日移動平均線より上</span></label>
@@ -198,6 +194,10 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="eps25"><span>EPS増加率（前年同期比）が25%以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="roe17"><span>ROEが17%以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="sector"><span>所属セクターが上位を維持（緑丸）</span></label>
+<div class="bt-group bt-group-row"><span>市場動向</span><button type="button" class="bt-clear" data-bt-clear="market">すべて外す</button></div>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ftd"><span>FTD（フォロースルーデー）が発生</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD（買い集め日）が<select class="bt-select" data-bt-num="ad" aria-label="ADのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>日以上（直近25取引日）</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD（売り抜け日）が<select class="bt-select" data-bt-num="dd" aria-label="DDのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>以下（直近25取引日）</span></label>
 </div>
 <div class="bt-block sell">
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
@@ -281,7 +281,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
     return items.slice(a,b+1);
   }
   panel.querySelectorAll('.bt-block').forEach(block=>{
-    const kind=block.classList.contains('buy')?'buy':block.classList.contains('sell')?'sell':'market';
+    const kind=block.classList.contains('buy')?'buy':block.classList.contains('sell')?'sell':block.classList.contains('screen')?'screen':'market';
     const groups=[];let cur=[];
     for(const child of block.children){
       if(child.matches('.bt-item'))cur.push(child);
