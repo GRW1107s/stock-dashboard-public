@@ -104,13 +104,33 @@ def write_snapshot(root, output, *, today=None):
         if old.name != "index.json" and old.stem < cutoff:
             old.unlink()
             pruned += 1
-    # Date index for the dashboard's as-of selector (newest first).
+    _write_index(folder, today.isoformat())
+    return path.name, pruned
+
+
+def _write_index(folder, updated_at):
+    """Rewrite screener-archive/index.json from the files present."""
     dates = sorted(
         (item.stem for item in folder.glob("*.json")
          if re.fullmatch(r"\d{4}-\d{2}-\d{2}", item.stem)),
         reverse=True)
     (folder / "index.json").write_text(
-        json.dumps({"dates": dates, "updated_at": today.isoformat()},
+        json.dumps({"dates": dates, "updated_at": updated_at},
                    ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8")
-    return path.name, pruned
+
+
+def write_snapshot_rows(root, day_iso, jp_rows, us_rows):
+    """Write one day's snapshot from prepared row dicts (backfill path).
+
+    Uses the same slim columnar format as write_snapshot so the
+    dashboard reads backfilled and live snapshots identically.
+    """
+    folder = Path(root) / "screener-archive"
+    folder.mkdir(parents=True, exist_ok=True)
+    payload = slim_snapshot({"jp": jp_rows, "us": us_rows}, day_iso)
+    (folder / f"{day_iso}.json").write_text(
+        json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8")
+    _write_index(folder, day_iso)
+    return f"{day_iso}.json"

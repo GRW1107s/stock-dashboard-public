@@ -889,6 +889,13 @@ def main():
         print("SCREENER_SNAPSHOT", name, "pruned", pruned, flush=True)
     except Exception as err:
         print("SCREENER_SNAPSHOT_ERROR", str(err)[:150], flush=True)
+    # Backfill past screener snapshots (to 2026-10-01) from this run's
+    # fetched OHLCV series. No-op once every date exists. Best-effort.
+    try:
+        from backfill_snapshots import run as backfill_snapshots_run
+        backfill_snapshots_run(ROOT, output)
+    except Exception as err:
+        print("BACKFILL_SNAPSHOTS_ERROR", str(err)[:150], flush=True)
     # US industry analysis data (GICS Industry / Sub-Industry + Nasdaq
     # Industry), built from the screener data just written. Best-effort,
     # like the stores above: a failure never blocks the screener update.
