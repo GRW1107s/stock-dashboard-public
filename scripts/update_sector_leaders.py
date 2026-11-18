@@ -33,6 +33,7 @@ US_REFRESH_PER_RUN = 100
 US_REFRESH_AFTER_DAYS = 3
 JP_TREND_PER_RUN = 1500
 US_TREND_PER_RUN = 700
+COLLECTED_OHLCV = {"jp": {}, "us": {}}
 US_UNIVERSE_LIMIT = 1800
 
 SP500_MASTER_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
@@ -121,6 +122,18 @@ def latest_us_universe(previous_stocks):
     old = {row["ticker"]: row for row in previous_stocks if isinstance(row, dict) and row.get("ticker")}
     master = {}
     provenance = {}
+    # GICS for the wider universe: S&P 400/600 constituents and the
+    # Sub-Industry -> Industry structure, both from Wikipedia tables.
+    # Best-effort; on failure the Nasdaq labels below remain in use.
+    gics_extra, sub_to_industry = {}, {}
+    try:
+        from gics_us import load_us_gics
+        gics_extra, sub_to_industry, gics_stats = load_us_gics()
+        provenance["gics_extra"] = gics_stats
+        print("US_GICS_EXTRA", gics_stats, flush=True)
+    except Exception as err:
+        provenance["gics_extra_error"] = str(err)[:170]
+        print("US_GICS_EXTRA_ERROR", err, flush=True)
     try:
         sp_rows = csv_table(SP500_MASTER_URL, 470)
         for row in sp_rows:
@@ -128,12 +141,15 @@ def latest_us_universe(previous_stocks):
             gics = row.get("GICS Sector")
             if ticker and gics in US_GICS_SECTORS:
                 sector, name = US_GICS_SECTORS[gics]
+                sub_industry = clean_industry(row.get("GICS Sub-Industry"))
                 master[ticker] = {
                     "ticker": ticker, "name": row.get("Security") or ticker,
                     "sector": sector, "sector_name": name,
                     "gics_sector": gics, "universe_group": "S&P500",
-                    "industry_name": clean_industry(row.get("GICS Sub-Industry")),
+                    "industry_name": sub_industry,
                     "industry_source": "S&P500 GICS Sub-Industry",
+                    "gics_sub_industry": sub_industry,
+                    "gics_industry": sub_to_industry.get(sub_industry),
                     "cik": int(row["CIK"]) if str(row.get("CIK", "")).strip().isdigit() else None
                 }
         provenance["sp500_rows"] = len(sp_rows)
@@ -158,6 +174,9 @@ def latest_us_universe(previous_stocks):
             if not ticker:
                 continue
             gics = US_NASDAQ_SECTORS.get(row.get("sector", ""))
+            wiki = gics_extra.get(ticker)
+            if wiki and wiki["gics_sector"] in US_GICS_SECTORS:
+                gics = wiki["gics_sector"]
             if gics not in US_GICS_SECTORS:
                 continue
             name = str(row.get("name") or ticker).strip()
@@ -167,11 +186,20 @@ def latest_us_universe(previous_stocks):
             if cap is None or cap < 1_000_000_000:
                 continue
             sector, sector_name = US_GICS_SECTORS[gics]
+            industry_name = clean_industry(row.get("industry"))
+            industry_source = "Nasdaq screener Industry"
+            gics_sub = None
+            if wiki and wiki["gics_sector"] in US_GICS_SECTORS:
+                industry_name = clean_industry(wiki["sub"])
+                industry_source = wiki["group"] + " GICS Sub-Industry"
+                gics_sub = industry_name
             others[ticker] = {
                 "ticker": ticker, "name": name, "sector": sector,
                 "sector_name": sector_name, "gics_sector": gics,
-                "industry_name": clean_industry(row.get("industry")),
-                "industry_source": "Nasdaq screener Industry",
+                "industry_name": industry_name,
+                "industry_source": industry_source,
+                "gics_sub_industry": gics_sub,
+                "gics_industry": sub_to_industry.get(gics_sub) if gics_sub else None,
                 "universe_group": "US listed major equities",
                 "_market_cap_for_selection": cap,
             }
@@ -203,6 +231,9 @@ def latest_us_universe(previous_stocks):
             master[ticker] = {
                 "ticker": ticker, "name": item.get("name") or ticker,
                 "sector": item.get("sector"), "sector_name": item.get("sector_name"),
+                "gics_sector": item.get("gics_sector"),
+                "gics_industry": item.get("gics_industry"),
+                "gics_sub_industry": item.get("gics_sub_industry"),
                 "industry_name": item.get("industry_name"), "industry_source": item.get("industry_source"),
                 "universe_group": "original watchlist",
             }
@@ -212,6 +243,9 @@ def latest_us_universe(previous_stocks):
             master[ticker] = {
                 "ticker": ticker,"name":item.get("name") or ticker,
                 "sector": item.get("sector"),"sector_name": item.get("sector_name"),
+                "gics_sector": item.get("gics_sector"),
+                "gics_industry": item.get("gics_industry"),
+                "gics_sub_industry": item.get("gics_sub_industry"),
                 "industry_name": item.get("industry_name"),"industry_source": item.get("industry_source"),
                 "universe_group": item.get("universe_group") or "previous listing"
             }
@@ -251,9 +285,14 @@ def latest_us_universe(previous_stocks):
         result.append(item)
     provenance["universe"] = len(result)
     provenance["industry_coverage"] = sum(bool(row.get("industry_name")) for row in result)
-    provenance["industry_note"] = "S&P500: GICS Sub-Industry; other US listings: Nasdaq Industry. Different taxonomies."
+    provenance["gics_coverage"] = sum(bool(row.get("gics_sub_industry")) for row in result)
+    provenance["gics_industry_coverage"] = sum(bool(row.get("gics_industry")) for row in result)
+    provenance["industry_note"] = "GICS Sub-Industry for S&P 1500 constituents (500/400/600, public lists); GICS Industry derived from the official GICS structure; other US listings: Nasdaq Industry."
     provenance["price_data_source"] = "Yahoo Finance unofficial 1d chart API, rolling batch"
-    provenance["listing_source"] = [SP500_MASTER_URL, US_LISTED_MASTER_URL]
+    provenance["listing_source"] = [SP500_MASTER_URL, US_LISTED_MASTER_URL,
+                                    "https://en.wikipedia.org/wiki/List_of_S%26P_400_companies",
+                                    "https://en.wikipedia.org/wiki/List_of_S%26P_600_companies",
+                                    "https://en.wikipedia.org/wiki/Global_Industry_Classification_Standard"]
     return result, provenance
 
 
@@ -352,10 +391,14 @@ def obtain(symbol, market):
                 record = payload["chart"]["result"][0]
                 quote_data = record["indicators"]["quote"][0]
                 now = datetime.now(exchange_zone)
+                opens = quote_data.get("open") or []
+                highs = quote_data.get("high") or []
+                lows = quote_data.get("low") or []
                 days = []
-                for timestamp, close, volume in zip(
+                ohlcv_by_date = {}
+                for idx, (timestamp, close, volume) in enumerate(zip(
                     record["timestamp"], quote_data["close"], quote_data["volume"]
-                ):
+                )):
                     close = safe_num(close)
                     if close is None or close <= 0:
                         continue
@@ -364,7 +407,20 @@ def obtain(symbol, market):
                         cutoff = clock_time(15, 35) if market == "jp" else clock_time(16, 15)
                         if now.time() < cutoff:
                             continue
-                    days.append((date.isoformat(), close, safe_num(volume)))
+                    vol = safe_num(volume)
+                    if isinstance(vol, float) and vol.is_integer():
+                        vol = int(vol)
+                    days.append((date.isoformat(), close, vol))
+                    def _r4(v):
+                        return round(v, 4) if isinstance(v, float) else v
+                    ohlcv_by_date[date.isoformat()] = [
+                        date.isoformat(),
+                        _r4(safe_num(opens[idx])) if idx < len(opens) else None,
+                        _r4(safe_num(highs[idx])) if idx < len(highs) else None,
+                        _r4(safe_num(lows[idx])) if idx < len(lows) else None,
+                        _r4(close), vol,
+                    ]
+                ohlcv = [ohlcv_by_date[day] for day in sorted(ohlcv_by_date)]
                 days = sorted({day: (day, price, volume) for day, price, volume in days}.values())
                 if len(days) < 63:
                     raise ValueError("Not enough completed market sessions")
@@ -382,6 +438,7 @@ def obtain(symbol, market):
                 }
                 return {
                     "_daily_returns": daily_returns,
+                    "_ohlcv": ohlcv,
                     "asof": days[-1][0],
                     "close": round(close, 3),
                     **ma_snapshot(prices),
@@ -556,6 +613,9 @@ def fetch_charts(stocks, market, benchmark_returns=None, benchmark_symbol=None):
             try:
                 data = task.result()
                 daily = data.pop("_daily_returns", {})
+                series = data.pop("_ohlcv", None)
+                if series:
+                    COLLECTED_OHLCV[market][stock["ticker"]] = series
                 data.update(risk_metrics(daily, benchmark_returns))
                 data["risk_benchmark"] = benchmark_symbol if benchmark_returns else None
                 stock.update(data)
@@ -623,12 +683,21 @@ def main():
     try:
         jp_benchmark = obtain("1306.T", "jp")
         jp_benchmark_returns = jp_benchmark.pop("_daily_returns")
+        jp_benchmark.pop("_ohlcv", None)
         output["jp_risk_benchmark_asof"] = jp_benchmark.get("asof")
         output.pop("jp_risk_benchmark_error", None)
     except Exception as err:
         output["jp_risk_benchmark_error"] = str(err)[:180]
         print("JP_RISK_BENCHMARK_ERROR", err, flush=True)
     jp_ok, jp_fail = fetch_charts(selected, "jp", jp_benchmark_returns, "1306.T")
+    # Persist the fetched daily OHLCV series (backtest foundation,
+    # 365-day retention). Best-effort: never blocks the price pipeline.
+    try:
+        from history_store import update_ohlcv
+        stored = update_ohlcv(ROOT, "jp", COLLECTED_OHLCV.get("jp") or {})
+        print("OHLCV_JP_STORED", stored, flush=True)
+    except Exception as err:
+        print("OHLCV_JP_ERROR", str(err)[:150], flush=True)
     jp_rs = enrich(current_jp, "jp")
     output["jp"] = current_jp
     priced = sum(1 for item in current_jp if item.get("asof"))
@@ -754,6 +823,7 @@ def main():
     try:
         sp500_benchmark = obtain("^GSPC", "us")
         us_benchmark_returns = sp500_benchmark.pop("_daily_returns")
+        sp500_benchmark.pop("_ohlcv", None)
         sp500_benchmark["symbol"] = "^GSPC"
         sp500_benchmark["rs_weighted_return_pct"] = rs_weighted_return(sp500_benchmark)
         output.pop("sp500_benchmark_error", None)
@@ -761,6 +831,12 @@ def main():
         output["sp500_benchmark_error"] = str(err)[:180]
         print("SP500_RS_BENCHMARK_ERROR", err, flush=True)
     us_ok, us_fail = fetch_charts(us_selected, "us", us_benchmark_returns, "^GSPC")
+    try:
+        from history_store import update_ohlcv
+        stored = update_ohlcv(ROOT, "us", COLLECTED_OHLCV.get("us") or {})
+        print("OHLCV_US_STORED", stored, flush=True)
+    except Exception as err:
+        print("OHLCV_US_ERROR", str(err)[:150], flush=True)
     output["sp500_benchmark"] = sp500_benchmark
     # A dated USD/JPY quote is required to convert USD capitalization to JPY.
     # Preserve the previously verified rate when the quote endpoint is down.
@@ -800,6 +876,16 @@ def main():
     print("US_COVERAGE", output["us_coverage"], flush=True)
     ARCHIVE.write_text(json.dumps(output, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print("WROTE", ARCHIVE.name, flush=True)
+    # Daily screener snapshot for the 1-year archive (slim columnar JSON;
+    # the day's last run wins). Best-effort, like the OHLCV store.
+    try:
+        from history_store import write_snapshot
+        name, pruned = write_snapshot(
+            ROOT, output,
+            today=datetime.now(ZoneInfo("Asia/Tokyo")).date())
+        print("SCREENER_SNAPSHOT", name, "pruned", pruned, flush=True)
+    except Exception as err:
+        print("SCREENER_SNAPSHOT_ERROR", str(err)[:150], flush=True)
 
 
 if __name__ == "__main__":
