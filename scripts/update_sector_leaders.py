@@ -26,11 +26,14 @@ UA = "Mozilla/5.0 (compatible; StockDashboard/1.0; personal investment research)
 HEADERS = {"User-Agent": UA, "Accept": "application/json"}
 MAX_WORKERS = 7
 JP_NEW_PER_RUN = 260
-JP_REFRESH_PER_RUN = max(1, min(2500, int(os.getenv('JP_REFRESH_PER_RUN', '650'))))
-JP_REFRESH_AFTER_DAYS = 4
+# Full refresh every run (GRW decision 2026-11-18): every quoted stock is
+# re-fetched so RS / moving averages / returns are all computed from the
+# latest close. Measured cost: roughly +3.5 min of chart fetching per run.
+JP_REFRESH_PER_RUN = max(1, min(10000, int(os.getenv('JP_REFRESH_PER_RUN', '4000'))))
+JP_REFRESH_AFTER_DAYS = 0
 US_NEW_PER_RUN = 220
-US_REFRESH_PER_RUN = 100
-US_REFRESH_AFTER_DAYS = 3
+US_REFRESH_PER_RUN = 2000
+US_REFRESH_AFTER_DAYS = 0
 JP_TREND_PER_RUN = 1500
 US_TREND_PER_RUN = 700
 COLLECTED_OHLCV = {"jp": {}, "us": {}}
