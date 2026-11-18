@@ -112,6 +112,12 @@ function sectorMarker(sector){
   return '<span class="ls-sector-laggard-marker" role="img" aria-label="3・10・25取引日すべてで下位3分の1" title="3・10・25取引日すべてで下位3分の1"></span>';
  return '';
 }
+function industryLeaderMarker(kind,value){
+ const leaders=kind==="ind2"?ind2Leaders:ind1Leaders;
+ if(!value||!leaders.has(value))return '';
+ const band=kind==="ind2"?"上位10分の1":"上位3分の1";
+ return '<span class="ls-sector-leader-marker" role="img" aria-label="3・10・25取引日すべてで'+band+'" title="3・10・25取引日すべてで'+band+'"></span>';
+}
 function marketSectorReturn(ticker){
  if(!history||!Array.isArray(history.rows))return null;
  const changes=history.rows.slice(0,60).map(function(item){return item.sectors&&item.sectors[ticker]&&item.sectors[ticker].change});
@@ -415,8 +421,8 @@ function rowHtml(r){
  const annualEpsCagr=epsValue(r,"annual"),roe=roeValue(r);
  const mmQuote=market==="us"&&finite(r.moomoo_close)&&r.moomoo_quote_asof?" ｜ moomoo $"+r.moomoo_close.toFixed(2)+" ("+r.moomoo_quote_asof+")":"";
  return '<tr><td class="ls-sector-name">'+sectorMarker(r.sector)+H(r.sector_name)+'</td>'+
- '<td class="ls-industry-name" title="'+H([r.industry_name,r.industry_source].filter(Boolean).join(" ｜ ")||"業種データ未取得")+'">'+H(industryLabel(r)||'—')+'</td>'+
- (market==="jp"?'<td class="ls-industry-name" title="'+H(r.industry_fine_en||"業種②データ未取得")+'">'+H(r.industry_fine_ja||'—')+'</td>':'')+
+ '<td class="ls-industry-name" title="'+H([r.industry_name,r.industry_source].filter(Boolean).join(" ｜ ")||"業種データ未取得")+'">'+industryLeaderMarker("ind1",r.industry_name)+H(industryLabel(r)||'—')+'</td>'+
+ (market==="jp"?'<td class="ls-industry-name" title="'+H(r.industry_fine_en||"業種②データ未取得")+'">'+industryLeaderMarker("ind2",r.industry_fine_en)+H(r.industry_fine_ja||'—')+'</td>':'')+
  '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+H(r.ticker)+(r.market?' ｜ '+H(r.market):'')+(r.asof?' ｜ '+H(r.asof):' ｜ 履歴未取得')+H(mmQuote)+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
  (market==="jp"?'<td>'+H(sizeFromCap(r))+'</td>'+shortCells(r)+marginCells(r):'')+
