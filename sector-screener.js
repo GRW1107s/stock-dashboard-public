@@ -29,7 +29,7 @@ function usIndustry2Cell(r){
  return '<td class="ls-industry-name" title="'+H(title)+'">'+H(shown||'—')+'</td>';
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?29:26;
+const totalColumns=market==="us"?27:26;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 let ind1Leaders=new Set(),ind2Leaders=new Set();
 panel.innerHTML=
@@ -76,7 +76,6 @@ panel.innerHTML=
 '<th>セクター内<br>60日順位</th>'+
 '<th>60日騰落率</th><th>同ETF比<br>60日</th><th>52週高値<br>からの下落</th><th>52週安値<br>からの上昇</th>'+
 
-(market==="us"?'<th class="ls-ma-col" title="終値が50日単純移動平均より上なら○、下または同値なら✕。未算出は—。">50MA</th><th class="ls-ma-col" title="終値が200日単純移動平均より上なら○、下または同値なら✕。未算出は—。">200MA</th>':'')+
 '<th>出来高<br>対20日平均</th>'+
 '<th title="最新の発表済み四半期EPSの前年同期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>直近四半期</th>'+
 '<th title="最新の通期EPSの前年比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>（当期）</th>'+
@@ -450,7 +449,7 @@ function rowHtml(r){
  (market==="us"?'<td title="S&P500指数（^GSPC）に対する加重騰落率の差">'+cellStrong(r.rs_sp500_delta_pp,"pp")+'</td>':'')+
  '<td>'+H(r.sector_rank||"—")+(r.sector_count?'/'+H(r.sector_count):"")+'</td>'+
  '<td>'+cellStrong(r.return_60d,"%")+'</td><td>'+cellStrong(v,"pp")+'</td>'+
- '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td><td>'+H(plain(r.low52_rise_pct,"%"))+'</td>'+(market==="us"?maCell(r,50)+maCell(r,200):"")+'<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+
+ '<td>'+H(plain(r.high52_distance_pct,"%"))+'</td><td>'+H(plain(r.low52_rise_pct,"%"))+'</td>'+'<td>'+H(plain(r.rvol20,"倍",2))+'</td>'+
  '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"annual_yoy"))+'">'+cellStrong(epsAnnualYoy,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"annual"))+'">'+cellStrong(annualEpsCagr,"%")+'</td>'+

@@ -280,12 +280,6 @@ root.createLeaderColumnFilters=function(ctx){
   {id:"etf",label:"同ETF比60日",kind:"number",unit:"pp",get:r=>relative(r)},
   {id:"high",label:"52週高値からの距離",kind:"number",unit:"%",get:r=>numeric(r.high52_distance_pct)},
   {id:"low52",label:"52週安値からの上昇",kind:"number",unit:"%",get:r=>numeric(r.low52_rise_pct)},
-  ...(market==="us"?[50,200].map(period=>({
-   id:"ma"+period,label:period+"MA",kind:"choice",
-   get:r=>r["ma"+period+"_position"]==="above"?"○":
-          r["ma"+period+"_position"]==="below"||r["ma"+period+"_position"]==="equal"?"✕":"—",
-   options:["○","✕","—"]
-  })):[]),
   {id:"volume",label:"出来高倍率",kind:"number",unit:"倍",get:r=>numeric(r.rvol20)},
   {id:"eps",label:"直近四半期EPS成長率",kind:"number",unit:"%",get:r=>epsValue(r,"eps")},
   {id:"epsAnnualYoy",label:"EPS増加率（当期）",kind:"number",unit:"%",get:r=>epsValue(r,"annual_yoy")},
