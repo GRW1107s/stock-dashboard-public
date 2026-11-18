@@ -242,20 +242,22 @@
         results.innerHTML = '<p class="bt-res-note">銘柄コードを入力してから実行してください（対象セレクトだけでは実行できません）。</p>';
         return;
       }
-      var buyAll = checked("buy"), sellAll = checked("sell"), marketAll = checked("market");
+      var screenAll = checked("screen"), buyAll = checked("buy"), sellAll = checked("sell"), marketAll = checked("market");
+      var screen = screenAll.filter(function (id) { return BUY_EVALUABLE[id]; });
       var buy = buyAll.filter(function (id) { return BUY_EVALUABLE[id]; });
       var sell = sellAll.filter(function (id) { return SELL_EVALUABLE[id]; });
       var skipped = [];
+      screenAll.filter(function (id) { return !BUY_EVALUABLE[id]; }).forEach(function (id) { skipped.push("スクリーニング：" + (BUY_LABELS[id] || id)); });
       buyAll.filter(function (id) { return !BUY_EVALUABLE[id]; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
       sellAll.filter(function (id) { return !SELL_EVALUABLE[id]; }).forEach(function (id) { skipped.push("売り：" + (SELL_LABELS[id] || id)); });
       marketAll.filter(function (id) { return id !== "dd"; }).forEach(function (id) {
         skipped.push("市場：" + (id === "ad" ? "AD（買い集め日）" : id === "ftd" ? "FTD（フォロースルーデー）" : id));
       });
-      if (!buy.length && !marketAll.includes("dd")) {
-        results.innerHTML = '<p class="bt-res-note">判定できる買い条件が選択されていません。価格・出来高から判定できる条件（トレンドテンプレート、出来高など）を1つ以上選んでください。</p>';
+      var entry = screen.concat(buy); // screening gates + buy timing
+      if (!entry.length && !marketAll.includes("dd")) {
+        results.innerHTML = '<p class="bt-res-note">判定できる条件が選択されていません。スクリーニング（トレンドテンプレート）か買い条件から、価格・出来高で判定できるものを1つ以上選んでください。</p>';
         return;
       }
-      if (!buy.length) buy = []; // market-DD-only: buy whenever DD allows
       var ddLimit = marketAll.includes("dd") ? numOf("dd") : null;
       var fromVal = (document.getElementById("bt-from") || {}).value || "";
       var toVal = (document.getElementById("bt-to") || {}).value || "";
@@ -310,7 +312,7 @@
             return;
           }
           var out = runBacktest(rows, {
-            fromIdx: fromIdx, toIdx: toIdx, buy: buy, sell: sell,
+            fromIdx: fromIdx, toIdx: toIdx, buy: entry, sell: sell,
             ddLimit: ddLimit, ddByDate: ctx.ddMap
           });
           var p = out.perf;
@@ -332,7 +334,8 @@
           }
           html += "</div>";
         });
-        var applied = buy.map(function (id) { return BUY_LABELS[id] || id; })
+        var applied = screen.map(function (id) { return "スクリーニング：" + (BUY_LABELS[id] || id); })
+          .concat(buy.map(function (id) { return "買い：" + (BUY_LABELS[id] || id); }))
           .concat(sell.map(function (id) { return "売り：" + (SELL_LABELS[id] || id); }));
         if (ddLimit != null) applied.push("市場：DDが" + ddLimit + "以下");
         html += '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。</p>";

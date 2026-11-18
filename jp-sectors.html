@@ -130,8 +130,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-settings input[type="text"],.bt-settings input[type="date"]{margin-left:6px;padding:5px 8px;border:1px solid #b7c8db;border-radius:6px;background:#fff;font-size:13px}
 .bt-settings input[type="text"]{width:210px}
 .bt-settings .bt-hint{font-size:11px;color:#64748b}
-.bt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-@media (max-width:900px){.bt-grid{grid-template-columns:1fr}}
+.bt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}
+@media (max-width:640px){.bt-grid{grid-template-columns:1fr}}
 .bt-block{border:1px solid #d7e0ea;border-radius:10px;padding:12px 14px;background:#fff}
 .bt-block.buy{border-top:4px solid #16a34a}
 .bt-block.sell{border-top:4px solid #dc2626}
@@ -164,7 +164,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 </style>
 <section id="backtest-panel" aria-label="バックテスト">
 <h2 class="period-rankings-title" style="margin-top:30px">バックテスト</h2>
-<p class="bt-note">買い・売り・市場動向の条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。銘柄コードと期間を指定して「バックテスト実行」を押すと、保存済みの日足データ（直近1年分）で検証します。チャート表示は今後追加予定です。</p>
+<p class="bt-note">市場動向・スクリーニング・買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。銘柄コードと期間を指定して「バックテスト実行」を押すと、保存済みの日足データ（直近1年分）で検証します。チャート表示は今後追加予定です。</p>
 <div class="bt-settings">
 <label>対象<select id="bt-universe"><option value="all">日本株 全銘柄</option><option value="prime">プライムのみ</option><option value="standard">スタンダードのみ</option><option value="growth">グロースのみ</option></select></label>
 <label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
@@ -181,21 +181,23 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD（買い集め日）が<select class="bt-select" data-bt-num="ad" aria-label="ADのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>日以上（直近25取引日）</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD（売り抜け日）が<select class="bt-select" data-bt-num="dd" aria-label="DDのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>以下（直近25取引日）</span></label>
 </div>
+<div class="bt-block screen">
+<div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt1"><span>株価が150日・200日移動平均線より上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt2"><span>150日MAが200日MAより上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt3"><span>200日MAが少なくとも1か月上昇</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt4"><span>50日MAが150日・200日MAより上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt5"><span>株価が50日MAより上</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt6"><span>52週安値から30%以上上昇</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt7"><span>52週高値から25%以内</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="screen" value="tt8"><span>RS指数が<select class="bt-select" id="bt-tt-rs" aria-label="RS指数のしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>
+</div>
 <div class="bt-block buy">
 <div class="bt-block-head"><h3>買いシグナル</h3><button type="button" class="bt-clear" data-bt-clear="buy">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="vol15"><span>出来高が20日平均の1.5倍以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="eps25"><span>EPS増加率（前年同期比）が25%以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="roe17"><span>ROEが17%以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="sector"><span>所属セクターが上位を維持（緑丸）</span></label>
-<p class="bt-group">トレンドテンプレート</p>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt1"><span>株価が150日・200日移動平均線より上</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt2"><span>150日MAが200日MAより上</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt3"><span>200日MAが少なくとも1か月上昇</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt4"><span>50日MAが150日・200日MAより上</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt5"><span>株価が50日MAより上</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt6"><span>52週安値から30%以上上昇</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt7"><span>52週高値から25%以内</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="buy" value="tt8"><span>RS指数が<select class="bt-select" id="bt-tt-rs" aria-label="RS指数のしきい値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>
 </div>
 <div class="bt-block sell">
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
@@ -227,7 +229,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   const fromDate=document.getElementById('bt-from');
   const toDate=document.getElementById('bt-to');
   function save(){
-    const state={buy:boxes.filter(b=>b.dataset.bt==='buy'&&b.checked).map(b=>b.value),
+    const state={screen:boxes.filter(b=>b.dataset.bt==='screen'&&b.checked).map(b=>b.value),
+                 buy:boxes.filter(b=>b.dataset.bt==='buy'&&b.checked).map(b=>b.value),
                  sell:boxes.filter(b=>b.dataset.bt==='sell'&&b.checked).map(b=>b.value),
                  market:boxes.filter(b=>b.dataset.bt==='market'&&b.checked).map(b=>b.value),
                  nums:Object.fromEntries(nums.map(n=>[n.dataset.btNum,n.value])),
@@ -235,12 +238,12 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
                  universe:universe.value,period:period.value,
                  symbols:symbols?symbols.value:'',from:fromDate?fromDate.value:'',to:toDate?toDate.value:''};
     try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
-    summary.textContent='買い条件 '+state.buy.length+'件 / 売り条件 '+state.sell.length+'件 / 市場条件 '+state.market.length+'件 を選択中'+(state.buy.length===0?'（買い条件が未選択です）':'');
+    summary.textContent='スクリーニング条件 '+state.screen.length+'件 / 買い条件 '+state.buy.length+'件 / 売り条件 '+state.sell.length+'件 / 市場条件 '+state.market.length+'件 を選択中'+((state.buy.length+state.screen.length)===0?'（買い・スクリーニング条件が未選択です）':'');
   }
   try{
     const saved=JSON.parse(localStorage.getItem(KEY)||'null');
     if(saved){
-      boxes.forEach(b=>{b.checked=(saved[b.dataset.bt]||[]).includes(b.value);});
+      boxes.forEach(b=>{let list=saved[b.dataset.bt]||[];if(b.dataset.bt==='screen'&&saved.buy)list=list.concat(saved.buy);b.checked=list.includes(b.value);});
       nums.forEach(n=>{if(saved.nums&&saved.nums[n.dataset.btNum]!==undefined)n.value=saved.nums[n.dataset.btNum];});
       if(saved.ttRs&&ttRs)ttRs.value=saved.ttRs;
       if(saved.universe)universe.value=saved.universe;
@@ -986,5 +989,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261118bt1" defer></script>
+<script src="./backtest.js?v=20261118bt2" defer></script>
 </body></html>
