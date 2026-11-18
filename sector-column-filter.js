@@ -175,6 +175,31 @@ function setupColumnResize(panel,market,headings,ids){
  const legacyKey="stock-dashboard-screener-widths-v1-"+market;
  const ADD_ID="__add",ADD_WIDTH=36;
  const minFor=(th,id)=>id==="name"?135:(th&&th.classList.contains("ls-ma-col")?50:58);
+ // Multi-column selection for bulk width adjustment: Ctrl+click (or
+ // Cmd+click) a heading to toggle it. Dragging the width grip of a
+ // selected column then sets every selected column to the same width.
+ const selectedCols=new Set();
+ panel.__lsSelectedCols=selectedCols;
+ function paintSelection(){
+  Array.from(headings).forEach((th,i)=>th.classList.toggle("ls-col-selected",selectedCols.has(ids[i])));
+ }
+ panel.addEventListener("pointerdown",e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.button!==0)return;
+  const th=e.target&&e.target.closest?e.target.closest("th[data-ls-column-id]"):null;
+  if(!th||!table.contains(th))return;
+  if(e.target.closest("button,.ls-column-resize-handle"))return;
+  const id=th.dataset.lsColumnId;
+  if(!ids.includes(id))return;
+  e.preventDefault();e.stopPropagation();
+  if(selectedCols.has(id))selectedCols.delete(id);else selectedCols.add(id);
+  paintSelection();
+ },true);
+ panel.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&selectedCols.size){selectedCols.clear();paintSelection();}
+ });
+ function widthTargets(id){
+  return selectedCols.has(id)&&selectedCols.size>1?[...selectedCols]:[id];
+ }
  const clamp=(th,id,v)=>Math.max(minFor(th,id),Math.min(650,Math.round(v)));
  let done=false,drawRef=null;
  // Hidden columns (panel.__lsHiddenCols, owned by the visibility block in
@@ -241,7 +266,8 @@ function setupColumnResize(panel,market,headings,ids){
     const startX=e.clientX,startWidth=widths.get(id),pointerId=e.pointerId;
     function move(ev){
      if(ev.pointerId!==pointerId)return;
-     widths.set(id,clamp(th,id,startWidth+(ev.clientX-startX)));
+     const raw=startWidth+(ev.clientX-startX);
+     for(const t of widthTargets(id))widths.set(t,clamp(thById.get(t),t,raw));
      draw();
     }
     function up(ev){
@@ -255,10 +281,10 @@ function setupColumnResize(panel,market,headings,ids){
     window.addEventListener("pointerup",up,true);
     window.addEventListener("pointercancel",up,true);
    });
-   grip.addEventListener("dblclick",e=>{e.preventDefault();e.stopPropagation();widths.set(id,defaults.get(id));draw();persist();});
+   grip.addEventListener("dblclick",e=>{e.preventDefault();e.stopPropagation();for(const t of widthTargets(id))widths.set(t,defaults.get(t));draw();persist();});
    grip.addEventListener("keydown",e=>{
     if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
-    e.preventDefault();widths.set(id,clamp(th,id,(widths.get(id)||58)+(e.key==="ArrowRight"?10:-10)));draw();persist();
+    e.preventDefault();const raw=(widths.get(id)||58)+(e.key==="ArrowRight"?10:-10);for(const t of widthTargets(id))widths.set(t,clamp(thById.get(t),t,raw));draw();persist();
    });
   }
   draw();
@@ -309,7 +335,7 @@ root.createLeaderColumnFilters=function(ctx){
  let sort=null,active=null;
  const toolbar=document.createElement("div");
  toolbar.className="ls-column-toolbar";
- toolbar.innerHTML='<div class="ls-column-toolbar-top"><span>列フィルター：見出しの <b>▾</b> で絞り込み。列幅は見出し右端をドラッグ、列順は見出しをドラッグ（どちらも自動保存）。見出しを右クリック→「この列を非表示」で列を非表示、再表示は「列を追加」から。業種は複数選択でき、複数列はAND条件です。</span><button type="button" id="ls-add-col-btn">列を追加</button><button type="button" id="ls-reset-all">全条件を解除</button></div><div id="ls-filter-chips" class="ls-filter-chips" aria-live="polite"></div>';
+ toolbar.innerHTML='<div class="ls-column-toolbar-top"><span>列フィルター：見出しの <b>▾</b> で絞り込み。列幅は見出し右端をドラッグ、列順は見出しをドラッグ（どちらも自動保存）。Ctrl+クリックで列を複数選択すると、幅をまとめて同じ大きさにできます。見出しを右クリック→「この列を非表示」で列を非表示、再表示は「列を追加」から。業種は複数選択でき、複数列はAND条件です。</span><button type="button" id="ls-add-col-btn">列を追加</button><button type="button" id="ls-reset-all">全条件を解除</button></div><div id="ls-filter-chips" class="ls-filter-chips" aria-live="polite"></div>';
  const toolbarAnchor=panel.querySelector(".ls-controls")||panel.querySelector(".ls-sector-fieldset");
  if(toolbarAnchor)toolbarAnchor.insertAdjacentElement("afterend",toolbar);
  else panel.insertBefore(toolbar,panel.querySelector(".ls-table-wrap"));
@@ -435,6 +461,7 @@ root.createLeaderColumnFilters=function(ctx){
   const th=headings[i];if(!th)return;
   th.addEventListener("contextmenu",e=>{
    e.preventDefault();
+   if(e.ctrlKey||e.metaKey)return; // Ctrl/Cmd+click is column selection, not the menu
    openCtxMenu(def,e.clientX,e.clientY);
   });
  });

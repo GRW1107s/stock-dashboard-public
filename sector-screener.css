@@ -209,3 +209,6 @@
 /* Two-row header: category group row above the column headings. */
 .leader-screen table.ls-table thead tr.ls-group-row th{position:sticky;top:0;z-index:3;background:#d7e2ee;color:#1e3a5f;font-size:11px;font-weight:700;text-align:center;padding:4px 7px;height:28px;line-height:1.3;border-bottom:1px solid #b6c4d6;box-shadow:none}
 .leader-screen table.ls-table thead tr:not(.ls-group-row) th{top:28px}
+
+/* Ctrl/Cmd+clicked headings selected for bulk width adjustment. */
+.leader-screen table.ls-table thead th.ls-col-selected{background:#bcd3ee;box-shadow:inset 0 0 0 2px #2563eb;color:#1e3a5f}
