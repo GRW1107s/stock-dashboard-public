@@ -259,6 +259,7 @@ root.createLeaderColumnFilters=function(ctx){
   {id:"sector",label:"セクター",kind:"multi",get:r=>r.sector_name||r.sector||""},
   {id:"industry",label:"業種①",kind:"multi",get:market==="jp"?(r=>r.industry_name||""):(r=>r.gics_industry||"")},
   {id:"industry2",label:"業種②",kind:"multi",get:market==="jp"?(r=>r.industry_fine_ja||""):(r=>r.gics_sub_industry||r.industry_name||"")},
+  ...(market==="us"?[{id:"code",label:"コード",kind:"text",get:r=>r.ticker||""}]:[]),
   {id:"name",label:"候補銘柄",kind:"text",get:r=>[r.name,r.ticker,r.market].filter(Boolean).join(" ")},
   {id:"cap",label:"時価総額",kind:"number",unit:"億円",
    get:r=>{const v=marketCapJPY(r);return finite(v)?v/1e8:null;}},
