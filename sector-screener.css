@@ -212,4 +212,5 @@
 
 /* Ctrl/Cmd+clicked headings selected for bulk width adjustment. */
 .leader-screen table.ls-table thead th.ls-col-selected{background:#bcd3ee;box-shadow:inset 0 0 0 2px #2563eb;color:#1e3a5f}
-.ls-bt-check{margin-right:6px;width:15px;height:15px;vertical-align:-2px;accent-color:#2563eb;cursor:pointer}
+.ls-bt-check{width:15px;height:15px;vertical-align:middle;accent-color:#2563eb;cursor:pointer}
+.ls-bt-cell{text-align:center}

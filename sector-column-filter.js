@@ -66,6 +66,7 @@ function setupColumnOrder(panel,market,headings,defs){
  const key="stock-dashboard-screener-order-v2-"+market;
  let stored=null;try{stored=JSON.parse(localStorage.getItem(key)||"null");}catch(e){}
  let order=normalizeColumnOrder(ids,stored);
+ if(ids.includes("target"))order=["target",...order.filter(id=>id!=="target")];
  const reset=document.createElement("button");reset.type="button";reset.id="ls-reset-column-order";reset.textContent="列順を初期化";
  panel.querySelector(".ls-column-toolbar-top").appendChild(reset);
  const catById=new Map(defs.map(d=>[d.id,d.cat||"company"]));
@@ -128,6 +129,7 @@ function setupColumnOrder(panel,market,headings,defs){
   }
  }
  function update(next){
+  if(next.includes("target"))next=["target",...next.filter(id=>id!=="target")];
   if(next.every((id,i)=>id===order[i]))return;
   order=next;
   try{localStorage.setItem(key,JSON.stringify(order));}catch(e){}
@@ -193,7 +195,7 @@ function setupColumnResize(panel,market,headings,ids){
  const key="stock-dashboard-screener-widths-v2-"+market;
  const legacyKey="stock-dashboard-screener-widths-v1-"+market;
  const ADD_ID="__add",ADD_WIDTH=36;
- const minFor=(th,id)=>id==="name"?135:(th&&th.classList.contains("ls-ma-col")?50:58);
+ const minFor=(th,id)=>id==="name"?135:id==="target"?38:(th&&th.classList.contains("ls-ma-col")?50:58);
  // Multi-column selection for bulk width adjustment: Ctrl+click (or
  // Cmd+click) a heading to toggle it. Dragging the width grip of a
  // selected column then sets every selected column to the same width.
@@ -239,7 +241,7 @@ function setupColumnResize(panel,market,headings,ids){
   const thById=new Map(),defaults=new Map();
   Array.from(headings).forEach((th,i)=>{
    thById.set(ids[i],th);
-   defaults.set(ids[i],clamp(th,ids[i],Math.ceil(th.getBoundingClientRect().width)||58));
+   defaults.set(ids[i],ids[i]==="target"?46:clamp(th,ids[i],Math.ceil(th.getBoundingClientRect().width)||58));
   });
   let stored=null;
   try{stored=JSON.parse(localStorage.getItem(key)||"null");}catch(e){}
@@ -327,6 +329,7 @@ root.LeaderColumnFiltersCore={matches,compare,industryOptions,normalizeColumnOrd
 root.createLeaderColumnFilters=function(ctx){
  const {panel,market,get,H,numeric,finite,relative,epsValue,roeValue,salesValue,reviewStatus,onChange,getRows,marketCapJPY}=ctx;
  const defs=[
+  ...(market==="jp"?[{id:"target",cat:"company",label:"対象",kind:"choice",options:[],get:()=>""}]:[]),
   {id:"sector",cat:"company",label:"セクター",kind:"multi",get:r=>r.sector_name||r.sector||""},
   {id:"industry",cat:"company",label:"業種①",kind:"multi",get:market==="jp"?(r=>r.industry_name||""):(r=>r.gics_industry||"")},
   {id:"industry2",cat:"company",label:"業種②",kind:"multi",get:market==="jp"?(r=>r.industry_fine_ja||""):(r=>r.gics_sub_industry||r.industry_name||"")},
@@ -377,6 +380,7 @@ root.createLeaderColumnFilters=function(ctx){
  if(headings.length!==defs.length)console.warn("Leader column count mismatch",headings.length,defs.length);
  defs.forEach((def,i)=>{
   const th=headings[i];if(!th)return;
+  if(def.id==="target")return;
   const b=document.createElement("button");
   b.type="button";b.className="ls-column-toggle";
   b.textContent="▾";b.title=def.label+" の絞り込み・並び替え";

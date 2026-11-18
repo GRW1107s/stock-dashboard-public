@@ -30,7 +30,7 @@ function usIndustry2Cell(r){
  return '<td class="ls-industry-name" title="'+H(title)+'">'+H(shown||'—')+'</td>';
 }
 const PAGE_SIZE=100;
-const totalColumns=market==="us"?27:26;
+const totalColumns=27;
 let consistentSectorLeaders=new Set(),consistentSectorLaggards=new Set();
 let ind1Leaders=new Set(),ind2Leaders=new Set();
 panel.innerHTML=
@@ -69,6 +69,7 @@ panel.innerHTML=
 '</div></div>'+
 '<p class="ls-stat" id="ls-stat">データを読み込んでいます...</p>'+
 '<div class="ls-table-wrap"><table class="ls-table"><thead><tr>'+
+(market==="jp"?'<th>対象</th>':'')+
 '<th>セクター</th>'+
 (market==="jp"?'<th class="ls-industry-heading" title="JPXの33業種分類を使用します。">業種①</th><th class="ls-industry-heading" title="Yahoo Financeの業種分類（細分類）です。">業種②</th>':'<th class="ls-industry-heading" title="GICS Industry（74分類）です。">業種①</th><th class="ls-industry-heading" title="GICS Sub-Industry（163分類）です。GICS対象外の銘柄はNasdaq Industryを表示します。">業種②</th>')+
 '<th>コード</th>'+'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+
@@ -493,11 +494,11 @@ function rowHtml(r){
  if(r.market)subParts.push(H(r.market));
  subParts.push(r.asof?H(r.asof):'履歴未取得');
  const subName=subParts.join(' ｜ ')+H(mmQuote);
- return '<tr><td class="ls-sector-name">'+sectorMarker(r.sector)+H(r.sector_name)+'</td>'+
+ return '<tr>'+(market==="jp"?'<td class="ls-bt-cell"><input type="checkbox" class="ls-bt-check" data-code="'+H(String(r.ticker||'').replace(/\.T$/,''))+'" title="バックテストの対象に追加"'+(btSymbolCodes().includes(String(r.ticker||'').replace(/\.T$/,''))?" checked":"")+'></td>':"")+'<td class="ls-sector-name">'+sectorMarker(r.sector)+H(r.sector_name)+'</td>'+
  '<td class="ls-industry-name" title="'+H(industry1Title(r))+'">'+industryLeaderMarker("ind1",r.industry_name)+H(industryLabel(r)||'—')+'</td>'+
  (market==="jp"?'<td class="ls-industry-name" title="'+H(r.industry_fine_en||"業種②データ未取得")+'">'+industryLeaderMarker("ind2",r.industry_fine_en)+H(r.industry_fine_ja||'—')+'</td>':usIndustry2Cell(r))+
  '<td>'+H(String(r.ticker||'').replace(/\.T$/,''))+'</td>'+
- '<td class="ls-name">'+(market==="jp"?'<input type="checkbox" class="ls-bt-check" data-code="'+H(String(r.ticker||'').replace(/\.T$/,''))+'" title="バックテストの対象に追加"'+(btSymbolCodes().includes(String(r.ticker||'').replace(/\.T$/,''))?" checked":"")+'>':"")+'<a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+subName+'</small></td>'+
+ '<td class="ls-name"><a target="_blank" rel="noopener noreferrer" href="'+H(tradingViewUrl(r))+'" title="TradingViewでチャートを開く">'+H(r.name)+'</a><small>'+subName+'</small></td>'+
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
  '<td>'+H(sizeFromCap(r))+'</td>'+
  '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
