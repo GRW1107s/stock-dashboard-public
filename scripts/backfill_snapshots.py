@@ -207,11 +207,41 @@ def _build_market(rows_now, series_by_ticker, bench, market, targets):
     return out
 
 
-def run(root, output):
-    """Fill missing snapshot dates in [START, today). Returns count."""
-    from update_sector_leaders import COLLECTED_OHLCV, obtain
+def _snapshot_hollow(path):
+    """True when a snapshot file carries no price data.
+
+    The first backfill (2026-11-19) wrote static-only snapshots for
+    every past date: run() imported COLLECTED_OHLCV from the
+    update_sector_leaders module, but the pipeline executes that file
+    as __main__, so the import built a second, empty module instance
+    and every series lookup missed. Such hollow files count as
+    missing here so a later run rebuilds them with real data.
+    """
+    try:
+        snap = json.loads(path.read_text(encoding="utf-8"))
+        fields = snap.get("fields") or []
+        rows = snap.get("jp") or []
+        if not rows or "close" not in fields:
+            return True
+        idx = fields.index("close")
+        filled = sum(1 for row in rows if row[idx] is not None)
+        return filled < len(rows) * 0.5
+    except Exception:
+        return True
+
+
+def run(root, output, collected=None):
+    """Fill missing snapshot dates in [START, today). Returns count.
+
+    `collected` is the caller's COLLECTED_OHLCV dict, passed in
+    explicitly: importing it here would read a fresh module instance
+    (the pipeline runs update_sector_leaders.py as __main__), whose
+    dict is always empty.
+    """
+    from update_sector_leaders import obtain
     from history_store import write_snapshot_rows
 
+    collected = collected or {}
     archive = Path(root) / "screener-archive"
     existing = set()
     index_path = archive / "index.json"
@@ -222,6 +252,9 @@ def run(root, output):
             existing = set()
     if not existing and archive.exists():
         existing = {p.stem for p in archive.glob("*.json")}
+    # Hollow snapshots (see _snapshot_hollow) are rebuilt, not kept.
+    existing = {d for d in existing
+                if not (START <= d and _snapshot_hollow(archive / f"{d}.json"))}
 
     jp_bench_raw = obtain("1306.T", "jp")
     jp_bench = {"series": jp_bench_raw["_ohlcv"],
@@ -238,10 +271,10 @@ def run(root, output):
         return 0
 
     jp = _build_market(output.get("jp") or [],
-                       COLLECTED_OHLCV.get("jp") or {},
+                       collected.get("jp") or {},
                        jp_bench, "jp", targets)
     us = _build_market(output.get("us") or [],
-                       COLLECTED_OHLCV.get("us") or {},
+                       collected.get("us") or {},
                        us_bench, "us", targets)
     for d in targets:
         write_snapshot_rows(root, d, jp[d], us[d])

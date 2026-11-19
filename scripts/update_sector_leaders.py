@@ -891,9 +891,11 @@ def main():
         print("SCREENER_SNAPSHOT_ERROR", str(err)[:150], flush=True)
     # Backfill past screener snapshots (to 2026-10-01) from this run's
     # fetched OHLCV series. No-op once every date exists. Best-effort.
+    # COLLECTED_OHLCV is passed explicitly: this file runs as __main__,
+    # so an import inside backfill_snapshots would see an empty dict.
     try:
         from backfill_snapshots import run as backfill_snapshots_run
-        backfill_snapshots_run(ROOT, output)
+        backfill_snapshots_run(ROOT, output, COLLECTED_OHLCV)
     except Exception as err:
         print("BACKFILL_SNAPSHOTS_ERROR", str(err)[:150], flush=True)
     # US industry analysis data (GICS Industry / Sub-Industry + Nasdaq
