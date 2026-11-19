@@ -907,6 +907,13 @@ def main():
         print("US_INDUSTRIES_DONE", flush=True)
     except Exception as err:
         print("US_INDUSTRIES_ERROR", str(err)[:150], flush=True)
+    # Index options positioning (Nikkei 225 OI from JPX, SPX chain from
+    # CBOE) for the market overview's options tabs. Best-effort.
+    try:
+        from update_options import run as update_options_run
+        update_options_run(ROOT)
+    except Exception as err:
+        print("OPTIONS_ERROR", str(err)[:150], flush=True)
 
 
 if __name__ == "__main__":

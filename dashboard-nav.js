@@ -5,6 +5,8 @@
     "index.html":[
       {label:"日本市場",start:"h1"},
       {label:"米国市場",start:"#pane-us"},
+      {label:"日本オプション",start:"#pane-jp-options"},
+      {label:"米国オプション",start:"#pane-us-options"},
       {label:"過去データ",start:"#pane-history"},
       {label:"相場の歴史",start:"#pane-history-search"},
       {label:"凡例",start:"#pane-legend"}
