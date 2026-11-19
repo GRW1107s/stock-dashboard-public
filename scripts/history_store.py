@@ -22,6 +22,9 @@ from pathlib import Path
 import re
 
 RETENTION_DAYS = 365
+# Screener snapshots are kept for three years (GRW, 2026-11-19); the
+# OHLCV store above keeps its one-year window.
+SNAPSHOT_RETENTION_DAYS = 1150
 
 # Fields kept in a daily screener snapshot: identity/classification plus
 # every metric the screener displays or filters on. Bookkeeping fields
@@ -98,7 +101,7 @@ def write_snapshot(root, output, *, today=None):
         json.dumps(slim_snapshot(output, today.isoformat()),
                    ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8")
-    cutoff = (today - timedelta(days=RETENTION_DAYS)).isoformat()
+    cutoff = (today - timedelta(days=SNAPSHOT_RETENTION_DAYS)).isoformat()
     pruned = 0
     for old in folder.glob("*.json"):
         if old.name != "index.json" and old.stem < cutoff:

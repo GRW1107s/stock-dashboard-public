@@ -1,9 +1,12 @@
-"""Backfill daily screener snapshots back to 2026-09-01.
+"""Backfill daily screener snapshots back to 2023-11-20 (three years).
 
 The live pipeline writes one snapshot per day going forward. This
-module reconstructs the missing past days from the OHLCV series the
-current run already fetched (COLLECTED_OHLCV), so no extra bulk
-download is needed. It is a no-op once every date exists.
+module reconstructs the missing past days. Recent days come from the
+OHLCV series the current run already fetched (COLLECTED_OHLCV, ~455
+days); older days come from a deep price cache (deep-series-jp.json /
+deep-series-us.json at the repo root) that this module builds once
+from Yahoo's chart API with a ~1500-day window and then reuses. It is
+a no-op once every date exists.
 
 How each field class is handled for a past date D:
 - Static (ticker, name, sector / industry classification, market
@@ -25,15 +28,27 @@ How each field class is handled for a past date D:
 from __future__ import annotations
 
 import bisect
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import math
 import os
 from datetime import date, datetime
 from pathlib import Path
+import time
+from urllib.parse import quote, urlencode
+from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
-START = "2026-09-01"
+START = "2023-11-20"
+# The hollow-snapshot rebuild check only covers the window the buggy
+# first backfill wrote; deep files are written by the fixed code path
+# and re-reading ~700 files every run just to recount closes would
+# dominate the run.
+HOLLOW_CHECK_FROM = "2026-09-01"
 MAX_DATES = int(os.environ.get("BACKFILL_MAX_DATES", "80"))
+DEEP_DAYS = 1500
+DEEP_CACHE_FILES = {"jp": "deep-series-jp.json", "us": "deep-series-us.json"}
+BENCH_SYMBOLS = {"jp": "1306.T", "us": "^GSPC"}
 
 STATIC_FIELDS = [
     "ticker", "name", "sector", "sector_name", "industry_name",
@@ -231,6 +246,113 @@ def _snapshot_hollow(path):
         return True
 
 
+def _fetch_deep_series(symbol, market):
+    """(date, close, volume) rows for ~DEEP_DAYS, mirroring obtain().
+
+    Same endpoint, headers and close/volume parsing as
+    update_sector_leaders.obtain(), but with a multi-year window and
+    no minimum-session requirement (recent listings are short).
+    """
+    from update_sector_leaders import HEADERS, safe_num
+
+    end = int(time.time()) + 86400
+    start = end - DEEP_DAYS * 86400
+    query = urlencode({"period1": start, "period2": end, "interval": "1d"})
+    zone = ZoneInfo("Asia/Tokyo" if market == "jp" else "America/New_York")
+    for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+        for attempt in range(2):
+            try:
+                url = (f"https://{host}/v8/finance/chart/"
+                       f"{quote(symbol, safe='')}?{query}")
+                request = Request(url, headers=HEADERS)
+                with urlopen(request, timeout=20) as response:
+                    payload = json.loads(response.read(4_000_000))
+                record = payload["chart"]["result"][0]
+                quote_data = record["indicators"]["quote"][0]
+                rows = {}
+                for timestamp, close, volume in zip(
+                        record["timestamp"], quote_data["close"],
+                        quote_data["volume"]):
+                    close = safe_num(close)
+                    if close is None or close <= 0:
+                        continue
+                    day = datetime.fromtimestamp(timestamp, zone).date()
+                    vol = safe_num(volume)
+                    if isinstance(vol, float) and vol.is_integer():
+                        vol = int(vol)
+                    rows[day.isoformat()] = [day.isoformat(), close, vol]
+                return [rows[day] for day in sorted(rows)]
+            except Exception:
+                time.sleep(0.5 * (attempt + 1))
+    return []
+
+
+def _load_or_build_cache(root, market, tickers):
+    """Deep (date, close, volume) series per ticker, from disk or Yahoo.
+
+    The cache file is built once (one bulk fetch per market) and then
+    reused by every later run; it is committed with the other data
+    JSONs by the workflow. The benchmark symbol is always included:
+    its dates are the market calendar and its returns drive beta.
+    """
+    path = Path(root) / DEEP_CACHE_FILES[market]
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return {ticker: [tuple(row) for row in rows]
+                    for ticker, rows in (data.get("series") or {}).items()}
+        except Exception:
+            pass
+    symbols = sorted(set(tickers) | {BENCH_SYMBOLS[market]})
+    series = {}
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        futures = {pool.submit(_fetch_deep_series, symbol, market): symbol
+                   for symbol in symbols}
+        done = 0
+        for future in as_completed(futures):
+            symbol = futures[future]
+            try:
+                series[symbol] = future.result()
+            except Exception:
+                series[symbol] = []
+            done += 1
+            if done % 500 == 0:
+                print(f"BACKFILL_DEEP_FETCH {market} {done}/{len(symbols)}",
+                      flush=True)
+    payload = {"fetched_at": date.today().isoformat(),
+               "series": {ticker: rows for ticker, rows in series.items()
+                          if rows}}
+    path.write_text(json.dumps(payload, ensure_ascii=False,
+                               separators=(",", ":")),
+                    encoding="utf-8")
+    print(f"BACKFILL_DEEP_CACHE_BUILT {market} tickers={len(payload['series'])}",
+          flush=True)
+    return {ticker: [tuple(row) for row in rows]
+            for ticker, rows in payload["series"].items()}
+
+
+def _merge_series(cache_rows, collected_rows):
+    """OHLCV-format rows: deep cache underneath, collected on top.
+
+    Cache rows carry only close/volume, so open/high/low are None;
+    the backfill math (_metrics_at) reads close and volume only.
+    """
+    merged = {}
+    for day, close, vol in cache_rows or []:
+        merged[day] = [day, None, None, None, close, vol]
+    for row in collected_rows or []:
+        merged[row[0]] = list(row)
+    return [merged[day] for day in sorted(merged)]
+
+
+def _bench_from_series(series):
+    closes = {row[0]: row[4] for row in series}
+    days = sorted(closes)
+    daily = {days[i]: closes[days[i]] / closes[days[i - 1]] - 1
+             for i in range(1, len(days)) if closes[days[i - 1]] > 0}
+    return {"series": series, "daily_returns": daily}
+
+
 def run(root, output, collected=None):
     """Fill missing snapshot dates in [START, today). Returns count.
 
@@ -255,14 +377,28 @@ def run(root, output, collected=None):
         existing = {p.stem for p in archive.glob("*.json")}
     # Hollow snapshots (see _snapshot_hollow) are rebuilt, not kept.
     existing = {d for d in existing
-                if not (START <= d and _snapshot_hollow(archive / f"{d}.json"))}
+                if not (HOLLOW_CHECK_FROM <= d
+                        and _snapshot_hollow(archive / f"{d}.json"))}
 
-    jp_bench_raw = obtain("1306.T", "jp")
-    jp_bench = {"series": jp_bench_raw["_ohlcv"],
-                "daily_returns": jp_bench_raw["_daily_returns"]}
-    us_bench_raw = obtain("^GSPC", "us")
-    us_bench = {"series": us_bench_raw["_ohlcv"],
-                "daily_returns": us_bench_raw["_daily_returns"]}
+    jp_rows = output.get("jp") or []
+    us_rows = output.get("us") or []
+    jp_cache = _load_or_build_cache(
+        root, "jp", [row.get("ticker") for row in jp_rows if row.get("ticker")])
+    us_cache = _load_or_build_cache(
+        root, "us", [row.get("ticker") for row in us_rows if row.get("ticker")])
+
+    def bench(market, cache):
+        rows = _merge_series(cache.get(BENCH_SYMBOLS[market]),
+                             (collected.get(market) or {}).get(
+                                 BENCH_SYMBOLS[market]))
+        if rows:
+            return _bench_from_series(rows)
+        raw = obtain(BENCH_SYMBOLS[market], market)
+        return {"series": raw["_ohlcv"],
+                "daily_returns": raw["_daily_returns"]}
+
+    jp_bench = bench("jp", jp_cache)
+    us_bench = bench("us", us_cache)
 
     today_jst = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
     calendar = [r[0] for r in jp_bench["series"] if START <= r[0] < today_jst]
@@ -271,12 +407,13 @@ def run(root, output, collected=None):
         print("BACKFILL_SNAPSHOTS none", flush=True)
         return 0
 
-    jp = _build_market(output.get("jp") or [],
-                       collected.get("jp") or {},
-                       jp_bench, "jp", targets)
-    us = _build_market(output.get("us") or [],
-                       collected.get("us") or {},
-                       us_bench, "us", targets)
+    def merged(market, cache):
+        coll = collected.get(market) or {}
+        return {ticker: _merge_series(cache.get(ticker), coll.get(ticker))
+                for ticker in set(cache) | set(coll)}
+
+    jp = _build_market(jp_rows, merged("jp", jp_cache), jp_bench, "jp", targets)
+    us = _build_market(us_rows, merged("us", us_cache), us_bench, "us", targets)
     for d in targets:
         write_snapshot_rows(root, d, jp[d], us[d])
         print("BACKFILL_SNAPSHOT", d, len(jp[d]), len(us[d]), flush=True)
