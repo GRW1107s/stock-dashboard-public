@@ -264,6 +264,52 @@ window.leaderScreenerEvalScreen=function(ids,rsMin){
  }
  return out;
 };
+// Rolling-backtest support: screening judged as of a past date, from
+// that date's snapshot plus the sector bands of the same date. The
+// snapshot nearest to (and not after) the requested date is used, and
+// its date is returned alongside the codes.
+const rollSnapCache={};let rollIndexDates=null;let rollHistory=null;
+function rollLoadIndex(){
+ if(rollIndexDates)return Promise.resolve(rollIndexDates);
+ return fetch("./screener-archive/index.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(idx){
+  rollIndexDates=(idx&&Array.isArray(idx.dates))?idx.dates.slice().sort().reverse():[];
+  return rollIndexDates;
+ }).catch(function(){rollIndexDates=[];return rollIndexDates});
+}
+window.leaderScreenerArchiveDates=function(){return rollLoadIndex()};
+window.leaderScreenerEvalScreenAt=function(dateStr,ids,rsMin,markets){
+ return rollLoadIndex().then(function(dates){
+  const target=dates.find(function(d){return d<=dateStr});
+  if(!target)return null;
+  const snapPromise=rollSnapCache[target]?Promise.resolve(rollSnapCache[target])
+   :fetch("./screener-archive/"+target+".json").then(function(r){return r.ok?r.json():null}).then(function(s){rollSnapCache[target]=s;return s});
+  const histPromise=history?Promise.resolve(history)
+   :(rollHistory?Promise.resolve(rollHistory)
+   :fetch(market==="jp"?"./jp-sectors.json":"./sectors.json").then(function(r){return r.ok?r.json():null}).catch(function(){return null}).then(function(h){rollHistory=h;return h}));
+  return Promise.all([snapPromise,histPromise]).then(function(pair){
+   const snap=pair[0];if(!snap)return {date:target,codes:[]};
+   const fields=snap.fields||[];
+   const rows=(snap[market]||[]).map(function(vals){const o={};fields.forEach(function(f,i){o[f]=vals[i]});return o}).filter(function(r){return r&&r.ticker&&r.sector});
+   const hist=pair[1];
+   let leaders=null;
+   if(hist&&Array.isArray(hist.rows)){
+    const sliced={names:hist.names||{},rows:hist.rows.filter(function(r){return r.date<=target})};
+    leaders=calculateConsistentSectorBands(sliced).leaders;
+   }
+   const saved=consistentSectorLeaders;
+   if(leaders)consistentSectorLeaders=leaders;
+   const out=[];
+   for(const r of rows){
+    if(markets&&r.market&&!markets.includes(r.market))continue;
+    let ok=true;
+    for(const id of ids){if(!screenCond(r,id,rsMin)){ok=false;break;}}
+    if(ok)out.push(String(r.ticker).replace(/\.T$/,""));
+   }
+   consistentSectorLeaders=saved;
+   return {date:target,codes:out};
+  });
+ });
+};
 ttInputs.forEach(i=>i.addEventListener("change",ttChanged));
 const ttClearBtn=panel.querySelector("#ls-tt-clear");
 if(ttClearBtn)ttClearBtn.addEventListener("click",function(){ttInputs.forEach(i=>{i.checked=false;});ttChanged();});

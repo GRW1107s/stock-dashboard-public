@@ -97,7 +97,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261119lgd" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./sector-column-filter.js?v=20261119tgt" defer></script><script src="./sector-screener.js?v=20261119tgt" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261119lgd" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./sector-column-filter.js?v=20261119tgt" defer></script><script src="./sector-screener.js?v=20261119roll" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>日本セクター概況｜TOPIX-17</h1><p class="sub">国内17業種の連動ETF（1617〜1633）で見る騰落率・出来高増減率・簡易判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はTOPIX-17連動ETFとTOPIX連動ETF（1306）の市場価格騰落率の差（％ポイント）。判定はETF自身の取引量に基づく独自の簡易指標で、業種全体への資金流入を示すものではありません。出来高が少ないETFでは値動きと判定が不安定になり得ます。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
@@ -163,6 +163,11 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-res-table{border-collapse:collapse;margin:0 0 10px;font-size:12.5px}
 .bt-res-table th,.bt-res-table td{border:1px solid #d7e0ea;padding:4px 9px;text-align:right;white-space:nowrap}
 .bt-res-table th{background:#eef3f8;text-align:center}
+.bt-roll-row{cursor:pointer}
+.bt-roll-row:hover{background:#eef4fc}
+.bt-roll-row.bt-roll-sel{background:#dbeafe}
+.bt-roll-total{font-weight:700;background:#f6f9fc}
+.bt-roll-detail-title{margin:14px 0 6px;font-size:15px}
 .bt-run{border:1px solid #b7c8db;background:#e8eefc;color:#5b6b82;border-radius:8px;padding:9px 18px;font-size:14px;cursor:not-allowed}
 .bt-result{margin-top:12px;border:1px dashed #b7c8db;border-radius:10px;padding:16px;color:#64748b;font-size:13.5px;text-align:center;background:#fbfdff}
 .bt-item.bt-dragging{opacity:.5;background:#eef4fc}
@@ -171,12 +176,15 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <h2 class="period-rankings-title" style="margin-top:30px">バックテスト</h2>
 <p class="bt-note">市場動向・スクリーニング・買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。銘柄コードと期間を指定して「バックテスト実行」を押すと、保存済みの日足データ（直近1年分）で検証します。チャート表示は今後追加予定です。</p>
 <div class="bt-settings">
+<label>実行方法<select id="bt-mode"><option value="normal">通常</option><option value="rolling">ローリング</option></select></label>
 <label>対象<select id="bt-universe"><option value="all">日本株 全銘柄</option><option value="prime">プライムのみ</option><option value="standard">スタンダードのみ</option><option value="growth">グロースのみ</option></select></label>
 <label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
+<label id="bt-roll-horizon-label" style="display:none">テスト期間（各回）<select id="bt-roll-horizon"><option value="21">1ヶ月</option><option value="42">2ヶ月</option><option value="63">3ヶ月</option><option value="126">6ヶ月</option></select></label>
 <label>銘柄コード<input type="text" id="bt-symbols" placeholder="例：7203, 6988" autocomplete="off"></label>
 <label>開始日<input type="text" id="bt-from" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
-<span class="bt-hint">銘柄コードを入れると、その銘柄だけが対象になります。銘柄スクリーニングの表でチェックした銘柄もここに入ります。開始日・終了日を入れると、テスト期間より優先されます。</span>
+<span class="bt-hint" id="bt-normal-hint">銘柄コードを入れると、その銘柄だけが対象になります。銘柄スクリーニングの表でチェックした銘柄もここに入ります。開始日・終了日を入れると、テスト期間より優先されます。</span>
+<span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日として、その日時点でスクリーニング条件を満たす銘柄を対象にテストします。銘柄コードは使いません。</span>
 <button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
 </div>
 <div class="bt-grid">
@@ -229,6 +237,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   const summary=document.getElementById('bt-summary');
   const universe=document.getElementById('bt-universe');
   const period=document.getElementById('bt-period');
+  const mode=document.getElementById('bt-mode');
+  const rollHorizon=document.getElementById('bt-roll-horizon');
   const ttRs=document.getElementById('bt-tt-rs');
   const symbols=document.getElementById('bt-symbols');
   const fromDate=document.getElementById('bt-from');
@@ -241,6 +251,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
                  nums:Object.fromEntries(nums.map(n=>[n.dataset.btNum,n.value])),
                  ttRs:ttRs?ttRs.value:'70',
                  universe:universe.value,period:period.value,
+                 mode:mode?mode.value:'normal',rollHorizon:rollHorizon?rollHorizon.value:'21',
                  symbols:symbols?symbols.value:'',from:fromDate?fromDate.value:'',to:toDate?toDate.value:''};
     try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
     summary.textContent='スクリーニング条件 '+state.screen.length+'件 / 買い条件 '+state.buy.length+'件 / 売り条件 '+state.sell.length+'件 / 市場条件 '+state.market.length+'件 を選択中'+((state.buy.length+state.screen.length)===0?'（買い・スクリーニング条件が未選択です）':'');
@@ -253,6 +264,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
       if(saved.ttRs&&ttRs)ttRs.value=saved.ttRs;
       if(saved.universe)universe.value=saved.universe;
       if(saved.period)period.value=saved.period;
+      if(saved.mode&&mode)mode.value=saved.mode;
+      if(saved.rollHorizon&&rollHorizon)rollHorizon.value=saved.rollHorizon;
       if(saved.symbols&&symbols)symbols.value=saved.symbols;
       if(saved.from&&fromDate)fromDate.value=String(saved.from).replace(/-/g,'/');
       if(saved.to&&toDate)toDate.value=String(saved.to).replace(/-/g,'/');
@@ -267,6 +280,21 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   if(ttRs){ttRs.addEventListener('click',e=>e.stopPropagation());ttRs.addEventListener('change',save);}
   universe.addEventListener('change',save);
   period.addEventListener('change',save);
+  function applyMode(){
+    const rolling=mode&&mode.value==='rolling';
+    const periodLabel=period.closest('label');
+    if(periodLabel)periodLabel.style.display=rolling?'none':'';
+    const horizonLabel=document.getElementById('bt-roll-horizon-label');
+    if(horizonLabel)horizonLabel.style.display=rolling?'':'none';
+    const normalHint=document.getElementById('bt-normal-hint');
+    if(normalHint)normalHint.style.display=rolling?'none':'';
+    const rollHint=document.getElementById('bt-roll-hint');
+    if(rollHint)rollHint.style.display=rolling?'':'none';
+    if(symbols)symbols.disabled=!!rolling;
+  }
+  if(mode)mode.addEventListener('change',()=>{applyMode();save();});
+  if(rollHorizon)rollHorizon.addEventListener('change',save);
+  applyMode();
   if(symbols){symbols.addEventListener('change',save);symbols.addEventListener('input',save);}
   if(fromDate)fromDate.addEventListener('change',save);
   if(toDate)toDate.addEventListener('change',save);
@@ -1017,5 +1045,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261118bt5" defer></script>
+<script src="./backtest.js?v=20261119roll" defer></script>
 </body></html>

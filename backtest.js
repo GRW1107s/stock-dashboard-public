@@ -233,6 +233,30 @@
       return Promise.all(jobs).then(function () { return map; });
     }
 
+    // One stock's result block (summary table + trade list), shared by
+    // the normal run and the rolling run's per-date detail view.
+    function stockBlockHtml(title, out) {
+      var p = out.perf;
+      var html = '<div class="bt-res-block"><h4>' + title + '</h4>';
+      html += '<p class="bt-res-range">期間：' + esc(out.range.from) + " 〜 " + esc(out.range.to) + "（" + out.range.sessions + '営業日）</p>';
+      html += '<table class="bt-res-table"><thead><tr><th>戦略リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>平均保有</th></tr></thead><tbody><tr>' +
+        "<td>" + pct(p.totalReturn) + "</td><td>" + pct(p.bhReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
+        (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" +
+        (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + "</td></tr></tbody></table>";
+      if (out.trades.length) {
+        html += '<table class="bt-res-table"><thead><tr><th>買い日</th><th>買い値</th><th>売り日</th><th>売り値</th><th>損益</th><th>保有</th><th>売り理由</th></tr></thead><tbody>';
+        out.trades.forEach(function (t) {
+          html += "<tr><td>" + esc(t.buyDate) + "</td><td>" + price(t.buyPrice) + "</td><td>" + esc(t.sellDate) + (t.open ? "（期末評価）" : "") + "</td><td>" + price(t.sellPrice) + "</td><td>" + pct(t.ret) + "</td><td>" + t.hold + "日</td><td>" +
+            esc(t.open ? "期間終了" : (SELL_LABELS[t.reason] || t.reason)) + "</td></tr>";
+        });
+        html += "</tbody></table>";
+      } else {
+        html += '<p class="bt-res-note">この期間に買い条件を満たす日はありませんでした。</p>';
+      }
+      html += "</div>";
+      return html;
+    }
+
     var screenRunBtn = document.getElementById("bt-screen-run");
     if (screenRunBtn) screenRunBtn.addEventListener("click", function () {
       var note = document.getElementById("bt-screen-note");
@@ -249,7 +273,178 @@
       }
       if (note) note.textContent = codes.length ? codes.length + "銘柄が対象に入りました" : "条件を満たす銘柄がありませんでした";
     });
+    // Rolling run: for each start date in [from, to], the universe is
+    // the stocks passing the screening conditions as of that date
+    // (judged from the day's snapshot), and each stock is simulated
+    // for the chosen horizon. Results are summarised per start date.
+    function runRolling() {
+      var screenIds = checked("screen");
+      var buyAll = checked("buy"), sellAll = checked("sell"), marketAll = checked("market");
+      var buy = buyAll.filter(function (id) { return BUY_EVALUABLE[id]; });
+      var sell = sellAll.filter(function (id) { return SELL_EVALUABLE[id]; });
+      var skipped = [];
+      buyAll.filter(function (id) { return !BUY_EVALUABLE[id]; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
+      sellAll.filter(function (id) { return !SELL_EVALUABLE[id]; }).forEach(function (id) { skipped.push("売り：" + (SELL_LABELS[id] || id)); });
+      marketAll.filter(function (id) { return id !== "dd"; }).forEach(function (id) {
+        skipped.push("市場：" + (id === "ad" ? "AD（買い集め日）" : id === "ftd" ? "FTD（フォロースルーデー）" : id));
+      });
+      if (!screenIds.length) {
+        results.innerHTML = '<p class="bt-res-note">ローリングではスクリーニング条件を1つ以上選んでください（各開始日の対象銘柄の選定に使います）。</p>';
+        return;
+      }
+      if (typeof window.leaderScreenerArchiveDates !== "function" || typeof window.leaderScreenerEvalScreenAt !== "function") {
+        results.innerHTML = '<p class="bt-res-note">スクリーナーの読み込み待ちです。少し待ってから実行してください。</p>';
+        return;
+      }
+      var ddLimit = marketAll.includes("dd") ? numOf("dd") : null;
+      var rsMin = parseInt((document.getElementById("bt-tt-rs") || {}).value || "70", 10);
+      var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
+      var fromVal = normDate((document.getElementById("bt-from") || {}).value);
+      var toVal = normDate((document.getElementById("bt-to") || {}).value) || fromVal;
+      if (!fromVal) {
+        results.innerHTML = '<p class="bt-res-note">開始日を入力してください（ローリングで開始日をずらす範囲の初日です）。</p>';
+        return;
+      }
+      var horizon = parseInt((document.getElementById("bt-roll-horizon") || {}).value || "21", 10);
+      var universe = (document.getElementById("bt-universe") || {}).value || "all";
+      var markets = universe === "prime" ? ["プライム"] : universe === "standard" ? ["スタンダード"] : universe === "growth" ? ["グロース"] : null;
+
+      runBtn.disabled = true;
+      results.innerHTML = '<p class="bt-res-note">実行中…</p>';
+
+      window.leaderScreenerArchiveDates().then(function (datesDesc) {
+        var startDates = datesDesc.filter(function (d) { return d >= fromVal && d <= toVal; }).sort();
+        if (!startDates.length) {
+          throw { rollMsg: "指定範囲にスナップショットのある日がありません" + (datesDesc.length ? "（保存範囲：" + datesDesc[datesDesc.length - 1] + " 〜 " + datesDesc[0] + "）" : "") + "。" };
+        }
+        var perDate = [];
+        var chain = Promise.resolve();
+        startDates.forEach(function (d) {
+          chain = chain.then(function () {
+            results.innerHTML = '<p class="bt-res-note">実行中… ' + esc(d) + ' 時点のスクリーニング判定</p>';
+            return window.leaderScreenerEvalScreenAt(d, screenIds, rsMin, markets).then(function (res) {
+              if (res) perDate.push({ date: res.date, codes: res.codes.slice(0, 200), truncated: res.codes.length > 200 });
+            });
+          });
+        });
+        return chain.then(function () { return perDate; });
+      }).then(function (perDate) {
+        var seen = {}, uniq = [];
+        perDate.forEach(function (pd) { if (!seen[pd.date]) { seen[pd.date] = 1; uniq.push(pd); } });
+        var unionSet = new Set();
+        uniq.forEach(function (pd) { pd.codes.forEach(function (c) { unionSet.add(c); }); });
+        var union = Array.from(unionSet);
+        if (!union.length) {
+          results.innerHTML = '<p class="bt-res-note">条件を満たす銘柄がありませんでした。</p>';
+          runBtn.disabled = false;
+          return null;
+        }
+        return loadJson("sector-leaders.json").catch(function () { return null; }).then(function (leaders) {
+          var names = {};
+          ((leaders && leaders.jp) || []).forEach(function (r) {
+            if (r.ticker) names[String(r.ticker).replace(/\.T$/, "")] = r.name || "";
+          });
+          var store = {}, done = 0;
+          var queue = union.slice();
+          function worker() {
+            var code = queue.shift();
+            if (!code) return Promise.resolve();
+            return loadJson("ohlcv/jp/" + code + "-T.json").then(function (data) {
+              store[code] = (data && data.rows) || null;
+            }).catch(function () { store[code] = null; }).then(function () {
+              done++;
+              if (done % 25 === 0) results.innerHTML = '<p class="bt-res-note">実行中… 日足データ取得 ' + done + "/" + union.length + "銘柄</p>";
+              return worker();
+            });
+          }
+          var pool = [];
+          for (var k = 0; k < 8; k++) pool.push(worker());
+          return Promise.all(pool).then(function () { return { names: names, store: store, perDate: uniq }; });
+        });
+      }).then(function (ctx) {
+        if (!ctx) return null;
+        var years = [];
+        Object.keys(ctx.store).forEach(function (code) {
+          var rows = ctx.store[code];
+          if (rows && rows.length) {
+            var y0 = +rows[0][0].slice(0, 4), y1 = +rows[rows.length - 1][0].slice(0, 4);
+            for (var y = y0; y <= y1; y++) if (!years.includes(y)) years.push(y);
+          }
+        });
+        var ddPromise = ddLimit != null && years.length ? loadMarketDd(years) : Promise.resolve(new Map());
+        return ddPromise.then(function (ddMap) { ctx.ddMap = ddMap; return ctx; });
+      }).then(function (ctx) {
+        if (!ctx) return;
+        var summaries = [], details = {};
+        ctx.perDate.forEach(function (pd) {
+          var blocks = "", n = 0, sumRet = 0, sumBh = 0, rets = [], closedTrades = 0, winTrades = 0;
+          pd.codes.forEach(function (code) {
+            var rows = ctx.store[code];
+            if (!rows || !rows.length) return;
+            var fromIdx = rows.findIndex(function (r) { return r[0] >= pd.date; });
+            if (fromIdx < 0) return;
+            var toIdx = Math.min(rows.length - 1, fromIdx + horizon - 1);
+            if (toIdx <= fromIdx) return;
+            var out = runBacktest(rows, {
+              fromIdx: fromIdx, toIdx: toIdx, buy: buy, sell: sell,
+              ddLimit: ddLimit, ddByDate: ctx.ddMap
+            });
+            var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
+            blocks += stockBlockHtml(title, out);
+            n++; sumRet += out.perf.totalReturn; sumBh += out.perf.bhReturn; rets.push(out.perf.totalReturn);
+            out.trades.forEach(function (t) { if (!t.open) { closedTrades++; if (t.ret > 0) winTrades++; } });
+          });
+          rets.sort(function (a, b) { return a - b; });
+          var median = !rets.length ? null : (rets.length % 2 ? rets[(rets.length - 1) / 2] : (rets[rets.length / 2 - 1] + rets[rets.length / 2]) / 2);
+          summaries.push({
+            date: pd.date, count: n, avg: n ? sumRet / n : null, median: median,
+            bhAvg: n ? sumBh / n : null, trades: closedTrades,
+            winRate: closedTrades ? winTrades / closedTrades : null, truncated: pd.truncated
+          });
+          details[pd.date] = blocks;
+        });
+        var valid = summaries.filter(function (s) { return s.count > 0; });
+        var html = '<table class="bt-res-table bt-roll-table"><thead><tr><th>開始日</th><th>対象銘柄数</th><th>平均リターン</th><th>中央値</th><th>買い持ち平均</th><th>取引回数</th><th>勝率</th></tr></thead><tbody>';
+        if (valid.length) {
+          var totAvg = valid.reduce(function (s, x) { return s + x.avg; }, 0) / valid.length;
+          var totBh = valid.reduce(function (s, x) { return s + x.bhAvg; }, 0) / valid.length;
+          var totCount = valid.reduce(function (s, x) { return s + x.count; }, 0);
+          var totTrades = valid.reduce(function (s, x) { return s + x.trades; }, 0);
+          html += '<tr class="bt-roll-total"><td>全開始日の平均</td><td>' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + pct(totBh) + '</td><td>' + totTrades + '</td><td>—</td></tr>';
+        }
+        summaries.forEach(function (s) {
+          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + pct(s.bhAvg) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。</p>';
+        html += '<div id="bt-roll-detail"></div>';
+        var applied = screenIds.map(function (id) { return "スクリーニング：" + (BUY_LABELS[id] || id); })
+          .concat(buy.map(function (id) { return "買い：" + (BUY_LABELS[id] || id); }))
+          .concat(sell.map(function (id) { return "売り：" + (SELL_LABELS[id] || id); }));
+        if (ddLimit != null) applied.push("市場：DDが" + ddLimit + "以下");
+        html += '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ")) + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。" + (buy.length ? "" : "買い条件が未選択のため、対象銘柄は各開始日の翌営業日に買います。") + "</p>";
+        if (skipped.length) {
+          html += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
+        }
+        results.innerHTML = html;
+        var detail = document.getElementById("bt-roll-detail");
+        results.querySelectorAll(".bt-roll-row").forEach(function (tr) {
+          tr.addEventListener("click", function () {
+            results.querySelectorAll(".bt-roll-row").forEach(function (x) { x.classList.remove("bt-roll-sel"); });
+            tr.classList.add("bt-roll-sel");
+            detail.innerHTML = '<h3 class="bt-roll-detail-title">' + esc(tr.dataset.rollDate) + ' 開始の銘柄別結果</h3>' +
+              (details[tr.dataset.rollDate] || '<p class="bt-res-note">対象銘柄がありませんでした。</p>');
+          });
+        });
+        runBtn.disabled = false;
+      }).catch(function (e) {
+        results.innerHTML = '<p class="bt-res-note">' + esc(e && e.rollMsg ? e.rollMsg : "実行中にエラーが発生しました。期間と条件を確認してください。") + "</p>";
+        runBtn.disabled = false;
+      });
+    }
+
     runBtn.addEventListener("click", function () {
+      if (((document.getElementById("bt-mode") || {}).value || "normal") === "rolling") { runRolling(); return; }
       var symbolsRaw = (document.getElementById("bt-symbols") || {}).value || "";
       var codes = symbolsRaw.split(/[\s,、，]+/).map(function (s) { return s.trim(); }).filter(Boolean)
         .map(function (s) { return s.replace(/\.T$/i, ""); });
@@ -332,24 +527,7 @@
             fromIdx: fromIdx, toIdx: toIdx, buy: entry, sell: sell,
             ddLimit: ddLimit, ddByDate: ctx.ddMap
           });
-          var p = out.perf;
-          html += '<div class="bt-res-block"><h4>' + title + '</h4>';
-          html += '<p class="bt-res-range">期間：' + esc(out.range.from) + " 〜 " + esc(out.range.to) + "（" + out.range.sessions + '営業日）</p>';
-          html += '<table class="bt-res-table"><thead><tr><th>戦略リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>平均保有</th></tr></thead><tbody><tr>' +
-            "<td>" + pct(p.totalReturn) + "</td><td>" + pct(p.bhReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
-            (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" +
-            (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + "</td></tr></tbody></table>";
-          if (out.trades.length) {
-            html += '<table class="bt-res-table"><thead><tr><th>買い日</th><th>買い値</th><th>売り日</th><th>売り値</th><th>損益</th><th>保有</th><th>売り理由</th></tr></thead><tbody>';
-            out.trades.forEach(function (t) {
-              html += "<tr><td>" + esc(t.buyDate) + "</td><td>" + price(t.buyPrice) + "</td><td>" + esc(t.sellDate) + (t.open ? "（期末評価）" : "") + "</td><td>" + price(t.sellPrice) + "</td><td>" + pct(t.ret) + "</td><td>" + t.hold + "日</td><td>" +
-                esc(t.open ? "期間終了" : (SELL_LABELS[t.reason] || t.reason)) + "</td></tr>";
-            });
-            html += "</tbody></table>";
-          } else {
-            html += '<p class="bt-res-note">この期間に買い条件を満たす日はありませんでした。</p>';
-          }
-          html += "</div>";
+          html += stockBlockHtml(title, out);
         });
         var applied = screen.map(function (id) { return "スクリーニング：" + (BUY_LABELS[id] || id); })
           .concat(buy.map(function (id) { return "買い：" + (BUY_LABELS[id] || id); }))
