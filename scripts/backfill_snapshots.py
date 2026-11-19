@@ -1,4 +1,4 @@
-"""Backfill daily screener snapshots back to 2026-10-01.
+"""Backfill daily screener snapshots back to 2026-09-01.
 
 The live pipeline writes one snapshot per day going forward. This
 module reconstructs the missing past days from the OHLCV series the
@@ -32,8 +32,8 @@ from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-START = "2026-10-01"
-MAX_DATES = int(os.environ.get("BACKFILL_MAX_DATES", "40"))
+START = "2026-09-01"
+MAX_DATES = int(os.environ.get("BACKFILL_MAX_DATES", "80"))
 
 STATIC_FIELDS = [
     "ticker", "name", "sector", "sector_name", "industry_name",
