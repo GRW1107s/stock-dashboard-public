@@ -17,7 +17,7 @@ import math
 import re
 
 GROWTH = ("eps_q_latest_yoy_pct", "eps_q_prev_yoy_pct", "eps_annual_3y_cagr_pct",
-          "eps_annual_yoy_pct")
+          "eps_annual_yoy_pct", "eps_q_latest_qoq_pct")
 SOURCE = "Yahoo Finance via yfinance (calculated EPS growth)"
 SALES_SOURCE = "Yahoo Finance via yfinance (calculated sales growth)"
 ROE_SOURCE = "Yahoo Finance annual income / average parent shareholders equity"
@@ -90,6 +90,23 @@ def _yoy(current, prior):
     return round((current[1] / prior[1] - 1) * 100, 2)
 
 
+def _qoq(rows):
+    """Latest discrete quarter EPS vs the immediately preceding quarter.
+
+    Rows are discrete (single-quarter) EPS, newest first. The previous
+    row must be one quarter away (50-140 days); a wider gap means a
+    missing quarter, so the comparison would not be QoQ. A non-positive
+    previous-quarter EPS stays unknown, same rule as YoY.
+    """
+    if not rows or len(rows) < 2:
+        return None
+    latest, previous = rows[0], rows[1]
+    gap = (latest[0] - previous[0]).days
+    if not 50 <= gap <= 140:
+        return None
+    return _yoy(latest, previous)
+
+
 def calculate_growth(quarterly_eps, annual_eps):
     """quarterly_eps / annual_eps: [(period_end, eps), ...] newest first."""
     q, a = quarterly_eps, annual_eps
@@ -102,6 +119,7 @@ def calculate_growth(quarterly_eps, annual_eps):
         cagr = round(((last_annual[1] / old_annual[1]) ** (1 / 3) - 1) * 100, 2)
     return {
         "eps_q_latest_yoy_pct": _yoy(latest, _find_year_prior(q, latest)) if latest else None,
+        "eps_q_latest_qoq_pct": _qoq(q),
         "eps_q_prev_yoy_pct": _yoy(previous, _find_year_prior(q, previous)) if previous else None,
         "eps_annual_3y_cagr_pct": cagr,
         "eps_annual_yoy_pct": _yoy(last_annual, _find_year_prior(a, last_annual)) if last_annual else None,

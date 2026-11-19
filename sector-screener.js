@@ -74,8 +74,8 @@ panel.innerHTML=
 (market==="jp"?'<th class="ls-industry-heading" title="JPXの33業種分類を使用します。">業種①</th><th class="ls-industry-heading" title="Yahoo Financeの業種分類（細分類）です。">業種②</th>':'<th class="ls-industry-heading" title="GICS Industry（74分類）です。">業種①</th><th class="ls-industry-heading" title="GICS Sub-Industry（163分類）です。GICS対象外の銘柄はNasdaq Industryを表示します。">業種②</th>')+
 '<th>コード</th>'+'<th class="ls-name-heading">候補銘柄</th><th title="時価総額は円換算。米国株はスナップショットの米ドル値に取得日付きのUSD/JPYレートを乗じた概算です。日本株はJPY建てデータのみ表示。">時価総額<br>（円）</th>'+
 '<th title="時価総額による規模分類。超大型＝1兆円以上、大型＝3,000億円以上1兆円未満、中型＝500億円以上3,000億円未満、小型＝100億円以上500億円未満、超小型＝100億円未満">規模</th>'+
-'<th title="最新の発表済み四半期EPSの前年同期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>直近四半期</th>'+
-'<th title="最新の通期EPSの前年比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>（当期）</th>'+
+'<th title="最新の発表済み四半期EPSの前年同期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>（YoY）</th>'+
+'<th title="最新の発表済み四半期EPSの直前四半期比増加率。公表済みの自動取得値または確認済みの手入力値を表示。">EPS増加率<br>（QoQ）</th>'+
 '<th title="過去3年間の年間EPS平均成長率（CAGR）。取得可能な年間EPSの3年CAGR。取得元の自動算出値または確認済みの手入力から表示。">年間EPS増加率<br>3年CAGR</th>'+
 '<th title="最新の発表済み四半期売上高の前年同期比増加率。">売上高増加率<br>直近四半期</th>'+
 '<th title="最新の通期ROE。原則として親会社帰属年間純利益÷期首期末平均自己資本×100。取得できなければ—。">ROE<br>（%）</th>'+
@@ -89,7 +89,7 @@ panel.innerHTML=
 '<th title="JPXが日々公表する空売り残高報告（発行済株式数の0.5%以上を保有する報告者の合計）。発行済株式数に対する割合">大口空売り<br>残高</th><th title="大口空売り残高割合の前公表日からの増減（％ポイント）">空売り<br>増減</th><th title="信用取引の売残高の前日比増減率（JPX銘柄別信用取引残高表）">売残<br>増減率</th><th title="信用取引の買残高の前日比増減率（JPX銘柄別信用取引残高表）">買残<br>増減率</th><th title="信用倍率＝買残高÷売残高（JPX銘柄別信用取引残高表）">信用<br>倍率</th>'+
 '</tr></thead><tbody id="ls-body"><tr><td colspan="'+totalColumns+'">データを読み込んでいます...</td></tr></tbody></table></div>'+
 '<div class="ls-pagination"><button type="button" id="ls-prev" disabled>前の100件</button><span id="ls-page-label" aria-live="polite"></span><button type="button" id="ls-next" disabled>次の100件</button></div>'+
-'<p class="ls-foot">EPS増加率（直近四半期）と売上高増加率（直近四半期）は前年同期比（YoY）で、直前四半期比（QoQ）ではありません。EPS増加率（当期）は最新の通期EPSの前年比です。年間EPS増加率は過去3年のCAGRです。米国株のEPS成長率はyfinance由来の四半期・年間データから取得可能な範囲で段階的に自動算出します。生のEPS数値は表示せず、算出した成長率だけを掲載します。Yahoo Financeには個人利用・再配布に関する制限があり、公開掲載の許諾を保証するものではありません。取得できない数値は「—」です。日本株EPSもyfinanceの取得可能な四半期・年間データから段階的に自動算出します。未取得銘柄は「—」で表示します。時価総額は円表示です。米国株はNasdaq系のUSD建てスナップショットを取得日付きのUSD/JPYレートで換算する概算値です。日本株はJPY建ての取得可能な時価総額を段階的に表示します。為替や株価の時点が一致するとは限りません。ROEは直近通期の親会社帰属純利益／期首期末平均自己資本を基本とし、財務データがなければ「—」です。<br>指標の注意：ベータ値は市場との日次リターン共分散から計算し、シャープレシオは日次リターンの平均÷標準偏差×√252で算出します（無リスク金利0%、株価変動ベース、配当除外）。取得可能な直近最大252日・最低120日を使用し、日本株の比較市場は1306.T（TOPIX連動ETF）、米国株は^GSPC（S&P500）です。<br>RS指数（1〜99）は63・126・189・252営業日の騰落率を40%・20%・20%・20%で加重し、直近の株価取得済み銘柄の中で順位化するIBD参考方式です。公式IBD RS Ratingではなく、取得対象が全上場株を網羅していないため「99＝米国株全体の99%を上回る」とはまだ言えません。米国株の「S&amp;P500比」は同じ加重騰落率の差（％ポイント）です。セクター内順位も株価取得済み銘柄内だけです。高値は直近最大252取引日の終値を使用。ETFとの比較は約60取引日の参考値です。新製品・経営陣・ベース形成・投資家保有の質・市場トレンドの確認を省略して「合格」とはしません。</p>';
+'<p class="ls-foot">EPS増加率（YoY）は直近四半期EPSの前年同期比、EPS増加率（QoQ）は直近四半期EPSの直前四半期比です。売上高増加率（直近四半期）は前年同期比（YoY）です。年間EPS増加率は過去3年のCAGRです。米国株のEPS成長率はyfinance由来の四半期・年間データから取得可能な範囲で段階的に自動算出します。生のEPS数値は表示せず、算出した成長率だけを掲載します。Yahoo Financeには個人利用・再配布に関する制限があり、公開掲載の許諾を保証するものではありません。取得できない数値は「—」です。日本株EPSもyfinanceの取得可能な四半期・年間データから段階的に自動算出します。未取得銘柄は「—」で表示します。時価総額は円表示です。米国株はNasdaq系のUSD建てスナップショットを取得日付きのUSD/JPYレートで換算する概算値です。日本株はJPY建ての取得可能な時価総額を段階的に表示します。為替や株価の時点が一致するとは限りません。ROEは直近通期の親会社帰属純利益／期首期末平均自己資本を基本とし、財務データがなければ「—」です。<br>指標の注意：ベータ値は市場との日次リターン共分散から計算し、シャープレシオは日次リターンの平均÷標準偏差×√252で算出します（無リスク金利0%、株価変動ベース、配当除外）。取得可能な直近最大252日・最低120日を使用し、日本株の比較市場は1306.T（TOPIX連動ETF）、米国株は^GSPC（S&P500）です。<br>RS指数（1〜99）は63・126・189・252営業日の騰落率を40%・20%・20%・20%で加重し、直近の株価取得済み銘柄の中で順位化するIBD参考方式です。公式IBD RS Ratingではなく、取得対象が全上場株を網羅していないため「99＝米国株全体の99%を上回る」とはまだ言えません。米国株の「S&amp;P500比」は同じ加重騰落率の差（％ポイント）です。セクター内順位も株価取得済み銘柄内だけです。高値は直近最大252取引日の終値を使用。ETFとの比較は約60取引日の参考値です。新製品・経営陣・ベース形成・投資家保有の質・市場トレンドの確認を省略して「合格」とはしません。</p>';
 const get=function(id){return document.getElementById(id)};
 // Use the same daily price-return ranking and completeness requirements as the observation tab.
 function calculateConsistentSectorBands(data,divisor){
@@ -140,15 +140,15 @@ function marketSectorReturn(ticker){
 }
 function relative(r){const s=marketSectorReturn(r.sector);return finite(s)&&finite(r.return_60d)?r.return_60d-s:null}
 function epsValue(r,key){
- const autoKey={eps:"eps_q_latest_yoy_pct",previous_eps:"eps_q_prev_yoy_pct",annual:"eps_annual_3y_cagr_pct",annual_yoy:"eps_annual_yoy_pct"}[key];
+ const autoKey={eps:"eps_q_latest_yoy_pct",qoq:"eps_q_latest_qoq_pct",previous_eps:"eps_q_prev_yoy_pct",annual:"eps_annual_3y_cagr_pct",annual_yoy:"eps_annual_yoy_pct"}[key];
  const local=privateEps.get(r.ticker);
  if(local&&finite(local[autoKey]))return local[autoKey];
  return finite(r[autoKey])?r[autoKey]:null;
 }
 function epsProvenance(r,key){
- const end={eps:"eps_q_latest_end",previous_eps:"eps_q_prev_end",annual:"eps_annual_end",annual_yoy:"eps_annual_end"}[key];
+ const end={eps:"eps_q_latest_end",qoq:"eps_q_latest_end",previous_eps:"eps_q_prev_end",annual:"eps_annual_end",annual_yoy:"eps_annual_end"}[key];
  const local=privateEps.get(r.ticker);
- const autoKey={eps:"eps_q_latest_yoy_pct",previous_eps:"eps_q_prev_yoy_pct",annual:"eps_annual_3y_cagr_pct",annual_yoy:"eps_annual_yoy_pct"}[key];
+ const autoKey={eps:"eps_q_latest_yoy_pct",qoq:"eps_q_latest_qoq_pct",previous_eps:"eps_q_prev_yoy_pct",annual:"eps_annual_3y_cagr_pct",annual_yoy:"eps_annual_yoy_pct"}[key];
  if(local&&finite(local[autoKey]))return "個人用SimFin（ローカル読込）｜決算期末 "+String(local[end]||"未確認")+"｜生成日 "+String(local.eps_fetched_at||"未確認");
  if(epsValue(r,key)!==null && (r[autoKey+"_source"]||r.eps_source)){
   return String(r[autoKey+"_source"]||r.eps_source)+"｜決算期末 "+String(r[end]||"未確認")+
@@ -530,7 +530,7 @@ panel.addEventListener("change",function(e){
 });
 function rowHtml(r){
  const rs=finite(r.rs_universe_pct)?String(r.rs_universe_pct):"—", v=relative(r);
- const epsLatest=epsValue(r,"eps"),epsAnnualYoy=epsValue(r,"annual_yoy");
+ const epsLatest=epsValue(r,"eps"),epsQoq=epsValue(r,"qoq");
  const annualEpsCagr=epsValue(r,"annual"),roe=roeValue(r);
  const mmQuote=market==="us"&&finite(r.moomoo_close)&&r.moomoo_quote_asof?" ｜ moomoo $"+r.moomoo_close.toFixed(2)+" ("+r.moomoo_quote_asof+")":"";
  // JP rows show the code in its own column, so the name cell's sub-line
@@ -548,7 +548,7 @@ function rowHtml(r){
  '<td title="'+H(capTooltip(r))+'">'+H(capCell(r))+'</td>'+
  '<td>'+H(sizeFromCap(r))+'</td>'+
  '<td title="'+H(epsProvenance(r,"eps"))+'">'+cellStrong(epsLatest,"%")+'</td>'+
- '<td title="'+H(epsProvenance(r,"annual_yoy"))+'">'+cellStrong(epsAnnualYoy,"%")+'</td>'+
+ '<td title="'+H(epsProvenance(r,"qoq"))+'">'+cellStrong(epsQoq,"%")+'</td>'+
  '<td title="'+H(epsProvenance(r,"annual"))+'">'+cellStrong(annualEpsCagr,"%")+'</td>'+
  '<td title="'+H(salesProvenance(r))+'">'+cellStrong(salesValue(r),"%")+'</td>'+
  '<td title="'+H(roeProvenance(r))+'">'+cellStrong(roe,"%")+'</td>'+

@@ -32,7 +32,7 @@ import time
 import urllib.request
 from urllib.error import HTTPError
 
-from jp_fundamentals import _find_year_prior, _yoy, calculate_growth, finite, normalize_jp_ticker
+from jp_fundamentals import _find_year_prior, _qoq, _yoy, calculate_growth, finite, normalize_jp_ticker
 from update_data import SimpleTables
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -195,6 +195,7 @@ def kabutan_growth(rows):
     previous = rows[1] if len(rows) > 1 else None
     return {
         "eps_q_latest_yoy_pct": _yoy(latest, _find_year_prior(rows, latest)) if latest else None,
+        "eps_q_latest_qoq_pct": _qoq(rows),
         "eps_q_prev_yoy_pct": _yoy(previous, _find_year_prior(rows, previous)) if previous else None,
         "eps_q_latest_end": latest[0].isoformat() if latest else None,
         "eps_q_prev_end": previous[0].isoformat() if previous else None,
@@ -214,21 +215,37 @@ def kabutan_fill(row, rows):
     stored_latest_end = row.get("eps_q_latest_end")
     if row.get("eps_q_latest_yoy_pct") is None:
         growth = kabutan_growth(rows)
+        filled_latest = False
         if growth["eps_q_latest_yoy_pct"] is not None:
             fills["eps_q_latest_yoy_pct"] = growth["eps_q_latest_yoy_pct"]
             fills["eps_q_latest_end"] = growth["eps_q_latest_end"]
             stored_latest_end = growth["eps_q_latest_end"]
+            filled_latest = True
         if growth["eps_q_prev_yoy_pct"] is not None and row.get("eps_q_prev_yoy_pct") is None:
             fills["eps_q_prev_yoy_pct"] = growth["eps_q_prev_yoy_pct"]
             fills["eps_q_prev_end"] = growth["eps_q_prev_end"]
+        # QoQ shares the latest-quarter anchor: fill it only when this
+        # call also set the latest quarter, or the row has no stored
+        # latest anchor at all, so it never pairs with a different
+        # quarter than the row's eps_q_latest_end.
+        if (growth["eps_q_latest_qoq_pct"] is not None
+                and row.get("eps_q_latest_qoq_pct") is None
+                and (filled_latest or not stored_latest_end)):
+            fills["eps_q_latest_qoq_pct"] = growth["eps_q_latest_qoq_pct"]
         return fills
-    if row.get("eps_q_prev_yoy_pct") is not None or not stored_latest_end:
+    if not stored_latest_end:
         return fills
     ends = [end.isoformat() for end, _ in rows]
     if stored_latest_end not in ends:
         return fills
     idx = ends.index(stored_latest_end)
     if idx + 1 >= len(rows):
+        return fills
+    if row.get("eps_q_latest_qoq_pct") is None:
+        qoq = _qoq(rows[idx:idx + 2])
+        if qoq is not None:
+            fills["eps_q_latest_qoq_pct"] = qoq
+    if row.get("eps_q_prev_yoy_pct") is not None:
         return fills
     previous = rows[idx + 1]
     value = _yoy(previous, _find_year_prior(rows, previous))
@@ -297,7 +314,7 @@ def _fetch_and_fill(row):
                 if not row.get("eps_source"):
                     row["eps_source"] = SOURCE
                     row["eps_fetched_at"] = today
-    return row, len([k for k in fills if k.endswith("yoy_pct")]), roe_filled, cagr_filled, None
+    return row, len([k for k in fills if k.endswith(("yoy_pct", "qoq_pct"))]), roe_filled, cagr_filled, None
 
 
 def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
@@ -313,6 +330,7 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
     for index, row in enumerate(stocks):
         if (row.get("eps_q_prev_yoy_pct") is not None
                 and row.get("eps_q_latest_yoy_pct") is not None
+                and row.get("eps_q_latest_qoq_pct") is not None
                 and row.get("roe_pct") is not None
                 and row.get("eps_annual_3y_cagr_pct") is not None
                 and row.get("eps_annual_yoy_pct") is not None):
@@ -321,9 +339,11 @@ def enrich_jp_kabutan_eps(data, limit, *, workers=3, refresh_days=45):
         # Tickers still missing the annual EPS CAGR are always retried:
         # their attempt stamp predates the CAGR fill (added 2026-11-14),
         # so the refresh cutoff would otherwise block them for 45 days.
+        # Same carve-out for the QoQ fill (added 2026-11-19).
         if (isinstance(checked, str) and checked >= cutoff
                 and row.get("eps_annual_3y_cagr_pct") is not None
-                and row.get("eps_annual_yoy_pct") is not None):
+                and row.get("eps_annual_yoy_pct") is not None
+                and row.get("eps_q_latest_qoq_pct") is not None):
             continue
         candidates.append((row.get("eps_q_prev_yoy_pct") is not None, index, row))
     candidates.sort(key=lambda item: (item[0], item[1]))

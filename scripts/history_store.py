@@ -36,7 +36,7 @@ SNAPSHOT_FIELDS = [
     "high52_distance_pct", "low52_rise_pct", "ma20_position",
     "ma50_position", "ma150", "ma200", "ma200_prev", "rvol20",
     "market_cap", "sector_rank", "eps_q_latest_yoy_pct",
-    "eps_annual_yoy_pct", "eps_annual_3y_cagr_pct",
+    "eps_q_latest_qoq_pct", "eps_annual_yoy_pct", "eps_annual_3y_cagr_pct",
     "sales_q_latest_yoy_pct", "roe_pct", "short_ratio", "short_d_ratio",
     "margin_buy_pct", "margin_sell_pct", "margin_ratio",
 ]

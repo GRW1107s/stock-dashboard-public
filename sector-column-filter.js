@@ -50,7 +50,15 @@ function normalizeColumnOrder(ids,saved){
  for(const id of Array.isArray(saved)?saved:[]){
   if(allowed.has(id)&&!seen.has(id)){seen.add(id);result.push(id);}
  }
- for(const id of ids)if(!seen.has(id))result.push(id);
+ // New columns join next to their definition-order predecessor instead
+ // of the far end, so a column added beside its siblings (e.g. epsQoq
+ // after eps) renders there even with a saved order from before.
+ ids.forEach((id,i)=>{
+  if(seen.has(id))return;
+  let at=0;
+  for(let j=i-1;j>=0;j--){const p=result.indexOf(ids[j]);if(p>=0){at=p+1;break;}}
+  result.splice(at,0,id);seen.add(id);
+ });
  return result;
 }
 function moveColumnOrder(order,source,target,after){
@@ -340,8 +348,8 @@ root.createLeaderColumnFilters=function(ctx){
   {id:"size",cat:"company",label:"規模",kind:"choice",
    get:r=>{const cap=marketCapJPY(r);return !finite(cap)?"—":cap>=1e12?"超大型":cap>=3e11?"大型":cap>=5e10?"中型":cap>=1e10?"小型":"超小型";},
    options:["超大型","大型","中型","小型","超小型","—"]},
-  {id:"eps",cat:"fund",label:"直近四半期EPS成長率",kind:"number",unit:"%",get:r=>epsValue(r,"eps")},
-  {id:"epsAnnualYoy",cat:"fund",label:"EPS増加率（当期）",kind:"number",unit:"%",get:r=>epsValue(r,"annual_yoy")},
+  {id:"eps",cat:"fund",label:"EPS増加率（YoY）",kind:"number",unit:"%",get:r=>epsValue(r,"eps")},
+  {id:"epsQoq",cat:"fund",label:"EPS増加率（QoQ）",kind:"number",unit:"%",get:r=>epsValue(r,"qoq")},
   {id:"epsAnnual",cat:"fund",label:"年間EPS成長率3年",kind:"number",unit:"%",get:r=>epsValue(r,"annual")},
   {id:"sales",cat:"fund",label:"直近四半期売上高増加率",kind:"number",unit:"%",get:r=>salesValue(r)},
   {id:"roe",cat:"fund",label:"ROE",kind:"number",unit:"%",get:r=>roeValue(r)},
