@@ -253,12 +253,15 @@
           block.classList.toggle("bt-closed", closed);
         }
         btn.addEventListener("click", function () { saved["b:" + kind] = !saved["b:" + kind]; persist(); apply(); });
-        head.appendChild(btn);
+        head.insertBefore(btn, head.firstChild);
         apply();
       });
       panel.querySelectorAll(".bt-group").forEach(function (g) {
         var label = (g.textContent || "").replace(/すべて外す/g, "").trim();
         if (!label) return;
+        var host = g.closest(".bt-block");
+        var hostKind = host && host.classList.contains("screen") ? "screen" : host && host.classList.contains("buy") ? "buy" : "sell";
+        label = hostKind + ":" + label;
         var items = [];
         var el = g.nextElementSibling;
         while (el && !el.classList.contains("bt-group") && !el.classList.contains("bt-block-foot")) {
@@ -273,7 +276,7 @@
           items.forEach(function (it) { it.style.display = closed ? "none" : ""; });
         }
         btn.addEventListener("click", function () { saved["g:" + label] = !saved["g:" + label]; persist(); apply(); });
-        g.appendChild(btn);
+        g.insertBefore(btn, g.firstChild);
         apply();
       });
     })();

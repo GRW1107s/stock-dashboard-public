@@ -149,9 +149,10 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-clear{border:1px solid #d7e0ea;background:#f8fafc;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
 .bt-block.bt-closed>*:not(.bt-block-head){display:none!important}
 .bt-block-head h3{margin-right:auto}
-.bt-collapse-btn{margin-left:8px;width:22px;height:22px;line-height:1;border:1px solid #cbd5e1;background:#fff;border-radius:6px;font-size:14px;cursor:pointer;color:#334155;padding:0;flex:none}
-.bt-group .bt-collapse-btn{width:18px;height:18px;font-size:12px;margin-left:6px;vertical-align:1px}
-.bt-group-row .bt-clear{margin-left:auto}
+.bt-collapse-btn{margin-left:0;margin-right:8px;width:22px;height:22px;line-height:1;border:1px solid #cbd5e1;background:#fff;border-radius:6px;font-size:14px;cursor:pointer;color:#334155;padding:0;flex:none}
+.bt-group .bt-collapse-btn{width:18px;height:18px;font-size:12px;margin-left:0;margin-right:6px;vertical-align:1px}
+.bt-group-row .bt-clear{margin-left:0}
+.bt-group-row span{margin-right:auto}
 .bt-clear:hover{background:#eef4fc}
 .bt-item{display:flex;gap:8px;align-items:flex-start;padding:6px 6px;border-radius:6px;cursor:pointer;font-size:13.5px;line-height:1.45}
 .bt-item:hover{background:#f4f8fd}
@@ -207,6 +208,10 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <p class="bt-group">CAN-SLIM（オニール）</p>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="eps25"><span>EPS増加率（前年同期比）が25%以上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="roe17"><span>ROEが17%以上</span></label>
+<div class="bt-group bt-group-row"><span>市場動向</span><button type="button" class="bt-clear" data-bt-clear="market">すべて外す</button></div>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ftd"><span>FTD（フォロースルーデー）が発生</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD（買い集め日）が<select class="bt-select" data-bt-num="ad" aria-label="ADのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>日以上（直近25取引日）</span></label>
+<label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD（売り抜け日）が<select class="bt-select" data-bt-num="dd" aria-label="DDのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>以下（直近25取引日）</span></label>
 <p class="bt-group">トレンドテンプレート</p>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="tt1"><span>株価が150日・200日移動平均線より上</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="tt2"><span>150日MAが200日MAより上</span></label>
@@ -222,11 +227,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <div class="bt-block-head"><h3>買いシグナル</h3><button type="button" class="bt-clear" data-bt-clear="buy">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="vol15"><span>出来高が20日平均の1.5倍以上</span></label>
 
+<p class="bt-group">RSI Strategy</p>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="rsiGe"><span>RSI（14日）が<select class="bt-select" data-bt-num="rsiBuy" aria-label="買いのRSIしきい値"><option value="0">0</option><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30" selected>30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option><option value="55">55</option><option value="60">60</option><option value="65">65</option><option value="70">70</option><option value="75">75</option><option value="80">80</option><option value="85">85</option><option value="90">90</option><option value="95">95</option><option value="100">100</option></select>以下</span></label>
-<div class="bt-group bt-group-row"><span>市場動向</span><button type="button" class="bt-clear" data-bt-clear="market">すべて外す</button></div>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="ftd"><span>FTD（フォロースルーデー）が発生</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="ad"><span>AD（買い集め日）が<select class="bt-select" data-bt-num="ad" aria-label="ADのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>日以上（直近25取引日）</span></label>
-<label class="bt-item"><input type="checkbox" data-bt="market" value="dd"><span>DD（売り抜け日）が<select class="bt-select" data-bt-num="dd" aria-label="DDのしきい値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>以下（直近25取引日）</span></label>
 </div>
 <div class="bt-block sell">
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
@@ -236,6 +238,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="rs70"><span>RS指数が70以下に低下</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="high25"><span>52週高値から25%以上下落</span></label>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="dd3"><span>出来高を伴う下落日（DD）が3日出る</span></label>
+<p class="bt-group">RSI Strategy</p>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="rsiLe"><span>RSI（14日）が<select class="bt-select" data-bt-num="rsiSell" aria-label="売りのRSIしきい値"><option value="0">0</option><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option><option value="55">55</option><option value="60">60</option><option value="65">65</option><option value="70" selected>70</option><option value="75">75</option><option value="80">80</option><option value="85">85</option><option value="90">90</option><option value="95">95</option><option value="100">100</option></select>以上</span></label>
 </div>
 </div>
@@ -1069,5 +1072,6 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261120collapse" defer></script>
+<script>try{var ok2=localStorage.getItem('stock-dashboard-bt-order-screen:2');if(ok2&&!localStorage.getItem('stock-dashboard-bt-order-screen:3'))localStorage.setItem('stock-dashboard-bt-order-screen:3',ok2);}catch(e){}</script>
+<script src="./backtest.js?v=20261120canslimm" defer></script>
 </body></html>
