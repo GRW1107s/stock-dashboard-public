@@ -180,7 +180,8 @@
 </style>
 <section id="backtest-panel" data-bt-market="us" aria-label="バックテスト">
 <h2 class="period-rankings-title" style="margin-top:30px">バックテスト</h2>
-<p class="bt-note">市場動向・スクリーニング・買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。ティッカーと期間を指定して「バックテスト実行」を押すと、保存済みの日足データ（直近1年分）で検証します。チャート表示は今後追加予定です。</p>
+<p class="bt-note">市場動向・スクリーニング・買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。ティッカーと期間を指定して「バックテスト実行」を押すと、保存済みの日足データで検証します。チャート表示は今後追加予定です。</p>
+<p class="bt-data-note" id="bt-data-note" style="font-size:12px;color:var(--muted,#666);margin:2px 0 8px">データ量を読み込んでいます…</p>
 <div class="bt-settings">
 <label>実行方法<select id="bt-mode"><option value="normal">通常</option><option value="rolling">ローリング</option></select></label>
 <label>対象<select id="bt-universe"><option value="all">米国株 全銘柄</option><option value="sp500">S&P 500のみ</option></select></label>
@@ -190,9 +191,10 @@
 <label>開始日<input type="text" id="bt-from" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <span class="bt-hint" id="bt-normal-hint">ティッカーを入れると、その銘柄だけが対象になります。開始日・終了日を入れると、テスト期間より優先されます。</span>
-<span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日として、その日時点でスクリーニング条件を満たす銘柄を対象にテストします。ティッカーは使いません。</span>
+<span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日としてテストします。ティッカーを入れるとその銘柄が全開始日の対象になり（スクリーニング条件は使いません）、空欄のときは開始日時点でスクリーニング条件を満たす銘柄が対象です。</span>
 <button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
 </div>
+<div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="sp500">S&P500</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq100">NASDAQ100</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq">NASDAQ総合</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="dow">ダウ</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="QQQ">NASDAQ100連動（QQQ）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="SPY">S&P500連動（SPY）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
 <div class="bt-grid">
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
@@ -603,5 +605,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261120drop" defer></script>
+</script><script src="./backtest.js?v=20261120idx" defer></script>
 </body></html>

@@ -183,3 +183,47 @@ def _save_state(state_path, done, today):
             ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as err:  # noqa: BLE001
         print("OHLCV10Y_STATE_ERROR", str(err)[:120], flush=True)
+
+
+def write_coverage(root):
+    """Summarise the stored OHLCV files into ohlcv/coverage.json so the
+    backtest page can state how much data it holds. Dates are read from
+    the head and tail of each file only, keeping the scan cheap."""
+    import re
+    out = {"updated_at": datetime.now(ZoneInfo("Asia/Tokyo")).strftime(
+        "%Y-%m-%dT%H:%M:%S+09:00")}
+    first_re = re.compile(rb'"rows":\[\["(\d{4}-\d{2}-\d{2})"')
+    row_re = re.compile(rb'\["(\d{4}-\d{2}-\d{2})"')
+    for market in ("jp", "us"):
+        folder = Path(root) / "ohlcv" / market
+        files = 0
+        oldest = None
+        newest = None
+        if folder.is_dir():
+            for path in folder.glob("*.json"):
+                try:
+                    with open(path, "rb") as fh:
+                        head = fh.read(512)
+                        fh.seek(0, 2)
+                        size = fh.tell()
+                        fh.seek(max(0, size - 512))
+                        tail = fh.read()
+                except OSError:
+                    continue
+                m1 = first_re.search(head)
+                lasts = row_re.findall(tail)
+                if not m1 or not lasts:
+                    continue
+                files += 1
+                d0 = m1.group(1).decode()
+                d1 = lasts[-1].decode()
+                if oldest is None or d0 < oldest:
+                    oldest = d0
+                if newest is None or d1 > newest:
+                    newest = d1
+        out[market] = {"files": files, "oldest": oldest, "newest": newest}
+    target = Path(root) / "ohlcv" / "coverage.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(out, ensure_ascii=False,
+                                 separators=(",", ":")), encoding="utf-8")
+    return out

@@ -226,6 +226,26 @@
       });
       return names;
     }
+    // Data coverage note: how much history the backtest can use.
+    (function showDataNote() {
+      var note = document.getElementById("bt-data-note");
+      if (!note) return;
+      var label = MARKET === "us" ? "米国株" : "日本株";
+      function get(url) { return fetch(url, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
+      Promise.all([get("ohlcv/coverage.json"), get("ohlcv/backfill10y-state.json"), get("screener-archive/index.json")]).then(function (res) {
+        var cov = res[0], st = res[1], arc = res[2], parts = [];
+        if (cov && cov[MARKET] && cov[MARKET].files) {
+          var c = cov[MARKET];
+          var done = st && Array.isArray(st[MARKET]) ? st[MARKET].length : null;
+          parts.push("価格データ: " + label + " " + c.files.toLocaleString("ja-JP") + "銘柄（" + c.oldest + "〜" + c.newest + "）" + (done != null ? "、10年分そろった銘柄は " + done.toLocaleString("ja-JP") + "（自動更新で拡大中）" : ""));
+        }
+        if (arc && Array.isArray(arc.dates) && arc.dates.length) {
+          parts.push("スクリーニング履歴: " + arc.dates.length.toLocaleString("ja-JP") + "日分（" + arc.dates[arc.dates.length - 1] + "〜" + arc.dates[0] + "）");
+        }
+        note.textContent = parts.length ? parts.join("／") : "データ量の集計を表示できませんでした。";
+      });
+    })();
+
     var runBtn = document.getElementById("bt-run");
     var results = document.getElementById("bt-results");
     if (!runBtn || !results) return;
@@ -330,8 +350,8 @@
       return Promise.all(jobs).then(function () { return map; });
     }
 
-    var INDEX_LABELS = { nikkei: "日経225", prime: "東証プライム", standard: "東証スタンダード", growth: "東証グロース" };
-    var ETF_NAMES = { "1321": "NEXT FUNDS 日経225連動型上場投信", "1306": "NEXT FUNDS TOPIX連動型上場投信" };
+    var INDEX_LABELS = { nikkei: "日経225", prime: "東証プライム", standard: "東証スタンダード", growth: "東証グロース", sp500: "S&P500", nasdaq100: "NASDAQ100", nasdaq: "NASDAQ総合", dow: "ダウ" };
+    var ETF_NAMES = { "1321": "NEXT FUNDS 日経225連動型上場投信", "1306": "NEXT FUNDS TOPIX連動型上場投信", "QQQ": "インベスコ QQQ（NASDAQ100連動）", "SPY": "SPDR S&P500 ETF（SPY）" };
 
     // Index targets are judged on closes only: history-<year>.json holds
     // daily index closes (and a volume proxy), so rows are close-filled.
@@ -344,7 +364,7 @@
         keys.forEach(function (k) { byKey[k] = new Map(); });
         files.forEach(function (h) {
           if (!h) return;
-          (h.tse_rows || []).forEach(function (row) {
+          (MARKET === "us" ? (h.rows || []) : (h.tse_rows || [])).forEach(function (row) {
             keys.forEach(function (k) {
               var cell = row[k];
               if (cell && cell.close != null) {
@@ -700,7 +720,7 @@
       var indexKeys = Array.from(panel.querySelectorAll('input[data-bt-index]:checked')).map(function (b) { return b.value; });
       if (!codes.length && !indexKeys.length) {
         results.innerHTML = MARKET === "us"
-          ? '<p class="bt-res-note">ティッカーを入力してから実行してください（対象セレクトだけでは実行できません）。</p>'
+          ? '<p class="bt-res-note">ティッカーを入力するか、指数・ETFを選んでから実行してください（対象セレクトだけでは実行できません）。</p>'
           : '<p class="bt-res-note">銘柄コードを入力するか、指数・ETFを選んでから実行してください（対象セレクトだけでは実行できません）。</p>';
         return;
       }

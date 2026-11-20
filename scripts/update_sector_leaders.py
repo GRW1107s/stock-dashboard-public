@@ -852,16 +852,18 @@ def main():
         output["sp500_benchmark_error"] = str(err)[:180]
         print("SP500_RS_BENCHMARK_ERROR", err, flush=True)
     us_ok, us_fail = fetch_charts(us_selected, "us", us_benchmark_returns, "^GSPC")
-    # QQQ is outside the screener universe; keep its daily OHLCV stored
-    # too (accumulation requested by GRW, 2026-11-20).
-    if "QQQ" not in (COLLECTED_OHLCV.get("us") or {}):
-        try:
-            qqq_data = obtain("QQQ", "us")
-            qqq_series = qqq_data.pop("_ohlcv", None) if qqq_data else None
-            if qqq_series:
-                COLLECTED_OHLCV["us"]["QQQ"] = qqq_series
-        except Exception as err:
-            print("OHLCV_US_ETF_ERROR", "QQQ", str(err)[:120], flush=True)
+    # QQQ and SPY are outside the screener universe; keep their daily
+    # OHLCV stored too (index ETF accumulation requested by GRW,
+    # 2026-11-20).
+    for etf_symbol in ("QQQ", "SPY"):
+        if etf_symbol not in (COLLECTED_OHLCV.get("us") or {}):
+            try:
+                etf_data = obtain(etf_symbol, "us")
+                etf_series = etf_data.pop("_ohlcv", None) if etf_data else None
+                if etf_series:
+                    COLLECTED_OHLCV["us"][etf_symbol] = etf_series
+            except Exception as err:
+                print("OHLCV_US_ETF_ERROR", etf_symbol, str(err)[:120], flush=True)
     try:
         from history_store import update_ohlcv
         stored = update_ohlcv(ROOT, "us", COLLECTED_OHLCV.get("us") or {})
@@ -937,9 +939,16 @@ def main():
             [item["ticker"] for item in current_jp if item.get("ticker")]
             + ["1321.T", "1306.T"],
             [item["ticker"] for item in current_us if item.get("ticker")]
-            + ["QQQ"])
+            + ["QQQ", "SPY"])
     except Exception as err:
         print("BACKFILL_OHLCV10Y_ERROR", str(err)[:150], flush=True)
+    # Coverage summary for the backtest page's data note (file counts and
+    # date ranges of the stored OHLCV series). Best-effort.
+    try:
+        from backfill_ohlcv10y import write_coverage
+        write_coverage(ROOT)
+    except Exception as err:
+        print("OHLCV_COVERAGE_ERROR", str(err)[:150], flush=True)
     # US industry analysis data (GICS Industry / Sub-Industry + Nasdaq
     # Industry), built from the screener data just written. Best-effort,
     # like the stores above: a failure never blocks the screener update.
