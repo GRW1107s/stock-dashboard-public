@@ -30,6 +30,7 @@
   var SELL_LABELS = {
     ma50: "株価が50日移動平均を下回る",
     loss8: "買値から8%下落",
+    dropPct: "前日終値からしきい値%以上下落",
     ma200: "株価が200日移動平均を下回る",
     rs70: "RS指数が70以下に低下",
     high25: "52週高値から25%以上下落",
@@ -37,7 +38,7 @@
     rsiLe: "RSI（14日）がしきい値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1, dropPct: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -140,6 +141,7 @@
           if (hi2 != null && c <= hi2 * 0.75) return id;
         }
         if (id === "rsiLe" && cfg.rsiSell != null && rsi[i] != null && rsi[i] >= cfg.rsiSell) return id;
+        if (id === "dropPct" && cfg.dropPct != null && i > 0 && closes[i - 1] > 0 && c / closes[i - 1] - 1 <= -cfg.dropPct / 100) return id;
         if (id === "dd3") {
           var cnt = 0;
           for (var k = pos.execIdx + 1; k <= i; k++) {
@@ -374,7 +376,7 @@
           }
           var res = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell,
-            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal
+            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal
           });
           out.push({ title: title, out: res });
         });
@@ -435,15 +437,17 @@
       if (entries.length) select(0);
     }
 
-    var rsiBuyVal = null, rsiSellVal = null;
+    var rsiBuyVal = null, rsiSellVal = null, dropPctVal = null;
     function condLabel(group, id) {
       if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "しきい値" : rsiBuyVal) + "以下";
       if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "しきい値" : rsiSellVal) + "以上";
+      if (id === "dropPct") return "前日終値から" + (dropPctVal == null ? "しきい値" : dropPctVal) + "%以上下落";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
     function readRsi(buyAll, sellAll) {
       if (buyAll.includes("rsiGe")) { var v = numOf("rsiBuy"); rsiBuyVal = isFinite(v) ? v : 30; } else rsiBuyVal = null;
       if (sellAll.includes("rsiLe")) { var w = numOf("rsiSell"); rsiSellVal = isFinite(w) ? w : 70; } else rsiSellVal = null;
+      if (sellAll.includes("dropPct")) { var d = numOf("dropSell"); dropPctVal = isFinite(d) ? d : 5; } else dropPctVal = null;
     }
 
     var screenRunBtn = document.getElementById("bt-screen-run");
@@ -627,7 +631,7 @@
             if (toIdx <= fromIdx) return;
             var out = runBacktest(rows, {
               fromIdx: fromIdx, toIdx: toIdx, buy: buy, sell: sell,
-              ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal
+              ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
             entries.push({ title: title, out: out });
@@ -771,7 +775,7 @@
           }
           var out = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: entry, sell: sell,
-            ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal
+            ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal
           });
           entries.push({ title: title, out: out });
         });
