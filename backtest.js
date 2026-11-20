@@ -888,10 +888,6 @@
       buyAll.filter(function (id) { return !BUY_EVALUABLE[id] && id !== "dd"; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
       sellAll.filter(function (id) { return !SELL_EVALUABLE[id]; }).forEach(function (id) { skipped.push("売り：" + (SELL_LABELS[id] || id)); });
       var entry = screen.concat(buy); // screening gates + buy timing
-      if (!entry.length && !buyAll.includes("dd")) {
-        results.innerHTML = '<p class="bt-res-note">判定できる条件が選択されていません。トレンドテンプレート（ミネルヴィニ）か買い条件から、価格・出来高で判定できるものを1つ以上選んでください。</p>';
-        return;
-      }
       var ddLimit = buyAll.includes("dd") ? numOf("dd") : null;
       readRsi(buyAll, sellAll);
       var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
@@ -955,7 +951,7 @@
           .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id); }))
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
         if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
-        var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。</p>";
+        var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。" + (entry.length ? "" : "買い条件（判定できるもの）が未選択のため、対象銘柄は期間開始の翌営業日に買います。") + "</p>";
         if (skipped.length) {
           notes += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
         }
