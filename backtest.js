@@ -415,6 +415,11 @@
     // for the chosen horizon. Results are summarised per start date.
     function runRolling() {
       var screenIds = checked("screen");
+      var inputCodes = ((document.getElementById("bt-symbols") || {}).value || "").split(/[\s,、，]+/)
+        .map(function (x) { return x.trim(); }).filter(Boolean)
+        .map(function (x) { return MARKET === "us" ? x.toUpperCase() : x.replace(/\.T$/i, ""); });
+      inputCodes = Array.from(new Set(inputCodes)).slice(0, 200);
+      var fixedCodes = inputCodes.length ? inputCodes : null;
       var buyAll = checked("buy"), sellAll = checked("sell"), marketAll = checked("market");
       var buy = buyAll.filter(function (id) { return BUY_EVALUABLE[id]; });
       var sell = sellAll.filter(function (id) { return SELL_EVALUABLE[id]; });
@@ -424,11 +429,11 @@
       marketAll.filter(function (id) { return id !== "dd"; }).forEach(function (id) {
         skipped.push("市場：" + (id === "ad" ? "AD（買い集め日）" : id === "ftd" ? "FTD（フォロースルーデー）" : id));
       });
-      if (!screenIds.length) {
-        results.innerHTML = '<p class="bt-res-note">ローリングではスクリーニング条件を1つ以上選んでください（各開始日の対象銘柄の選定に使います）。</p>';
+      if (!fixedCodes && !screenIds.length) {
+        results.innerHTML = '<p class="bt-res-note">銘柄を入力するか、スクリーニング条件を1つ以上選んでください（スクリーニング条件は各開始日の対象銘柄の選定に使います）。</p>';
         return;
       }
-      if (typeof window.leaderScreenerArchiveDates !== "function" || typeof window.leaderScreenerEvalScreenAt !== "function") {
+      if (typeof window.leaderScreenerArchiveDates !== "function" || (!fixedCodes && typeof window.leaderScreenerEvalScreenAt !== "function")) {
         results.innerHTML = '<p class="bt-res-note">スクリーナーの読み込み待ちです。少し待ってから実行してください。</p>';
         return;
       }
@@ -447,7 +452,7 @@
       var markets = MARKET === "us" ? null : universe === "prime" ? ["プライム"] : universe === "standard" ? ["スタンダード"] : universe === "growth" ? ["グロース"] : null;
       var spSet = null;
       var preRoll = Promise.resolve();
-      if (MARKET === "us" && universe === "sp500") {
+      if (!fixedCodes && MARKET === "us" && universe === "sp500") {
         preRoll = loadJson("sector-leaders.json").then(function (leaders) {
           var set = new Set();
           ((leaders && leaders.us) || []).forEach(function (r) {
@@ -464,6 +469,9 @@
         var startDates = datesDesc.filter(function (d) { return d >= fromVal && d <= toVal; }).sort();
         if (!startDates.length) {
           throw { rollMsg: "指定範囲にスナップショットのある日がありません" + (datesDesc.length ? "（保存範囲：" + datesDesc[datesDesc.length - 1] + " 〜 " + datesDesc[0] + "）" : "") + "。" };
+        }
+        if (fixedCodes) {
+          return startDates.map(function (d) { return { date: d, codes: fixedCodes, truncated: false }; });
         }
         var perDate = [];
         var chain = Promise.resolve();
@@ -565,9 +573,9 @@
           html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + pct(s.bhAvg) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td></tr>';
         });
         html += '</tbody></table>';
-        html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。</p>';
+        html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。' + (fixedCodes ? "対象銘柄は入力した銘柄です（スクリーニング条件は使っていません）。" : "対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。") + '</p>';
         html += '<div id="bt-roll-detail"></div>';
-        var applied = screenIds.map(function (id) { return "スクリーニング：" + condLabel("buy", id); })
+        var applied = (fixedCodes ? [] : screenIds.map(function (id) { return "スクリーニング：" + condLabel("buy", id); }))
           .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id); }))
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
         if (ddLimit != null) applied.push("市場：DDが" + ddLimit + "以下");
