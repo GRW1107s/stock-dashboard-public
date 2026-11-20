@@ -18,6 +18,9 @@ import re
 
 GROWTH = ("eps_q_latest_yoy_pct", "eps_q_prev_yoy_pct", "eps_annual_3y_cagr_pct",
           "eps_annual_yoy_pct", "eps_q_latest_qoq_pct")
+# Fetches before this date predate the QoQ field, so a missing QoQ value on
+# such a row means "never computed", not "uncomputable".
+QOQ_SINCE = "2026-11-19"
 SOURCE = "Yahoo Finance via yfinance (calculated EPS growth)"
 SALES_SOURCE = "Yahoo Finance via yfinance (calculated sales growth)"
 ROE_SOURCE = "Yahoo Finance annual income / average parent shareholders equity"
@@ -213,6 +216,10 @@ def select_batch(stocks, cursor, limit, *, today=None, refresh_days=60):
                              or row.get("sales_q_latest_yoy_pct") is None)
             if missing_yahoo and not isinstance(row.get("eps_yfinance_empty_attempts"), int):
                 pass  # legacy stamp from an empty Yahoo response: retry once
+            elif (row.get("eps_q_latest_qoq_pct") is None
+                  and (row.get("eps_fetched_at") or "") < QOQ_SINCE
+                  and row.get("eps_source") == SOURCE):
+                pass  # fetched before QoQ existed: refetch once to compute it
             else:
                 continue
         candidates.append((bool(checked), checked, (index - cursor) % len(stocks), row))
