@@ -5,9 +5,11 @@ commit step picks them up without any workflow change:
 
 - ohlcv/<market>/<ticker>.json — per-stock daily OHLCV rows
   [date, open, high, low, close, volume]. Every pipeline run merges the
-  series it fetched (each fetch carries ~455 days, so the store fills
-  to a full year as the rotation reaches each ticker) and trims rows
-  older than 365 days. This is the backtest data foundation.
+  series it fetched (each fetch carries ~455 days) and trims rows
+  older than the retention window. Retention is ten years (GRW,
+  2026-11-20): backfill_ohlcv10y.py deepens every ticker's file to a
+  full decade once, and daily merges keep it topped up. This is the
+  backtest data foundation.
 - screener-archive/YYYY-MM-DD.json — one slim columnar snapshot of the
   screener rows per day (the day's last run wins), pruned to 365 days.
 
@@ -21,9 +23,9 @@ import json
 from pathlib import Path
 import re
 
-RETENTION_DAYS = 365
+RETENTION_DAYS = 3660
 # Screener snapshots are kept for three years (GRW, 2026-11-19); the
-# OHLCV store above keeps its one-year window.
+# OHLCV store above keeps ten years (GRW, 2026-11-20).
 SNAPSHOT_RETENTION_DAYS = 1150
 
 # Fields kept in a daily screener snapshot: identity/classification plus

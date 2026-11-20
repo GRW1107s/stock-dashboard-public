@@ -926,6 +926,20 @@ def main():
         backfill_snapshots_run(ROOT, output, COLLECTED_OHLCV)
     except Exception as err:
         print("BACKFILL_SNAPSHOTS_ERROR", str(err)[:150], flush=True)
+    # Deepen the OHLCV store to ten years of daily bars (GRW,
+    # 2026-11-20): each run fetches the next batch of tickers whose
+    # file does not reach back a decade yet. Best-effort, no-op once
+    # every ticker is deepened.
+    try:
+        from backfill_ohlcv10y import run as backfill_ohlcv10y_run
+        backfill_ohlcv10y_run(
+            ROOT,
+            [item["ticker"] for item in current_jp if item.get("ticker")]
+            + ["1321.T", "1306.T"],
+            [item["ticker"] for item in current_us if item.get("ticker")]
+            + ["QQQ"])
+    except Exception as err:
+        print("BACKFILL_OHLCV10Y_ERROR", str(err)[:150], flush=True)
     # US industry analysis data (GICS Industry / Sub-Industry + Nasdaq
     # Industry), built from the screener data just written. Best-effort,
     # like the stores above: a failure never blocks the screener update.
