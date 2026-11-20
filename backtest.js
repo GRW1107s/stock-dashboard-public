@@ -25,7 +25,10 @@
     tt5: "株価が50日MAより上",
     tt6: "52週安値から30%以上上昇",
     tt7: "52週高値から25%以内",
-    tt8: "RS指数がしきい値以上"
+    tt8: "RS指数がしきい値以上",
+    ftd: "FTD（フォロースルーデー）が発生",
+    ad: "AD（買い集め日）がしきい値以上",
+    dd: "DD（売り抜け日）がしきい値以下"
   };
   var SELL_LABELS = {
     ma50: "株価が50日移動平均を下回る",
@@ -35,10 +38,11 @@
     rs70: "RS指数が70以下に低下",
     high25: "52週高値から25%以上下落",
     dd3: "出来高を伴う下落日（DD）が3日出る",
+    ddGe: "DD（売り抜け日）がしきい値以上",
     rsiLe: "RSI（14日）がしきい値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1, dropPct: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -142,6 +146,11 @@
         }
         if (id === "rsiLe" && cfg.rsiSell != null && rsi[i] != null && rsi[i] >= cfg.rsiSell) return id;
         if (id === "dropPct" && cfg.dropPct != null && i > 0 && closes[i - 1] > 0 && c / closes[i - 1] - 1 <= -cfg.dropPct / 100) return id;
+        if (id === "ddGe" && cfg.ddSell != null && cfg.ddByDate) {
+          for (var k2 = i; k2 >= 0; k2--) {
+            if (cfg.ddByDate.has(dates[k2])) { if (cfg.ddByDate.get(dates[k2]) >= cfg.ddSell) return id; break; }
+          }
+        }
         if (id === "dd3") {
           var cnt = 0;
           for (var k = pos.execIdx + 1; k <= i; k++) {
@@ -332,7 +341,7 @@
       if (!Array.isArray(items)) items = [];
       function persist() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {} }
       function collect() {
-        var st = { screen: checked("screen"), buy: checked("buy"), sell: checked("sell"), market: checked("market"), nums: {}, ttRs: "70" };
+        var st = { screen: checked("screen"), buy: checked("buy"), sell: checked("sell"), nums: {}, ttRs: "70" };
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
         var tt = document.getElementById("bt-tt-rs");
         if (tt) st.ttRs = tt.value;
@@ -341,6 +350,7 @@
       function apply(st) {
         panel.querySelectorAll('input[type="checkbox"][data-bt]').forEach(function (b) {
           var list = st[b.getAttribute("data-bt")] || [];
+          if (b.getAttribute("data-bt") === "buy" && st.market) list = list.concat(st.market);
           var on = list.indexOf(b.value) >= 0;
           if (b.checked !== on) { b.checked = on; b.dispatchEvent(new Event("change", { bubbles: true })); }
         });
@@ -475,7 +485,7 @@
           }
           var res = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell,
-            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal
+            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
           });
           out.push({ title: title, out: res });
         });
@@ -589,17 +599,21 @@
       if (entries.length) select(0);
     }
 
-    var rsiBuyVal = null, rsiSellVal = null, dropPctVal = null;
+    var rsiBuyVal = null, rsiSellVal = null, dropPctVal = null, ddSellVal = null, ddGateVal = null;
     function condLabel(group, id) {
       if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "しきい値" : rsiBuyVal) + "以下";
       if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "しきい値" : rsiSellVal) + "以上";
       if (id === "dropPct") return "前日終値から" + (dropPctVal == null ? "しきい値" : dropPctVal) + "%以上下落";
+      if (id === "ddGe") return "DD（売り抜け日）が" + (ddSellVal == null ? "しきい値" : ddSellVal) + "以上";
+      if (id === "dd") return "DD（売り抜け日）が" + (ddGateVal == null ? "しきい値" : ddGateVal) + "以下";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
     function readRsi(buyAll, sellAll) {
       if (buyAll.includes("rsiGe")) { var v = numOf("rsiBuy"); rsiBuyVal = isFinite(v) ? v : 30; } else rsiBuyVal = null;
       if (sellAll.includes("rsiLe")) { var w = numOf("rsiSell"); rsiSellVal = isFinite(w) ? w : 70; } else rsiSellVal = null;
       if (sellAll.includes("dropPct")) { var d = numOf("dropSell"); dropPctVal = isFinite(d) ? d : 5; } else dropPctVal = null;
+      if (sellAll.includes("ddGe")) { var g = numOf("ddSell"); ddSellVal = isFinite(g) ? g : 5; } else ddSellVal = null;
+      if (buyAll.includes("dd")) { var dv = numOf("dd"); ddGateVal = isFinite(dv) ? dv : 5; } else ddGateVal = null;
     }
 
     var screenRunBtn = document.getElementById("bt-screen-run");
@@ -629,15 +643,12 @@
         .map(function (x) { return MARKET === "us" ? x.toUpperCase() : x.replace(/\.T$/i, ""); });
       inputCodes = Array.from(new Set(inputCodes)).slice(0, 200);
       var fixedCodes = inputCodes.length ? inputCodes : null;
-      var buyAll = checked("buy"), sellAll = checked("sell"), marketAll = checked("market");
+      var buyAll = checked("buy"), sellAll = checked("sell");
       var buy = buyAll.filter(function (id) { return BUY_EVALUABLE[id]; });
       var sell = sellAll.filter(function (id) { return SELL_EVALUABLE[id]; });
       var skipped = [];
-      buyAll.filter(function (id) { return !BUY_EVALUABLE[id]; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
+      buyAll.filter(function (id) { return !BUY_EVALUABLE[id] && id !== "dd"; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
       sellAll.filter(function (id) { return !SELL_EVALUABLE[id]; }).forEach(function (id) { skipped.push("売り：" + (SELL_LABELS[id] || id)); });
-      marketAll.filter(function (id) { return id !== "dd"; }).forEach(function (id) {
-        skipped.push("市場：" + (id === "ad" ? "AD（買い集め日）" : id === "ftd" ? "FTD（フォロースルーデー）" : id));
-      });
       if (!fixedCodes && !screenIds.length) {
         results.innerHTML = '<p class="bt-res-note">銘柄を入力するか、スクリーニング条件を1つ以上選んでください（スクリーニング条件は各開始日の対象銘柄の選定に使います）。</p>';
         return;
@@ -646,7 +657,7 @@
         results.innerHTML = '<p class="bt-res-note">スクリーナーの読み込み待ちです。少し待ってから実行してください。</p>';
         return;
       }
-      var ddLimit = marketAll.includes("dd") ? numOf("dd") : null;
+      var ddLimit = buyAll.includes("dd") ? numOf("dd") : null;
       readRsi(buyAll, sellAll);
       var rsMin = parseInt((document.getElementById("bt-tt-rs") || {}).value || "70", 10);
       var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
@@ -783,7 +794,7 @@
             if (toIdx <= fromIdx) return;
             var out = runBacktest(rows, {
               fromIdx: fromIdx, toIdx: toIdx, buy: buy, sell: sell,
-              ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal
+              ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
             entries.push({ title: title, out: out });
@@ -828,7 +839,7 @@
         var applied = (fixedCodes ? [] : screenIds.map(function (id) { return "スクリーニング：" + condLabel("buy", id); }))
           .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id); }))
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
-        if (ddLimit != null) applied.push("市場：DDが" + ddLimit + "以下");
+        if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
         html += '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ")) + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。" + (buy.length ? "" : "買い条件が未選択のため、対象銘柄は各開始日の翌営業日に買います。") + "</p>";
         if (skipped.length) {
           html += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
@@ -868,23 +879,20 @@
           : '<p class="bt-res-note">銘柄コードを入力するか、指数・ETFを選んでから実行してください（対象セレクトだけでは実行できません）。</p>';
         return;
       }
-      var screenAll = checked("screen"), buyAll = checked("buy"), sellAll = checked("sell"), marketAll = checked("market");
+      var screenAll = checked("screen"), buyAll = checked("buy"), sellAll = checked("sell");
       var screen = screenAll.filter(function (id) { return BUY_EVALUABLE[id]; });
       var buy = buyAll.filter(function (id) { return BUY_EVALUABLE[id]; });
       var sell = sellAll.filter(function (id) { return SELL_EVALUABLE[id]; });
       var skipped = [];
       screenAll.filter(function (id) { return !BUY_EVALUABLE[id]; }).forEach(function (id) { skipped.push("スクリーニング：" + (BUY_LABELS[id] || id)); });
-      buyAll.filter(function (id) { return !BUY_EVALUABLE[id]; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
+      buyAll.filter(function (id) { return !BUY_EVALUABLE[id] && id !== "dd"; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
       sellAll.filter(function (id) { return !SELL_EVALUABLE[id]; }).forEach(function (id) { skipped.push("売り：" + (SELL_LABELS[id] || id)); });
-      marketAll.filter(function (id) { return id !== "dd"; }).forEach(function (id) {
-        skipped.push("市場：" + (id === "ad" ? "AD（買い集め日）" : id === "ftd" ? "FTD（フォロースルーデー）" : id));
-      });
       var entry = screen.concat(buy); // screening gates + buy timing
-      if (!entry.length && !marketAll.includes("dd")) {
+      if (!entry.length && !buyAll.includes("dd")) {
         results.innerHTML = '<p class="bt-res-note">判定できる条件が選択されていません。トレンドテンプレート（ミネルヴィニ）か買い条件から、価格・出来高で判定できるものを1つ以上選んでください。</p>';
         return;
       }
-      var ddLimit = marketAll.includes("dd") ? numOf("dd") : null;
+      var ddLimit = buyAll.includes("dd") ? numOf("dd") : null;
       readRsi(buyAll, sellAll);
       var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
       var fromVal = normDate((document.getElementById("bt-from") || {}).value);
@@ -939,14 +947,14 @@
           }
           var out = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: entry, sell: sell,
-            ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal
+            ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
           });
           entries.push({ title: title, out: out });
         });
         var applied = screen.map(function (id) { return "スクリーニング：" + condLabel("buy", id); })
           .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id); }))
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
-        if (ddLimit != null) applied.push("市場：DDが" + ddLimit + "以下");
+        if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
         var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。</p>";
         if (skipped.length) {
           notes += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
