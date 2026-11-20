@@ -486,7 +486,7 @@
         results.innerHTML = '<p class="bt-res-note">銘柄を入力するか、スクリーニング条件を1つ以上選んでください（スクリーニング条件は各開始日の対象銘柄の選定に使います）。</p>';
         return;
       }
-      if (typeof window.leaderScreenerArchiveDates !== "function" || (!fixedCodes && typeof window.leaderScreenerEvalScreenAt !== "function")) {
+      if (!fixedCodes && (typeof window.leaderScreenerArchiveDates !== "function" || typeof window.leaderScreenerEvalScreenAt !== "function")) {
         results.innerHTML = '<p class="bt-res-note">スクリーナーの読み込み待ちです。少し待ってから実行してください。</p>';
         return;
       }
@@ -518,13 +518,40 @@
       runBtn.disabled = true;
       results.innerHTML = '<p class="bt-res-note">実行中…</p>';
 
-      preRoll.then(function () { return window.leaderScreenerArchiveDates(); }).then(function (datesDesc) {
+      var fixedStore = null;
+      function loadStoreFor(codes) {
+        var store = {};
+        var queue = codes.slice();
+        function worker() {
+          var code = queue.shift();
+          if (!code) return Promise.resolve();
+          return loadJson(ohlcvUrl(code)).then(function (data) {
+            store[code] = (data && data.rows) || null;
+          }).catch(function () { store[code] = null; }).then(function () { return worker(); });
+        }
+        var pool = [];
+        for (var k = 0; k < 8; k++) pool.push(worker());
+        return Promise.all(pool).then(function () { return store; });
+      }
+      var perDatePromise;
+      if (fixedCodes) {
+        perDatePromise = loadStoreFor(fixedCodes).then(function (store) {
+          fixedStore = store;
+          var grid = new Set();
+          fixedCodes.forEach(function (c) {
+            (store[c] || []).forEach(function (r) { if (r[0] >= fromVal && r[0] <= toVal) grid.add(r[0]); });
+          });
+          var startDates = Array.from(grid).sort();
+          if (!startDates.length) {
+            throw { rollMsg: "指定範囲に入力銘柄の価格データがありません。期間を広げてください。" };
+          }
+          return startDates.map(function (d) { return { date: d, codes: fixedCodes, truncated: false }; });
+        });
+      } else {
+        perDatePromise = preRoll.then(function () { return window.leaderScreenerArchiveDates(); }).then(function (datesDesc) {
         var startDates = datesDesc.filter(function (d) { return d >= fromVal && d <= toVal; }).sort();
         if (!startDates.length) {
           throw { rollMsg: "指定範囲にスナップショットのある日がありません" + (datesDesc.length ? "（保存範囲：" + datesDesc[datesDesc.length - 1] + " 〜 " + datesDesc[0] + "）" : "") + "。" };
-        }
-        if (fixedCodes) {
-          return startDates.map(function (d) { return { date: d, codes: fixedCodes, truncated: false }; });
         }
         var perDate = [];
         var chain = Promise.resolve();
@@ -541,7 +568,9 @@
           });
         });
         return chain.then(function () { return perDate; });
-      }).then(function (perDate) {
+        });
+      }
+      perDatePromise.then(function (perDate) {
         var seen = {}, uniq = [];
         perDate.forEach(function (pd) { if (!seen[pd.date]) { seen[pd.date] = 1; uniq.push(pd); } });
         var unionSet = new Set();
@@ -554,6 +583,7 @@
         }
         return loadJson("sector-leaders.json").catch(function () { return null; }).then(function (leaders) {
           var names = buildNames(leaders);
+          if (fixedStore) return { names: names, store: fixedStore, perDate: uniq };
           var store = {}, done = 0;
           var queue = union.slice();
           function worker() {
