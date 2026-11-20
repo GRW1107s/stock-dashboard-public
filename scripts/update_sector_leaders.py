@@ -852,6 +852,16 @@ def main():
         output["sp500_benchmark_error"] = str(err)[:180]
         print("SP500_RS_BENCHMARK_ERROR", err, flush=True)
     us_ok, us_fail = fetch_charts(us_selected, "us", us_benchmark_returns, "^GSPC")
+    # QQQ is outside the screener universe; keep its daily OHLCV stored
+    # too (accumulation requested by GRW, 2026-11-20).
+    if "QQQ" not in (COLLECTED_OHLCV.get("us") or {}):
+        try:
+            qqq_data = obtain("QQQ", "us")
+            qqq_series = qqq_data.pop("_ohlcv", None) if qqq_data else None
+            if qqq_series:
+                COLLECTED_OHLCV["us"]["QQQ"] = qqq_series
+        except Exception as err:
+            print("OHLCV_US_ETF_ERROR", "QQQ", str(err)[:120], flush=True)
     try:
         from history_store import update_ohlcv
         stored = update_ohlcv(ROOT, "us", COLLECTED_OHLCV.get("us") or {})
