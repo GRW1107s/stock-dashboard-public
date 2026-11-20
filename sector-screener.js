@@ -51,7 +51,7 @@ panel.innerHTML=
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="sales"><span>売上高増加率（前年同期比）が<select class="ls-fd-num ls-fd-select" data-fd-num="sales" aria-label="売上高増加率（前年同期比）のしきい値"><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-fd-input" value="roe"><span>ROEが<select class="ls-fd-num ls-fd-select" data-fd-num="roe" aria-label="ROEのしきい値"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>%以上</span></label>'+
 '<p class="ls-tt-note">複数チェックはAND条件です。年間EPS増加率は3年CAGRです。</p></div>'+
-'<div class="ls-tt-card"><div class="ls-tt-head"><h3>トレンドテンプレート</h3><button type="button" class="ls-tt-clear" id="ls-tt-clear">すべて外す</button></div>'+
+'<div class="ls-tt-card"><div class="ls-tt-head"><h3>トレンドテンプレート（ミネルヴィニ）</h3><button type="button" class="ls-tt-clear" id="ls-tt-clear">すべて外す</button></div>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt1"><span>株価が150日・200日移動平均線より上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt2"><span>150日MAが200日MAより上</span></label>'+
 '<label class="ls-tt-item"><input type="checkbox" class="ls-tt-input" value="tt3"><span>200日MAが少なくとも1か月上昇</span></label>'+

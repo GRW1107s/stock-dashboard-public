@@ -737,7 +737,7 @@
       });
       var entry = screen.concat(buy); // screening gates + buy timing
       if (!entry.length && !marketAll.includes("dd")) {
-        results.innerHTML = '<p class="bt-res-note">判定できる条件が選択されていません。スクリーニング（トレンドテンプレート）か買い条件から、価格・出来高で判定できるものを1つ以上選んでください。</p>';
+        results.innerHTML = '<p class="bt-res-note">判定できる条件が選択されていません。トレンドテンプレート（ミネルヴィニ）か買い条件から、価格・出来高で判定できるものを1つ以上選んでください。</p>';
         return;
       }
       var ddLimit = marketAll.includes("dd") ? numOf("dd") : null;
