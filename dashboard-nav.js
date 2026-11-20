@@ -3,7 +3,7 @@
   "use strict";
   const pages={
     "index.html":[
-      {label:"日本市場",start:"h1"},
+      {label:"日本市場",start:"#ov-jp"},
       {label:"米国市場",start:"#pane-us"},
       {label:"日本オプション",start:"#pane-jp-options"},
       {label:"米国オプション",start:"#pane-us-options"},
