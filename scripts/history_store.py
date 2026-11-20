@@ -50,6 +50,32 @@ def _safe_name(ticker):
     return name or "unknown"
 
 
+def _fix_decimal_glitches(rows):
+    """Repair Yahoo decimal-shift glitch rows (a close at almost exactly
+    1/100, 1/10, 10x or 100x of the previous close). Such rows appear in
+    the raw chart series for some tickers (e.g. 1321.T on 2026-10-05/06
+    at 1/100 scale with 100x volume). Genuine moves never land within
+    3% of an exact decimal multiple, so rescaling is safe."""
+    prev_close = None
+    for row in rows:
+        close = row[4]
+        if prev_close and close:
+            ratio = close / prev_close
+            for factor in (0.01, 0.1, 10.0, 100.0):
+                if abs(ratio / factor - 1) < 0.03:
+                    mult = 1.0 / factor
+                    for i in (1, 2, 3, 4):
+                        if isinstance(row[i], (int, float)):
+                            row[i] = round(row[i] * mult, 3)
+                    if isinstance(row[5], (int, float)):
+                        row[5] = int(round(row[5] * factor))
+                    close = row[4]
+                    break
+        if close:
+            prev_close = close
+    return rows
+
+
 def update_ohlcv(root, market, series_by_ticker, *, today=None):
     """Merge fetched daily series into per-ticker files; returns writes."""
     today = today or date.today()
@@ -71,7 +97,8 @@ def update_ohlcv(root, market, series_by_ticker, *, today=None):
                 pass
         for row in series:
             merged[row[0]] = list(row)
-        rows = [merged[day] for day in sorted(merged) if day >= cutoff]
+        rows = _fix_decimal_glitches(
+            [merged[day] for day in sorted(merged) if day >= cutoff])
         if not rows:
             continue
         text = json.dumps({"ticker": ticker, "market": market, "rows": rows},
