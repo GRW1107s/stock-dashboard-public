@@ -250,6 +250,7 @@ function attachIdxDrag(m){
   const head=document.getElementById('headrow-'+m);
   head.querySelectorAll('th[data-idx]').forEach(th=>{
     th.addEventListener('pointerdown',e=>{
+      if(e.target.closest&&e.target.closest('a'))return;
       e.preventDefault();
       const srcKey=th.dataset.idx,srcSeg=th.dataset.seg;
       let target=null,after=false,dragging=false;
