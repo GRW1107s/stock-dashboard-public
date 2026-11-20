@@ -659,6 +659,19 @@ function initScreenerAsof(all){
   function useSnap(snap){
    const fields=snap.fields||[];
    base=(snap[market]||[]).map(function(vals){const o={};fields.forEach(function(f,i){o[f]=vals[i]});return o}).filter(function(r){return r&&r.ticker&&r.sector});
+   // Classifications are reference data, not point-in-time values: fill
+   // any the snapshot lacks (the fine industry is never stored in
+   // snapshots, and US GICS was partial before the Nasdaq crosswalk)
+   // from the current rows, so past dates still show 業種①・業種②.
+   // Prices and fundamentals stay exactly as of the snapshot date.
+   const liveByTicker={};
+   (liveBase||[]).forEach(function(r){if(r&&r.ticker)liveByTicker[r.ticker]=r});
+   const CLASS_FIELDS=["industry_name","industry_fine_en","industry_fine_ja","gics_industry","gics_sub_industry","sector_name"];
+   base.forEach(function(r){
+    const live=liveByTicker[r.ticker];
+    if(!live)return;
+    CLASS_FIELDS.forEach(function(f){if((r[f]===null||r[f]===undefined||r[f]==="")&&live[f])r[f]=live[f]});
+   });
    asofNote=target+"時点のスナップショットを表示中";
    applyBands(date);AsofDate.setEffective("screener",target);currentPage=0;render();
   }
