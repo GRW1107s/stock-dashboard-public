@@ -251,6 +251,7 @@ function screenCond(r,id,rsMin){
  if(id==="tt6")return finite(r.low52_rise_pct)&&r.low52_rise_pct>=30;
  if(id==="tt7")return finite(r.high52_distance_pct)&&r.high52_distance_pct<=25;
  if(id==="tt8")return finite(r.rs_universe_pct)&&r.rs_universe_pct>=rsMin;
+ if(id==="roe17")return finite(r.roe_pct)&&r.roe_pct>=17;
  if(id==="sector")return consistentSectorLeaders.has(r.sector);
  return true;
 }

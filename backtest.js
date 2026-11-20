@@ -16,7 +16,7 @@
     vol15: "出来高が20日平均の1.5倍以上",
     eps25: "EPS増加率（前年同期比）が25%以上",
     roe17: "ROEが17%以上",
-    rsiGe: "RSI（14日）がしきい値以上",
+    rsiGe: "RSI（14日）がしきい値以下",
     sector: "所属セクターが上位を維持",
     tt1: "株価が150日・200日移動平均線より上",
     tt2: "150日MAが200日MAより上",
@@ -34,7 +34,7 @@
     rs70: "RS指数が70以下に低下",
     high25: "52週高値から25%以上下落",
     dd3: "出来高を伴う下落日（DD）が3日出る",
-    rsiLe: "RSI（14日）がしきい値以下"
+    rsiLe: "RSI（14日）がしきい値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 };
   var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1 };
@@ -124,7 +124,7 @@
           var hi = extreme(highs, i, 252, true);
           if (hi == null || !(c >= hi * 0.75)) return false;
         } else if (id === "rsiGe") {
-          if (cfg.rsiBuy == null || rsi[i] == null || !(rsi[i] >= cfg.rsiBuy)) return false;
+          if (cfg.rsiBuy == null || rsi[i] == null || !(rsi[i] <= cfg.rsiBuy)) return false;
         }
       }
       return ddOk(i);
@@ -139,7 +139,7 @@
           var hi2 = extreme(highs, i, 252, true);
           if (hi2 != null && c <= hi2 * 0.75) return id;
         }
-        if (id === "rsiLe" && cfg.rsiSell != null && rsi[i] != null && rsi[i] <= cfg.rsiSell) return id;
+        if (id === "rsiLe" && cfg.rsiSell != null && rsi[i] != null && rsi[i] >= cfg.rsiSell) return id;
         if (id === "dd3") {
           var cnt = 0;
           for (var k = pos.execIdx + 1; k <= i; k++) {
@@ -384,13 +384,13 @@
 
     var rsiBuyVal = null, rsiSellVal = null;
     function condLabel(group, id) {
-      if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "しきい値" : rsiBuyVal) + "以上";
-      if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "しきい値" : rsiSellVal) + "以下";
+      if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "しきい値" : rsiBuyVal) + "以下";
+      if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "しきい値" : rsiSellVal) + "以上";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
     function readRsi(buyAll, sellAll) {
-      if (buyAll.includes("rsiGe")) { var v = numOf("rsiBuy"); rsiBuyVal = isFinite(v) ? v : 70; } else rsiBuyVal = null;
-      if (sellAll.includes("rsiLe")) { var w = numOf("rsiSell"); rsiSellVal = isFinite(w) ? w : 30; } else rsiSellVal = null;
+      if (buyAll.includes("rsiGe")) { var v = numOf("rsiBuy"); rsiBuyVal = isFinite(v) ? v : 30; } else rsiBuyVal = null;
+      if (sellAll.includes("rsiLe")) { var w = numOf("rsiSell"); rsiSellVal = isFinite(w) ? w : 70; } else rsiSellVal = null;
     }
 
     var screenRunBtn = document.getElementById("bt-screen-run");
