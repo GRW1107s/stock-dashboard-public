@@ -97,7 +97,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261120tabs" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./sector-column-filter.js?v=20261119qoq" defer></script><script src="./sector-screener.js?v=20261119qoq" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261120usbt" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./sector-column-filter.js?v=20261119qoq" defer></script><script src="./sector-screener.js?v=20261119qoq" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html" aria-current="page">日本株</a><a href="./sectors.html">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>日本セクター概況｜TOPIX-17</h1><p class="sub">国内17業種の連動ETF（1617〜1633）で見る騰落率・出来高増減率・簡易判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はTOPIX-17連動ETFとTOPIX連動ETF（1306）の市場価格騰落率の差（％ポイント）。判定はETF自身の取引量に基づく独自の簡易指標で、業種全体への資金流入を示すものではありません。出来高が少ないETFでは値動きと判定が不安定になり得ます。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
@@ -169,6 +169,10 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-stock-row{cursor:pointer}
 .bt-stock-row:hover{background:#eef4fc}
 .bt-stock-row.bt-stock-sel{background:#dbeafe}
+.bt-index-row{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:10px 0 2px;font-size:13.5px}
+.bt-index-cap{font-weight:600;color:#475569}
+.bt-index-item{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+.bt-index-item input{width:15px;height:15px;accent-color:#2563eb}
 .bt-roll-total{font-weight:700;background:#f6f9fc}
 .bt-roll-detail-title{margin:14px 0 6px;font-size:15px}
 .bt-run{border:1px solid #b7c8db;background:#e8eefc;color:#5b6b82;border-radius:8px;padding:9px 18px;font-size:14px;cursor:not-allowed}
@@ -190,6 +194,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日として、その日時点でスクリーニング条件を満たす銘柄を対象にテストします。銘柄コードは使いません。</span>
 <button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
 </div>
+<div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="nikkei">日経225</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="prime">東証プライム</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="standard">東証スタンダード</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="growth">東証グロース</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1321">日経225連動（1321）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1306">TOPIX連動（1306）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
 <div class="bt-grid">
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
@@ -238,6 +243,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   if(!panel)return;
   const KEY='stock-dashboard-backtest-v1';
   const boxes=Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt]'));
+  const indexBoxes=Array.from(panel.querySelectorAll('input[data-bt-index]'));
+  const etfBoxes=Array.from(panel.querySelectorAll('input[data-bt-etf]'));
   const nums=Array.from(panel.querySelectorAll('[data-bt-num]'));
   const summary=document.getElementById('bt-summary');
   const universe=document.getElementById('bt-universe');
@@ -253,6 +260,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
                  buy:boxes.filter(b=>b.dataset.bt==='buy'&&b.checked).map(b=>b.value),
                  sell:boxes.filter(b=>b.dataset.bt==='sell'&&b.checked).map(b=>b.value),
                  market:boxes.filter(b=>b.dataset.bt==='market'&&b.checked).map(b=>b.value),
+                 indices:indexBoxes.filter(b=>b.checked).map(b=>b.value),
+                 etfs:etfBoxes.filter(b=>b.checked).map(b=>b.value),
                  nums:Object.fromEntries(nums.map(n=>[n.dataset.btNum,n.value])),
                  ttRs:ttRs?ttRs.value:'70',
                  universe:universe.value,period:period.value,
@@ -265,6 +274,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
     const saved=JSON.parse(localStorage.getItem(KEY)||'null');
     if(saved){
       boxes.forEach(b=>{let list=saved[b.dataset.bt]||[];if(b.dataset.bt==='screen'&&saved.buy)list=list.concat(saved.buy);b.checked=list.includes(b.value);});
+      if(saved.indices)indexBoxes.forEach(b=>b.checked=saved.indices.includes(b.value));
+      if(saved.etfs)etfBoxes.forEach(b=>b.checked=saved.etfs.includes(b.value));
       nums.forEach(n=>{if(saved.nums&&saved.nums[n.dataset.btNum]!==undefined)n.value=saved.nums[n.dataset.btNum];});
       if(saved.ttRs&&ttRs)ttRs.value=saved.ttRs;
       if(saved.universe)universe.value=saved.universe;
@@ -277,6 +288,8 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
     }
   }catch(e){}
   boxes.forEach(b=>b.addEventListener('change',save));
+  indexBoxes.forEach(b=>b.addEventListener('change',save));
+  etfBoxes.forEach(b=>b.addEventListener('change',save));
   nums.forEach(n=>{
     n.addEventListener('click',e=>e.stopPropagation());
     n.addEventListener('change',save);
@@ -1050,5 +1063,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261120rsi" defer></script>
+<script src="./backtest.js?v=20261120us" defer></script>
 </body></html>

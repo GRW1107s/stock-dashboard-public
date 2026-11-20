@@ -1,7 +1,8 @@
-// Backtest execution for jp-sectors.html.
+// Backtest execution for jp-sectors.html and sectors.html (US).
 //
 // Reads the condition state from the backtest panel, loads the stored
-// daily OHLCV (ohlcv/jp/<code>-T.json, written by the data pipeline) and
+// daily OHLCV (ohlcv/jp/<code>-T.json or ohlcv/us/<ticker>.json,
+// written by the data pipeline) and
 // simulates: buy when every checked (and evaluable) buy condition plus
 // the market DD condition holds, sell when any checked sell condition
 // holds. Signals are judged on the close and executed at the next
@@ -212,6 +213,17 @@
   function init() {
     var panel = document.getElementById("backtest-panel");
     if (!panel) return;
+    var MARKET = panel.getAttribute("data-bt-market") || "jp";
+    function ohlcvUrl(code) {
+      return MARKET === "us" ? "ohlcv/us/" + code + ".json" : "ohlcv/jp/" + code + "-T.json";
+    }
+    function buildNames(leaders) {
+      var names = {};
+      ((leaders && leaders[MARKET]) || []).forEach(function (r) {
+        if (r.ticker) names[MARKET === "us" ? String(r.ticker) : String(r.ticker).replace(/\.T$/, "")] = r.name || "";
+      });
+      return names;
+    }
     var runBtn = document.getElementById("bt-run");
     var results = document.getElementById("bt-results");
     if (!runBtn || !results) return;
@@ -247,13 +259,74 @@
       var map = new Map();
       var jobs = years.map(function (y) {
         return loadJson("history-" + y + ".json").then(function (h) {
-          (h.tse_rows || []).forEach(function (row) {
-            var prime = row && row.prime;
-            if (prime && prime.dd_count != null) map.set(row.date, prime.dd_count);
-          });
+          if (MARKET === "us") {
+            (h.rows || []).forEach(function (row) {
+              var sp = row && row.sp500;
+              if (sp && sp.dd_count != null) map.set(row.date, sp.dd_count);
+            });
+          } else {
+            (h.tse_rows || []).forEach(function (row) {
+              var prime = row && row.prime;
+              if (prime && prime.dd_count != null) map.set(row.date, prime.dd_count);
+            });
+          }
         }).catch(function () {});
       });
       return Promise.all(jobs).then(function () { return map; });
+    }
+
+    var INDEX_LABELS = { nikkei: "日経225", prime: "東証プライム", standard: "東証スタンダード", growth: "東証グロース" };
+    var ETF_NAMES = { "1321": "NEXT FUNDS 日経225連動型上場投信", "1306": "NEXT FUNDS TOPIX連動型上場投信" };
+
+    // Index targets are judged on closes only: history-<year>.json holds
+    // daily index closes (and a volume proxy), so rows are close-filled.
+    function loadIndexEntries(keys, years, cfgBase, fromVal, toVal, periodYears) {
+      var jobs = years.map(function (y) {
+        return loadJson("history-" + y + ".json").catch(function () { return null; });
+      });
+      return Promise.all(jobs).then(function (files) {
+        var byKey = {};
+        keys.forEach(function (k) { byKey[k] = new Map(); });
+        files.forEach(function (h) {
+          if (!h) return;
+          (h.tse_rows || []).forEach(function (row) {
+            keys.forEach(function (k) {
+              var cell = row[k];
+              if (cell && cell.close != null) {
+                var vol = cell.volume_value > 0 ? cell.volume_value : (cell.shares_10000 || 0);
+                byKey[k].set(row.date, [row.date, cell.close, cell.close, cell.close, cell.close, vol]);
+              }
+            });
+          });
+        });
+        var out = [];
+        keys.forEach(function (k) {
+          var rows = Array.from(byKey[k].values()).sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+          var title = esc(INDEX_LABELS[k] || k) + "（指数）";
+          if (!rows.length) { out.push({ title: title, out: null, noData: "指数データがありません。" }); return; }
+          var lastDate = rows[rows.length - 1][0];
+          var startDate = fromVal;
+          if (!startDate) {
+            var d = new Date(lastDate + "T00:00:00");
+            d.setFullYear(d.getFullYear() - periodYears);
+            startDate = d.toISOString().slice(0, 10);
+          }
+          var endDate = toVal || lastDate;
+          var fromIdx = rows.findIndex(function (r) { return r[0] >= startDate; });
+          var toIdx = -1;
+          for (var i = rows.length - 1; i >= 0; i--) { if (rows[i][0] <= endDate) { toIdx = i; break; } }
+          if (fromIdx < 0 || toIdx < 0 || toIdx <= fromIdx) {
+            out.push({ title: title, out: null, noData: "指定期間のデータがありません（保有データ：" + rows[0][0] + " 〜 " + lastDate + "）。" });
+            return;
+          }
+          var res = runBacktest(rows, {
+            fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell,
+            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal
+          });
+          out.push({ title: title, out: res });
+        });
+        return out;
+      });
     }
 
     // One stock's trade list, shown under the summary table.
@@ -371,12 +444,23 @@
       }
       var horizon = parseInt((document.getElementById("bt-roll-horizon") || {}).value || "21", 10);
       var universe = (document.getElementById("bt-universe") || {}).value || "all";
-      var markets = universe === "prime" ? ["プライム"] : universe === "standard" ? ["スタンダード"] : universe === "growth" ? ["グロース"] : null;
+      var markets = MARKET === "us" ? null : universe === "prime" ? ["プライム"] : universe === "standard" ? ["スタンダード"] : universe === "growth" ? ["グロース"] : null;
+      var spSet = null;
+      var preRoll = Promise.resolve();
+      if (MARKET === "us" && universe === "sp500") {
+        preRoll = loadJson("sector-leaders.json").then(function (leaders) {
+          var set = new Set();
+          ((leaders && leaders.us) || []).forEach(function (r) {
+            if (r.universe_group === "S&P500" && r.ticker) set.add(String(r.ticker));
+          });
+          spSet = set;
+        }).catch(function () {});
+      }
 
       runBtn.disabled = true;
       results.innerHTML = '<p class="bt-res-note">実行中…</p>';
 
-      window.leaderScreenerArchiveDates().then(function (datesDesc) {
+      preRoll.then(function () { return window.leaderScreenerArchiveDates(); }).then(function (datesDesc) {
         var startDates = datesDesc.filter(function (d) { return d >= fromVal && d <= toVal; }).sort();
         if (!startDates.length) {
           throw { rollMsg: "指定範囲にスナップショットのある日がありません" + (datesDesc.length ? "（保存範囲：" + datesDesc[datesDesc.length - 1] + " 〜 " + datesDesc[0] + "）" : "") + "。" };
@@ -387,7 +471,11 @@
           chain = chain.then(function () {
             results.innerHTML = '<p class="bt-res-note">実行中… ' + esc(d) + ' 時点のスクリーニング判定</p>';
             return window.leaderScreenerEvalScreenAt(d, screenIds, rsMin, markets).then(function (res) {
-              if (res) perDate.push({ date: res.date, codes: res.codes.slice(0, 200), truncated: res.codes.length > 200 });
+              if (res) {
+                var codes = res.codes;
+                if (spSet) codes = codes.filter(function (c) { return spSet.has(c); });
+                perDate.push({ date: res.date, codes: codes.slice(0, 200), truncated: codes.length > 200 });
+              }
             });
           });
         });
@@ -404,16 +492,13 @@
           return null;
         }
         return loadJson("sector-leaders.json").catch(function () { return null; }).then(function (leaders) {
-          var names = {};
-          ((leaders && leaders.jp) || []).forEach(function (r) {
-            if (r.ticker) names[String(r.ticker).replace(/\.T$/, "")] = r.name || "";
-          });
+          var names = buildNames(leaders);
           var store = {}, done = 0;
           var queue = union.slice();
           function worker() {
             var code = queue.shift();
             if (!code) return Promise.resolve();
-            return loadJson("ohlcv/jp/" + code + "-T.json").then(function (data) {
+            return loadJson(ohlcvUrl(code)).then(function (data) {
               store[code] = (data && data.rows) || null;
             }).catch(function () { store[code] = null; }).then(function () {
               done++;
@@ -513,10 +598,15 @@
       if (((document.getElementById("bt-mode") || {}).value || "normal") === "rolling") { runRolling(); return; }
       var symbolsRaw = (document.getElementById("bt-symbols") || {}).value || "";
       var codes = symbolsRaw.split(/[\s,、，]+/).map(function (s) { return s.trim(); }).filter(Boolean)
-        .map(function (s) { return s.replace(/\.T$/i, ""); });
+        .map(function (s) { return MARKET === "us" ? s.toUpperCase() : s.replace(/\.T$/i, ""); });
       codes = Array.from(new Set(codes)).slice(0, 200);
-      if (!codes.length) {
-        results.innerHTML = '<p class="bt-res-note">銘柄コードを入力してから実行してください（対象セレクトだけでは実行できません）。</p>';
+      var etfCodes = Array.from(panel.querySelectorAll('input[data-bt-etf]:checked')).map(function (b) { return b.value; });
+      etfCodes.forEach(function (c) { if (!codes.includes(c)) codes.push(c); });
+      var indexKeys = Array.from(panel.querySelectorAll('input[data-bt-index]:checked')).map(function (b) { return b.value; });
+      if (!codes.length && !indexKeys.length) {
+        results.innerHTML = MARKET === "us"
+          ? '<p class="bt-res-note">ティッカーを入力してから実行してください（対象セレクトだけでは実行できません）。</p>'
+          : '<p class="bt-res-note">銘柄コードを入力するか、指数・ETFを選んでから実行してください（対象セレクトだけでは実行できません）。</p>';
         return;
       }
       var screenAll = checked("screen"), buyAll = checked("buy"), sellAll = checked("sell"), marketAll = checked("market");
@@ -546,12 +636,9 @@
       results.innerHTML = '<p class="bt-res-note">実行中…</p>';
 
       loadJson("sector-leaders.json").catch(function () { return null; }).then(function (leaders) {
-        var names = {};
-        ((leaders && leaders.jp) || []).forEach(function (r) {
-          if (r.ticker) names[String(r.ticker).replace(/\.T$/, "")] = r.name || "";
-        });
+        var names = buildNames(leaders);
         var jobs = codes.map(function (code) {
-          return loadJson("ohlcv/jp/" + code + "-T.json").then(function (data) {
+          return loadJson(ohlcvUrl(code)).then(function (data) {
             return { code: code, rows: (data && data.rows) || [] };
           }).catch(function () { return { code: code, rows: null }; });
         });
@@ -569,7 +656,8 @@
       }).then(function (ctx) {
         var entries = [];
         ctx.loaded.forEach(function (item) {
-          var title = esc(item.code) + (ctx.names[item.code] ? " " + esc(ctx.names[item.code]) : "");
+          var nm = ctx.names[item.code] || ETF_NAMES[item.code] || "";
+          var title = esc(item.code) + (nm ? " " + esc(nm) : "");
           if (!item.rows) {
             entries.push({ title: title, out: null, noData: "日足データがまだありません。自動更新で蓄積されてから実行できます。" });
             return;
@@ -604,8 +692,21 @@
         if (skipped.length) {
           notes += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
         }
-        results.innerHTML = '<div id="bt-stock-results"></div>' + notes;
-        renderStockResults(document.getElementById("bt-stock-results"), entries);
+        var finish = function () {
+          results.innerHTML = '<div id="bt-stock-results"></div>' + notes;
+          renderStockResults(document.getElementById("bt-stock-results"), entries);
+        };
+        if (indexKeys.length) {
+          var endYear = toVal ? +toVal.slice(0, 4) : new Date().getFullYear();
+          var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
+          var indexYears = [];
+          for (var iy = startYear - 1; iy <= endYear; iy++) indexYears.push(iy);
+          loadIndexEntries(indexKeys, indexYears, { buy: entry, sell: sell, ddLimit: ddLimit, ddMap: ctx.ddMap }, fromVal, toVal, periodYears)
+            .then(function (ixEntries) { entries.push.apply(entries, ixEntries); finish(); })
+            .catch(function () { finish(); });
+        } else {
+          finish();
+        }
         runBtn.disabled = false;
       }).catch(function (e) {
         results.innerHTML = '<p class="bt-res-note">実行中にエラーが発生しました。銘柄コードと期間を確認してください。</p>';

@@ -700,6 +700,17 @@ def main():
         output["jp_risk_benchmark_error"] = str(err)[:180]
         print("JP_RISK_BENCHMARK_ERROR", err, flush=True)
     jp_ok, jp_fail = fetch_charts(selected, "jp", jp_benchmark_returns, "1306.T")
+    # Index ETFs are outside the screener universe, but the backtest panel
+    # offers them as targets; keep their daily OHLCV stored too.
+    for etf in ("1321.T", "1306.T"):
+        if etf not in (COLLECTED_OHLCV.get("jp") or {}):
+            try:
+                etf_data = obtain(etf, "jp")
+                etf_series = etf_data.pop("_ohlcv", None) if etf_data else None
+                if etf_series:
+                    COLLECTED_OHLCV["jp"][etf] = etf_series
+            except Exception as err:
+                print("OHLCV_JP_ETF_ERROR", etf, str(err)[:120], flush=True)
     # Persist the fetched daily OHLCV series (backtest foundation,
     # 365-day retention). Best-effort: never blocks the price pipeline.
     try:
