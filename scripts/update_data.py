@@ -602,6 +602,15 @@ def main():
     except Exception as exc:
         print('WARNING QQQ volume reference failed, keeping ^NDX volume:', repr(exc))
     us['nasdaq100'] = enrich_us(ndx)
+    # SOXX (semiconductor ETF): judged like the other US indices and
+    # shown in both overview tabs (GRW, 2026-11-20). Best-effort: a
+    # failed fetch leaves empty cells rather than blocking the update.
+    try:
+        us['soxx'] = enrich_us(us_prices('SOXX'))
+        print(f"SOXX: {len(us['soxx'])} sessions")
+    except Exception as exc:
+        us['soxx'] = {}
+        print('WARNING SOXX ingestion failed:', repr(exc))
     # VIX: level + daily change only (no judge / DD tracking).
     vix = {}
     try:
@@ -719,6 +728,7 @@ def main():
         rows_all.append({'date': day, 'japan_date': japan,
                          'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
                          'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
+                         'soxx': us['soxx'].get(day),
                          'vix': vix.get(day), 'tnx': tnx.get(day)})
     rows = rows_all[:PUBLISH_SESSIONS]
     if len(rows) < 25:

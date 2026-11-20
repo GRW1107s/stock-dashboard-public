@@ -116,11 +116,11 @@
 const specs=[['sp500','S&P500'],['nasdaq','NASDAQ総合'],['nasdaq100','NASDAQ100'],['dow','ダウ'],['nikkei','日経225'],['prime','東証P'],['standard','東証S'],['growth','東証G']];
 const JP_KEYS=new Set(['nikkei','prime','standard','growth']);
 const NO_VOL=new Set(['vix','nikkei_vi','tnx']);
-const IDX_LABEL={sp500:'S&P500',nasdaq:'NASDAQ総合',nasdaq100:'NASDAQ100',dow:'ダウ',vix:'VIX',tnx:'米国10年債',nikkei:'日経225',prime:'東証P',standard:'東証S',growth:'東証G',nikkei_vi:'日経VI'};
-const TV_LINKS={sp500:['https://jp.tradingview.com/chart/?symbol=AMEX%3ASPY','SPY'],nasdaq:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3AIXIC','NASDAQ総合'],nasdaq100:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3AQQQ','QQQ']};
+const IDX_LABEL={sp500:'S&P500',nasdaq:'NASDAQ総合',nasdaq100:'NASDAQ100',dow:'ダウ',soxx:'SOXX',vix:'VIX',tnx:'米国10年債',nikkei:'日経225',prime:'東証P',standard:'東証S',growth:'東証G',nikkei_vi:'日経VI'};
+const TV_LINKS={sp500:['https://jp.tradingview.com/chart/?symbol=AMEX%3ASPY','SPY'],nasdaq:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3AIXIC','NASDAQ総合'],nasdaq100:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3AQQQ','QQQ'],soxx:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3ASOXX','SOXX']};
 function idxHeadLabel(k){const tv=TV_LINKS[k];return tv?'<a class="tv-link" href="'+tv[0]+'" target="_blank" rel="noopener" draggable="false" title="TradingView（'+tv[1]+'）">'+IDX_LABEL[k]+'</a>':IDX_LABEL[k];}
-const TAB_COLS={jp:['date-us','nasdaq100','sp500','nasdaq','date-jp','nikkei','prime','standard','growth','nikkei_vi'],us:['date-us','nasdaq100','sp500','nasdaq','dow','vix','tnx']};
-const DEFAULT_ORDER={jp:['nasdaq100','sp500','nasdaq','nikkei','prime','standard','growth','nikkei_vi'],us:['nasdaq100','sp500','nasdaq','dow','vix','tnx']};
+const TAB_COLS={jp:['date-us','nasdaq100','sp500','nasdaq','soxx','date-jp','nikkei','prime','standard','growth','nikkei_vi'],us:['date-us','nasdaq100','sp500','nasdaq','dow','soxx','vix','tnx']};
+const DEFAULT_ORDER={jp:['nasdaq100','sp500','nasdaq','soxx','nikkei','prime','standard','growth','nikkei_vi'],us:['nasdaq100','sp500','nasdaq','dow','soxx','vix','tnx']};
 let colOrder={jp:DEFAULT_ORDER.jp.slice(),us:DEFAULT_ORDER.us.slice()};
 try{const s=JSON.parse(localStorage.getItem('stock-dashboard-market-order-v1')||'null');if(s)for(const m of ['jp','us']){if(Array.isArray(s[m])){const valid=s[m].filter(k=>DEFAULT_ORDER[m].includes(k));colOrder[m]=valid.concat(DEFAULT_ORDER[m].filter(k=>!valid.includes(k)));}}}catch(e){}
 function saveOrder(){try{localStorage.setItem('stock-dashboard-market-order-v1',JSON.stringify(colOrder))}catch(e){}}
@@ -145,6 +145,8 @@ try{
 }catch(e){}
 function saveCols(){try{localStorage.setItem('overviewVisibleCols-v2',JSON.stringify({jp:[...visibleCols.jp],us:[...visibleCols.us]}))}catch(e){}}
 try{if(!localStorage.getItem('overviewTnxAdded-v1')){visibleCols.us.add('tnx');localStorage.setItem('overviewTnxAdded-v1','1');saveCols();}}catch(e){}
+try{if(!localStorage.getItem('overviewSoxxAdded-v1')){visibleCols.jp.add('soxx');visibleCols.us.add('soxx');localStorage.setItem('overviewSoxxAdded-v1','1');saveCols();}}catch(e){}
+try{if(!localStorage.getItem('overviewSoxxOrder-v1')){for(const m of ['jp','us']){const anchor=m==='jp'?'nasdaq':'dow';const arr=colOrder[m].filter(k=>k!=='soxx');const i=arr.indexOf(anchor);arr.splice(i<0?arr.length:i+1,0,'soxx');colOrder[m]=arr;}saveOrder();localStorage.setItem('overviewSoxxOrder-v1','1');}}catch(e){}
 function tabIdx(m){return TAB_COLS[m].filter(x=>x!=='date-us'&&x!=='date-jp')}
 function visibleTabIdx(m){return tabIdx(m).filter(k=>visibleCols[m].has(k))}
 
@@ -197,7 +199,7 @@ function renderSummary(){
   };
   document.getElementById('histories-us').innerHTML=
     dateLine('米国日付','date')+
-    orderPairs('us',specs.slice(0,4)).filter(([k])=>visibleCols.us.has(k)).map(judgmentLine).join('');
+    orderPairs('us',specs.slice(0,4).concat([['soxx','SOXX']])).filter(([k])=>visibleCols.us.has(k)).map(judgmentLine).join('');
   const jpAll=[...tseByDate.values()].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
   const jpPad=jpAll.concat(Array.from({length:25-jpAll.length},()=>null));
   const jpLine=([key,name])=>{
@@ -211,7 +213,7 @@ function renderSummary(){
   };
   document.getElementById('histories-jp').innerHTML=
     dateLine('米国日付','date')+
-    orderPairs('jp',['nasdaq100','sp500','nasdaq'].map(k=>[k,IDX_LABEL[k]])).filter(([k])=>visibleCols.jp.has(k)).map(judgmentLine).join('')+
+    orderPairs('jp',['nasdaq100','sp500','nasdaq','soxx'].map(k=>[k,IDX_LABEL[k]])).filter(([k])=>visibleCols.jp.has(k)).map(judgmentLine).join('')+
     historyLine('日本日付',jpPad.map(t=>t?.date||null),'history-divider')+
     orderPairs('jp',specs.slice(4)).filter(([k])=>visibleCols.jp.has(k)).map(jpLine).join('');
 }
