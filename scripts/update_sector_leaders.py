@@ -128,9 +128,10 @@ def latest_us_universe(previous_stocks):
     # GICS for the wider universe: S&P 400/600 constituents and the
     # Sub-Industry -> Industry structure, both from Wikipedia tables.
     # Best-effort; on failure the Nasdaq labels below remain in use.
-    gics_extra, sub_to_industry = {}, {}
+    gics_extra, sub_to_industry, nasdaq_crosswalk = {}, {}, {}
     try:
-        from gics_us import load_us_gics
+        from gics_us import load_us_gics, NASDAQ_GICS_CROSSWALK
+        nasdaq_crosswalk = NASDAQ_GICS_CROSSWALK
         gics_extra, sub_to_industry, gics_stats = load_us_gics()
         provenance["gics_extra"] = gics_stats
         print("US_GICS_EXTRA", gics_stats, flush=True)
@@ -196,6 +197,12 @@ def latest_us_universe(previous_stocks):
                 industry_name = clean_industry(wiki["sub"])
                 industry_source = wiki["group"] + " GICS Sub-Industry"
                 gics_sub = industry_name
+            if gics_sub is None:
+                mapped = nasdaq_crosswalk.get(industry_name)
+                if mapped and sub_to_industry.get(mapped):
+                    industry_name = mapped
+                    industry_source = "Nasdaq→GICS mapping"
+                    gics_sub = mapped
             others[ticker] = {
                 "ticker": ticker, "name": name, "sector": sector,
                 "sector_name": sector_name, "gics_sector": gics,
