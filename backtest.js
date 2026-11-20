@@ -193,6 +193,20 @@
       if (peak > 0 && 1 - e / peak > maxDd) maxDd = 1 - e / peak;
     });
     var finalEq = equity.length ? equity[equity.length - 1] : 1;
+    function sharpeOf(rets) {
+      if (rets.length < 2) return null;
+      var mean = rets.reduce(function (a, b) { return a + b; }, 0) / rets.length;
+      var sd = Math.sqrt(rets.reduce(function (a, r) { return a + (r - mean) * (r - mean); }, 0) / (rets.length - 1));
+      return sd > 0 ? mean / sd * Math.sqrt(252) : null;
+    }
+    var eqRets = [];
+    for (var ei = 1; ei < equity.length; ei++) if (equity[ei - 1] > 0) eqRets.push(equity[ei] / equity[ei - 1] - 1);
+    var bhRets = [], bhPeak = 0, bhMaxDd = 0;
+    for (var bi = from; bi <= to; bi++) {
+      if (closes[bi] > bhPeak) bhPeak = closes[bi];
+      if (bhPeak > 0 && 1 - closes[bi] / bhPeak > bhMaxDd) bhMaxDd = 1 - closes[bi] / bhPeak;
+      if (bi > from && closes[bi - 1] > 0) bhRets.push(closes[bi] / closes[bi - 1] - 1);
+    }
     return {
       trades: trades,
       perf: {
@@ -203,6 +217,9 @@
         avgRet: closed.length ? closed.reduce(function (s, t) { return s + t.ret; }, 0) / closed.length : null,
         avgHold: closed.length ? closed.reduce(function (s, t) { return s + t.hold; }, 0) / closed.length : null,
         maxDd: maxDd,
+        bhMaxDd: bhMaxDd,
+        sharpe: sharpeOf(eqRets),
+        bhSharpe: sharpeOf(bhRets),
         hasOpen: !!pos
       },
       range: { from: dates[from], to: dates[to], sessions: to - from + 1 }
@@ -484,25 +501,78 @@
       return html;
     }
 
-    // Summary table with one row per stock and the existing metrics as
-    // columns; clicking a row shows that stock's trade list underneath.
+    function sharpeTxt(v) { return v == null || !isFinite(v) ? "—" : v.toFixed(2); }
+
+    // Draggable column widths for result tables, saved per table kind.
+    function makeResizable(table, key) {
+      if (!table) return;
+      var ths = Array.from(table.querySelectorAll("thead th"));
+      if (!ths.length) return;
+      var cg = document.createElement("colgroup");
+      ths.forEach(function () { cg.appendChild(document.createElement("col")); });
+      table.insertBefore(cg, table.firstChild);
+      var cols = Array.from(cg.children);
+      function apply(widths) {
+        if (!widths) return;
+        table.style.tableLayout = "fixed";
+        var total = 0;
+        cols.forEach(function (c, i) { var w = widths[i]; if (w) { c.style.width = w + "px"; total += w; } });
+        if (total) table.style.width = total + "px";
+      }
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { saved = null; }
+      if (Array.isArray(saved) && saved.length === ths.length) apply(saved);
+      ths.forEach(function (th, i) {
+        th.style.position = "relative";
+        var h = document.createElement("span");
+        h.className = "bt-col-resizer";
+        h.title = "ドラッグで列幅を変更（ダブルクリックでリセット）";
+        th.appendChild(h);
+        h.addEventListener("click", function (e) { e.stopPropagation(); });
+        h.addEventListener("dblclick", function (e) {
+          e.stopPropagation();
+          try { localStorage.removeItem(key); } catch (err) {}
+          table.style.tableLayout = ""; table.style.width = "";
+          cols.forEach(function (c) { c.style.width = ""; });
+        });
+        h.addEventListener("pointerdown", function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var widths = cols.map(function (c, j) { return c.style.width ? parseInt(c.style.width, 10) : ths[j].offsetWidth; });
+          apply(widths);
+          var startX = e.clientX, startW = widths[i];
+          function move(ev) { widths[i] = Math.max(36, startW + ev.clientX - startX); apply(widths); }
+          function up() {
+            document.removeEventListener("pointermove", move);
+            document.removeEventListener("pointerup", up);
+            try { localStorage.setItem(key, JSON.stringify(widths)); } catch (err) {}
+          }
+          document.addEventListener("pointermove", move);
+          document.addEventListener("pointerup", up);
+        });
+      });
+    }
+
+    // Summary table with two rows per stock (the strategy and buy & hold
+    // as separate rows); clicking a row shows that stock's trade list underneath.
     // entries: [{title, out|null, noData|null}] (title is pre-escaped).
     function renderStockResults(container, entries) {
-      var html = '<table class="bt-res-table bt-stock-table"><thead><tr><th>銘柄</th><th>戦略リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>平均保有</th><th>期間</th></tr></thead><tbody>';
+      var html = '<table class="bt-res-table bt-stock-table"><thead><tr><th>銘柄</th><th>区分</th><th>リターン</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>シャープレシオ</th><th>平均保有</th><th>期間</th></tr></thead><tbody>';
       entries.forEach(function (e, idx) {
         if (!e.out) {
-          html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + '</td><td colspan="8" style="text-align:left">' + esc(e.noData || "") + "</td></tr>";
+          html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + '</td><td colspan="9" style="text-align:left">' + esc(e.noData || "") + "</td></tr>";
           return;
         }
         var p = e.out.perf;
-        html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + "</td><td>" + pct(p.totalReturn) + "</td><td>" + pct(p.bhReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
-          (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" +
-          (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + "</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
+        html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td rowspan="2" style="text-align:left">' + e.title + "</td><td>戦略</td><td>" + pct(p.totalReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
+          (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" + sharpeTxt(p.sharpe) + "</td><td>" +
+          (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + '</td><td rowspan="2">' + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
+        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>—</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>—</td></tr>";
       });
       html += "</tbody></table>";
       html += '<p class="bt-res-note">銘柄の行を選ぶと、その銘柄の売買履歴を表示します。</p>';
       html += '<div class="bt-stock-detail"></div>';
       container.innerHTML = html;
+      makeResizable(container.querySelector(".bt-stock-table"), "stock-dashboard-bt-widths-stock-" + MARKET + "-v1");
       var detail = container.querySelector(".bt-stock-detail");
       var rowsEls = Array.from(container.querySelectorAll(".bt-stock-row"));
       function select(idx) {
@@ -703,7 +773,7 @@
         if (!ctx) return;
         var summaries = [], details = {};
         ctx.perDate.forEach(function (pd) {
-          var entries = [], n = 0, sumRet = 0, sumBh = 0, rets = [], closedTrades = 0, winTrades = 0;
+          var entries = [], n = 0, sumRet = 0, sumBh = 0, rets = [], bhRets = [], closedTrades = 0, winTrades = 0, sumSharpe = 0, nSharpe = 0, sumBhSharpe = 0, nBhSharpe = 0;
           pd.codes.forEach(function (code) {
             var rows = ctx.store[code];
             if (!rows || !rows.length) return;
@@ -717,29 +787,40 @@
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
             entries.push({ title: title, out: out });
-            n++; sumRet += out.perf.totalReturn; sumBh += out.perf.bhReturn; rets.push(out.perf.totalReturn);
+            n++; sumRet += out.perf.totalReturn; sumBh += out.perf.bhReturn; rets.push(out.perf.totalReturn); bhRets.push(out.perf.bhReturn);
+            if (out.perf.sharpe != null) { sumSharpe += out.perf.sharpe; nSharpe++; }
+            if (out.perf.bhSharpe != null) { sumBhSharpe += out.perf.bhSharpe; nBhSharpe++; }
             out.trades.forEach(function (t) { if (!t.open) { closedTrades++; if (t.ret > 0) winTrades++; } });
           });
           rets.sort(function (a, b) { return a - b; });
           var median = !rets.length ? null : (rets.length % 2 ? rets[(rets.length - 1) / 2] : (rets[rets.length / 2 - 1] + rets[rets.length / 2]) / 2);
+          bhRets.sort(function (a, b) { return a - b; });
+          var bhMedian = !bhRets.length ? null : (bhRets.length % 2 ? bhRets[(bhRets.length - 1) / 2] : (bhRets[bhRets.length / 2 - 1] + bhRets[bhRets.length / 2]) / 2);
           summaries.push({
             date: pd.date, count: n, avg: n ? sumRet / n : null, median: median,
-            bhAvg: n ? sumBh / n : null, trades: closedTrades,
+            bhAvg: n ? sumBh / n : null, bhMedian: bhMedian, trades: closedTrades,
+            sharpeAvg: nSharpe ? sumSharpe / nSharpe : null, bhSharpeAvg: nBhSharpe ? sumBhSharpe / nBhSharpe : null,
             winRate: closedTrades ? winTrades / closedTrades : null, truncated: pd.truncated
           });
           details[pd.date] = entries;
         });
         var valid = summaries.filter(function (s) { return s.count > 0; });
-        var html = '<table class="bt-res-table bt-roll-table"><thead><tr><th>開始日</th><th>対象銘柄数</th><th>平均リターン</th><th>中央値</th><th>買い持ち平均</th><th>取引回数</th><th>勝率</th></tr></thead><tbody>';
+        var html = '<table class="bt-res-table bt-roll-table"><thead><tr><th>開始日</th><th>区分</th><th>対象銘柄数</th><th>平均リターン</th><th>中央値</th><th>取引回数</th><th>勝率</th><th>シャープレシオ</th></tr></thead><tbody>';
         if (valid.length) {
           var totAvg = valid.reduce(function (s, x) { return s + x.avg; }, 0) / valid.length;
           var totBh = valid.reduce(function (s, x) { return s + x.bhAvg; }, 0) / valid.length;
           var totCount = valid.reduce(function (s, x) { return s + x.count; }, 0);
           var totTrades = valid.reduce(function (s, x) { return s + x.trades; }, 0);
-          html += '<tr class="bt-roll-total"><td>全開始日の平均</td><td>' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + pct(totBh) + '</td><td>' + totTrades + '</td><td>—</td></tr>';
+          var shVals = valid.map(function (x) { return x.sharpeAvg; }).filter(function (v) { return v != null; });
+          var bhShVals = valid.map(function (x) { return x.bhSharpeAvg; }).filter(function (v) { return v != null; });
+          var totSharpe = shVals.length ? shVals.reduce(function (a, b) { return a + b; }, 0) / shVals.length : null;
+          var totBhSharpe = bhShVals.length ? bhShVals.reduce(function (a, b) { return a + b; }, 0) / bhShVals.length : null;
+          html += '<tr class="bt-roll-total"><td rowspan="2">全開始日の平均</td><td>戦略</td><td rowspan="2">' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + sharpeTxt(totSharpe) + '</td></tr>';
+          html += '<tr class="bt-roll-total bt-bh-row"><td>買い持ち</td><td>' + pct(totBh) + '</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(totBhSharpe) + '</td></tr>';
         }
         summaries.forEach(function (s) {
-          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + pct(s.bhAvg) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td></tr>';
+          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td rowspan="2">' + s.date + '</td><td>戦略</td><td rowspan="2">' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td>買い持ち</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>—</td><td>—</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td></tr>';
         });
         html += '</tbody></table>';
         html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。' + (fixedCodes ? "対象銘柄は入力した銘柄です（スクリーニング条件は使っていません）。" : "対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。") + '</p>';
@@ -748,11 +829,12 @@
           .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id); }))
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
         if (ddLimit != null) applied.push("市場：DDが" + ddLimit + "以下");
-        html += '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ")) + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。" + (buy.length ? "" : "買い条件が未選択のため、対象銘柄は各開始日の翌営業日に買います。") + "</p>";
+        html += '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ")) + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。" + (buy.length ? "" : "買い条件が未選択のため、対象銘柄は各開始日の翌営業日に買います。") + "</p>";
         if (skipped.length) {
           html += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
         }
         results.innerHTML = html;
+        makeResizable(results.querySelector(".bt-roll-table"), "stock-dashboard-bt-widths-roll-" + MARKET + "-v1");
         var detail = document.getElementById("bt-roll-detail");
         results.querySelectorAll(".bt-roll-row").forEach(function (tr) {
           tr.addEventListener("click", function () {
@@ -865,7 +947,7 @@
           .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id); }))
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
         if (ddLimit != null) applied.push("市場：DDが" + ddLimit + "以下");
-        var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。</p>";
+        var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。</p>";
         if (skipped.length) {
           notes += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
         }
