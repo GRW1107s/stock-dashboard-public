@@ -228,6 +228,56 @@
     var results = document.getElementById("bt-results");
     if (!runBtn || !results) return;
 
+    // Collapsible blocks and groups: +/- toggles, state persisted per market.
+    (function setupCollapse() {
+      var KEY = "stock-dashboard-bt-collapse-" + MARKET;
+      var saved = {};
+      try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { saved = {}; }
+      function persist() { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} }
+      function makeBtn(closed) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "bt-collapse-btn";
+        b.textContent = closed ? "＋" : "−";
+        b.setAttribute("aria-label", "開閉");
+        return b;
+      }
+      panel.querySelectorAll(".bt-block").forEach(function (block) {
+        var head = block.querySelector(".bt-block-head");
+        if (!head) return;
+        var kind = block.classList.contains("screen") ? "screen" : block.classList.contains("buy") ? "buy" : "sell";
+        var btn = makeBtn(!!saved["b:" + kind]);
+        function apply() {
+          var closed = !!saved["b:" + kind];
+          btn.textContent = closed ? "＋" : "−";
+          block.classList.toggle("bt-closed", closed);
+        }
+        btn.addEventListener("click", function () { saved["b:" + kind] = !saved["b:" + kind]; persist(); apply(); });
+        head.appendChild(btn);
+        apply();
+      });
+      panel.querySelectorAll(".bt-group").forEach(function (g) {
+        var label = (g.textContent || "").replace(/すべて外す/g, "").trim();
+        if (!label) return;
+        var items = [];
+        var el = g.nextElementSibling;
+        while (el && !el.classList.contains("bt-group") && !el.classList.contains("bt-block-foot")) {
+          if (el.classList.contains("bt-item")) items.push(el);
+          el = el.nextElementSibling;
+        }
+        if (!items.length) return;
+        var btn = makeBtn(!!saved["g:" + label]);
+        function apply() {
+          var closed = !!saved["g:" + label];
+          btn.textContent = closed ? "＋" : "−";
+          items.forEach(function (it) { it.style.display = closed ? "none" : ""; });
+        }
+        btn.addEventListener("click", function () { saved["g:" + label] = !saved["g:" + label]; persist(); apply(); });
+        g.appendChild(btn);
+        apply();
+      });
+    })();
+
     function checked(group) {
       return Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt="' + group + '"]:checked')).map(function (b) { return b.value; });
     }

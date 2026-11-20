@@ -147,6 +147,11 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .bt-block-head h3{margin:0;font-size:15px}
 .bt-clear{border:1px solid #d7e0ea;background:#f8fafc;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
+.bt-block.bt-closed>*:not(.bt-block-head){display:none!important}
+.bt-block-head h3{margin-right:auto}
+.bt-collapse-btn{margin-left:8px;width:22px;height:22px;line-height:1;border:1px solid #cbd5e1;background:#fff;border-radius:6px;font-size:14px;cursor:pointer;color:#334155;padding:0;flex:none}
+.bt-group .bt-collapse-btn{width:18px;height:18px;font-size:12px;margin-left:6px;vertical-align:1px}
+.bt-group-row .bt-clear{margin-left:auto}
 .bt-clear:hover{background:#eef4fc}
 .bt-item{display:flex;gap:8px;align-items:flex-start;padding:6px 6px;border-radius:6px;cursor:pointer;font-size:13.5px;line-height:1.45}
 .bt-item:hover{background:#f4f8fd}
@@ -1064,5 +1069,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261120rollfix" defer></script>
+<script src="./backtest.js?v=20261120collapse" defer></script>
 </body></html>
