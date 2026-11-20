@@ -303,6 +303,68 @@
       });
     })();
 
+    // Named strategies: save / load / delete the checked condition set.
+    (function setupStrategies() {
+      var nameInput = document.getElementById("bt-strat-name");
+      var saveBtn = document.getElementById("bt-strat-save");
+      var listEl = document.getElementById("bt-strat-list");
+      if (!saveBtn || !listEl) return;
+      var KEY = "stock-dashboard-bt-strategies-" + MARKET;
+      var items = [];
+      try { items = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { items = []; }
+      if (!Array.isArray(items)) items = [];
+      function persist() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {} }
+      function collect() {
+        var st = { screen: checked("screen"), buy: checked("buy"), sell: checked("sell"), market: checked("market"), nums: {}, ttRs: "70" };
+        panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
+        var tt = document.getElementById("bt-tt-rs");
+        if (tt) st.ttRs = tt.value;
+        return st;
+      }
+      function apply(st) {
+        panel.querySelectorAll('input[type="checkbox"][data-bt]').forEach(function (b) {
+          var list = st[b.getAttribute("data-bt")] || [];
+          var on = list.indexOf(b.value) >= 0;
+          if (b.checked !== on) { b.checked = on; b.dispatchEvent(new Event("change", { bubbles: true })); }
+        });
+        panel.querySelectorAll("[data-bt-num]").forEach(function (n) {
+          var v = st.nums ? st.nums[n.getAttribute("data-bt-num")] : undefined;
+          if (v !== undefined && n.value !== String(v)) { n.value = String(v); n.dispatchEvent(new Event("change", { bubbles: true })); }
+        });
+        var tt = document.getElementById("bt-tt-rs");
+        if (tt && st.ttRs && tt.value !== String(st.ttRs)) { tt.value = String(st.ttRs); tt.dispatchEvent(new Event("change", { bubbles: true })); }
+      }
+      function render() {
+        listEl.innerHTML = "";
+        items.forEach(function (it, idx) {
+          var chip = document.createElement("span");
+          chip.className = "bt-strat-chip";
+          var cmp = document.createElement("input");
+          cmp.type = "checkbox"; cmp.checked = !!it.cmp; cmp.title = "比較用に選択";
+          cmp.addEventListener("change", function () { it.cmp = cmp.checked; persist(); });
+          var name = document.createElement("button");
+          name.type = "button"; name.className = "bt-strat-load"; name.textContent = it.name; name.title = "クリックで読み込み";
+          name.addEventListener("click", function () { apply(it.state); });
+          var del = document.createElement("button");
+          del.type = "button"; del.className = "bt-strat-del"; del.textContent = "×"; del.title = "削除";
+          del.addEventListener("click", function () { items.splice(idx, 1); persist(); render(); });
+          chip.appendChild(cmp); chip.appendChild(name); chip.appendChild(del);
+          listEl.appendChild(chip);
+        });
+      }
+      saveBtn.addEventListener("click", function () {
+        var nm = nameInput ? String(nameInput.value || "").trim() : "";
+        if (!nm) nm = "戦略" + (items.length + 1);
+        var st = collect();
+        var ex = null;
+        items.forEach(function (i) { if (i.name === nm) ex = i; });
+        if (ex) ex.state = st; else items.push({ name: nm, state: st, cmp: false });
+        persist(); render();
+        if (nameInput) nameInput.value = "";
+      });
+      render();
+    })();
+
     function checked(group) {
       return Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt="' + group + '"]:checked')).map(function (b) { return b.value; });
     }

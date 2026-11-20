@@ -176,6 +176,13 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-stock-row:hover{background:#eef4fc}
 .bt-stock-row.bt-stock-sel{background:#dbeafe}
 .bt-index-row{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:10px 0 2px;font-size:13.5px}
+.bt-strat-row{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:8px 0 2px;font-size:13.5px}
+.bt-strat-row input[type="text"]{padding:5px 8px;border:1px solid #b7c8db;border-radius:6px;font-size:13px;width:130px}
+.bt-strat-row>button{padding:5px 10px;border:1px solid #b7c8db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer}
+.bt-strat-list{display:inline-flex;flex-wrap:wrap;gap:6px}
+.bt-strat-chip{display:inline-flex;align-items:center;gap:2px;border:1px solid #b7c8db;border-radius:999px;padding:2px 6px;background:#f4f8fd}
+.bt-strat-chip .bt-strat-load{border:none;background:none;padding:2px 4px;font-size:13px;cursor:pointer}
+.bt-strat-chip .bt-strat-del{border:none;background:none;padding:0 2px;font-size:13px;cursor:pointer;color:#888}
 .bt-index-cap{font-weight:600;color:#475569}
 .bt-index-item{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
 .bt-index-item input{width:15px;height:15px;accent-color:#2563eb}
@@ -202,6 +209,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
 </div>
 <div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="nikkei">日経225</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="prime">東証プライム</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="standard">東証スタンダード</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="growth">東証グロース</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1321">日経225連動（1321）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1306">TOPIX連動（1306）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
+<div class="bt-strat-row"><span class="bt-index-cap">戦略</span><input type="text" id="bt-strat-name" placeholder="戦略名" autocomplete="off"><button type="button" id="bt-strat-save">チェック中の条件を保存</button><span class="bt-strat-list" id="bt-strat-list"></span><span class="bt-note">保存した戦略は名前をクリックで読み込み、左の□は比較用に選択します。</span></div>
 <div class="bt-grid">
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
@@ -1074,5 +1082,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261120mnv" defer></script>
+<script src="./backtest.js?v=20261120strat" defer></script>
 </body></html>
