@@ -111,11 +111,13 @@
 <div id="pane-us-options"><div data-opt-market="us"><p class="info">読み込み中...</p></div></div>
 <div id="pane-history"><div class="past-tools"><label>年度 <select id="past-year-select" aria-label="年度"></select></label><span id="past-info" class="small"></span></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2"><a class="tv-link" href="https://jp.tradingview.com/chart/?symbol=AMEX%3ASPY" target="_blank" rel="noopener" draggable="false" title="TradingView（SPY）">S&amp;P500</a></th><th colspan="2"><a class="tv-link" href="https://jp.tradingview.com/chart/?symbol=NASDAQ%3AIXIC" target="_blank" rel="noopener" draggable="false" title="TradingView（NASDAQ総合）">NASDAQ総合</a></th><th colspan="2"><a class="tv-link" href="https://jp.tradingview.com/chart/?symbol=NASDAQ%3AQQQ" target="_blank" rel="noopener" draggable="false" title="TradingView（QQQ）">NASDAQ100</a></th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead2"></tr></thead><tbody id="body-all"><tr><td colspan="22">読み込み中...</td></tr></tbody></table></div><p class="info">年ごとに全取引日を表示しています。全期間をまたぐ検索は「相場の歴史」タブでできます。</p></div>
 <div id="pane-history-search"><p class="small">1992年以降の全取引日を対象に、指数が大きく動いた日を横断検索します。σは全期間の日次変動率の標準偏差です。</p><div class="hist-tools"><div class="hist-search"><label>指数 <select id="hist-index"><option value="sp500">S&amp;P500</option><option value="nasdaq">NASDAQ総合</option><option value="nasdaq100">NASDAQ100</option><option value="dow">ダウ</option><option value="vix">VIX</option><option value="nikkei">日経225</option><option value="prime">東証プライム</option><option value="standard">東証スタンダード</option><option value="growth">東証グロース</option><option value="nikkei_vi">日経VI</option></select></label><label>方向 <select id="hist-dir"><option value="down">下落</option><option value="up">上昇</option><option value="both">両方</option></select></label><label>変動率 <select id="hist-sigma"><option value="1">1σ以上</option><option value="1.5">1.5σ以上</option><option value="2" selected>2σ以上</option><option value="2.5">2.5σ以上</option><option value="3">3σ以上</option></select></label><button type="button" id="hist-go">検索</button><button type="button" id="hist-clear">解除</button><span id="hist-info" class="small"></span></div></div><div class="table-wrap"><table class="market-table" data-layout="fixed-22-columns-v8"><colgroup><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="date-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"><col class="idx-col"></colgroup><thead><tr><th rowspan="2" class="dayhead">米国日付</th><th colspan="2"><a class="tv-link" href="https://jp.tradingview.com/chart/?symbol=AMEX%3ASPY" target="_blank" rel="noopener" draggable="false" title="TradingView（SPY）">S&amp;P500</a></th><th colspan="2"><a class="tv-link" href="https://jp.tradingview.com/chart/?symbol=NASDAQ%3AIXIC" target="_blank" rel="noopener" draggable="false" title="TradingView（NASDAQ総合）">NASDAQ総合</a></th><th colspan="2"><a class="tv-link" href="https://jp.tradingview.com/chart/?symbol=NASDAQ%3AQQQ" target="_blank" rel="noopener" draggable="false" title="TradingView（QQQ）">NASDAQ100</a></th><th colspan="2">ダウ</th><th colspan="2">VIX</th><th rowspan="2" class="dayhead jpdate">日本日付</th><th colspan="2">日経225</th><th colspan="2">東証P</th><th colspan="2">東証S</th><th colspan="2">東証G</th><th colspan="2">日経VI</th></tr><tr id="subhead3"></tr></thead><tbody id="body-search"><tr><td colspan="22">タブを開くと読み込みます</td></tr></tbody></table></div></div>
-<div id="pane-legend"><div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">赤い丸数字は、その日時点の有効な売り抜け日（DD）件数です。番号のない×はDD集計に必要な履歴が不足する日の表示です。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div></div>
+<div id="pane-legend"><div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">赤い丸数字は、その日時点の有効な売り抜け日（DD）件数です。番号のない×はDD集計に必要な履歴が不足する日の表示です。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。<br>SOXXの「市場前」は寄り前（米国時間4:00〜9:30）の変動率（対前日終値）、「夜間」は引け後（16:00〜20:00）の変動率（対当日終値）です。夜間は翌日の自動更新で確定します。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div></div>
 </main><script>
 const specs=[['sp500','S&P500'],['nasdaq','NASDAQ総合'],['nasdaq100','NASDAQ100'],['dow','ダウ'],['nikkei','日経225'],['prime','東証P'],['standard','東証S'],['growth','東証G']];
 const JP_KEYS=new Set(['nikkei','prime','standard','growth']);
 const NO_VOL=new Set(['vix','nikkei_vi','tnx']);
+const EXT_COLS=new Set(['soxx']);
+function subCount(k){return NO_VOL.has(k)?3:EXT_COLS.has(k)?7:5}
 const IDX_LABEL={sp500:'S&P500',nasdaq:'NASDAQ総合',nasdaq100:'NASDAQ100',dow:'ダウ',soxx:'SOXX',vix:'VIX',tnx:'米国10年債',nikkei:'日経225',prime:'東証P',standard:'東証S',growth:'東証G',nikkei_vi:'日経VI'};
 const TV_LINKS={sp500:['https://jp.tradingview.com/chart/?symbol=AMEX%3ASPY','SPY'],nasdaq:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3AIXIC','NASDAQ総合'],nasdaq100:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3AQQQ','QQQ'],soxx:['https://jp.tradingview.com/chart/?symbol=NASDAQ%3ASOXX','SOXX']};
 function idxHeadLabel(k){const tv=TV_LINKS[k];return tv?'<a class="tv-link" href="'+tv[0]+'" target="_blank" rel="noopener" draggable="false" title="TradingView（'+tv[1]+'）">'+IDX_LABEL[k]+'</a>':IDX_LABEL[k];}
@@ -233,7 +235,7 @@ function fmtVolShares(v){
 }
 function idxCells(v,key){
   const noVol=NO_VOL.has(key);
-  if(!v)return '<td class="idx-start" colspan="'+(noVol?3:5)+'"><span class="na">—</span></td>';
+  if(!v)return '<td class="idx-start" colspan="'+subCount(key)+'"><span class="na">—</span></td>';
   const d=deltaOf(v);
   let cells='<td class="idx-start"><div class="price">'+fmtClose(v.close)+'</div></td>'
     +'<td><div class="'+cls(d)+'">'+fmtDelta(d)+'</div></td>'
@@ -243,9 +245,14 @@ function idxCells(v,key){
   if(key==='prime'||key==='standard'||key==='growth'){if(hasNum(v.shares_10000))volShares=v.shares_10000*10000;}
   else if(hasNum(v.volume_value))volShares=v.volume_value;
   const vs=fmtVolShares(volShares);
-  return cells
+  let out=cells
     +'<td>'+(vs?'<div>'+vs+'</div>':'<span class="na">—</span>')+'</td>'
     +'<td><div class="'+cls(v.volume)+'">'+(hasNum(v.volume)?fmt(v.volume):'—')+'</div></td>';
+  if(EXT_COLS.has(key)){
+    out+='<td><div class="'+cls(v.pre_change)+'">'+(hasNum(v.pre_change)?fmt(v.pre_change):'—')+'</div></td>'
+      +'<td><div class="'+cls(v.post_change)+'">'+(hasNum(v.post_change)?fmt(v.post_change):'—')+'</div></td>';
+  }
+  return out;
 }
 function attachIdxDrag(m){
   const head=document.getElementById('headrow-'+m);
@@ -292,7 +299,7 @@ function attachIdxDrag(m){
 window.__setMarketOrder=function(m,arr){colOrder[m]=arr.slice();saveOrder();renderMarket(m);renderSummary();};
 function renderMarket(m){
   const layout=orderedLayout(m).filter(x=>x==='date-us'||x==='date-jp'||visibleCols[m].has(x));
-  const units=layout.flatMap(x=>x.startsWith('date')?[2]:NO_VOL.has(x)?[1,1,1]:[1,1,1,1,1]);
+  const units=layout.flatMap(x=>x.startsWith('date')?[2]:Array.from({length:subCount(x)},()=>1));
   document.getElementById('cols-'+m).innerHTML=units.map(u=>'<col style="width:'+(u*64)+'px">').join('');
   const totalCols=units.length;
   const totalUnits=units.reduce((a,b)=>a+b,0);
@@ -303,9 +310,9 @@ function renderMarket(m){
   document.getElementById('headrow-'+m).innerHTML=layout.map(x=>{
     if(x==='date-us'){seg++;return '<th rowspan="2" class="dayhead">米国日付</th>';}
     if(x==='date-jp'){seg++;return '<th rowspan="2" class="dayhead jpdate">日本日付</th>';}
-    return '<th class="idx-start" colspan="'+(NO_VOL.has(x)?3:5)+'" data-idx="'+x+'" data-seg="'+seg+'" title="ドラッグで並び替え">'+idxHeadLabel(x)+'</th>';
+    return '<th class="idx-start" colspan="'+subCount(x)+'" data-idx="'+x+'" data-seg="'+seg+'" title="ドラッグで並び替え">'+idxHeadLabel(x)+'</th>';
   }).join('');
-  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(k=>NO_VOL.has(k)?'<th class="idx-start">終値</th><th>変化値</th><th>変動率</th>':'<th class="idx-start">終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th>').join('');
+  document.getElementById('subhead-'+m).innerHTML=layout.filter(x=>!x.startsWith('date')).map(k=>NO_VOL.has(k)?'<th class="idx-start">終値</th><th>変化値</th><th>変動率</th>':EXT_COLS.has(k)?'<th class="idx-start">終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th><th>市場前</th><th>夜間</th>':'<th class="idx-start">終値</th><th>変化値</th><th>変動率</th><th>出来高</th><th>出来高変化率</th>').join('');
   const view=rows.slice(0,25);
   document.getElementById('body-'+m).innerHTML=view.length?view.map(r=>{
     const tse=tseByDate.get(r.japan_date)||{};

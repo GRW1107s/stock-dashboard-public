@@ -84,6 +84,46 @@ def jp_prices(symbol):
     return index_prices(symbol, 'Asia/Tokyo', dt.time(15, 45))
 
 
+def soxx_extended_changes():
+    """SOXX pre-market / after-hours last prints per US session.
+
+    From Yahoo 30-minute bars including extended hours. Yahoo caps
+    30-minute bars at a 60-day range (about 42 sessions), which covers
+    the 25 rows the overview displays; older sessions keep the values
+    carried forward from the previously published data. Bars ascend
+    in time, so the
+    last write per session wins: pre = last print in 04:00-09:30 ET,
+    post = last print in 16:00-20:00 ET. Returns (pre, post) dicts of
+    {date: price}; the caller turns them into change percentages
+    against the daily series' regular closes.
+    """
+    params = urllib.parse.urlencode({'range': '60d', 'interval': '30m',
+                                     'includePrePost': 'true'})
+    tz = ZoneInfo('America/New_York')
+    last_error = None
+    for server in ('query1.finance.yahoo.com', 'query2.finance.yahoo.com'):
+        try:
+            url = f'https://{server}/v8/finance/chart/SOXX?{params}'
+            result = json.loads(fetch(url))['chart']['result'][0]
+            closes = result['indicators']['quote'][0]['close']
+            pre, post = {}, {}
+            for ts, close in zip(result['timestamp'], closes):
+                close = numeric(close)
+                if close is None or close <= 0:
+                    continue
+                moment = dt.datetime.fromtimestamp(ts, tz)
+                minutes = moment.hour * 60 + moment.minute
+                day = moment.date().isoformat()
+                if 4 * 60 <= minutes < 9 * 60 + 30:
+                    pre[day] = close
+                elif 16 * 60 <= minutes < 20 * 60:
+                    post[day] = close
+            return pre, post
+        except Exception as exc:
+            last_error = exc
+    raise last_error
+
+
 def enrich_jp_index(prices):
     """Change/volume/judge + distribution-day tracking for a Japanese index.
 
@@ -608,6 +648,37 @@ def main():
     try:
         us['soxx'] = enrich_us(us_prices('SOXX'))
         print(f"SOXX: {len(us['soxx'])} sessions")
+        # Extended-hours change columns for SOXX (GRW, 2026-11-21):
+        # pre-market vs the previous regular close, after-hours vs the
+        # same session's regular close. The after-hours value is
+        # provisional until the 20:00 ET close and is finalised by the
+        # next run, which rebuilds every row from scratch.
+        try:
+            pre, post = soxx_extended_changes()
+            carry = {}
+            for doc in existing_published():
+                for row in (doc.get('rows') or []):
+                    sx = row.get('soxx') or {}
+                    keep = {k: sx[k] for k in ('pre_change', 'post_change')
+                            if isinstance(sx.get(k), (int, float))}
+                    if keep and row.get('date'):
+                        carry.setdefault(row['date'], {}).update(keep)
+            days = sorted(us['soxx'])
+            filled = 0
+            for i, day in enumerate(days):
+                record = us['soxx'][day]
+                if day in post:
+                    record['post_change'] = round((post[day] / record['close'] - 1) * 100, 4)
+                if day in pre and i > 0:
+                    prev_close = us['soxx'][days[i - 1]]['close']
+                    record['pre_change'] = round((pre[day] / prev_close - 1) * 100, 4)
+                for k, v in (carry.get(day) or {}).items():
+                    record.setdefault(k, v)
+                if 'pre_change' in record or 'post_change' in record:
+                    filled += 1
+            print(f'SOXX EXTENDED: pre/post changes attached for {filled} sessions')
+        except Exception as exc:
+            print('WARNING SOXX extended hours failed:', repr(exc))
     except Exception as exc:
         us['soxx'] = {}
         print('WARNING SOXX ingestion failed:', repr(exc))
