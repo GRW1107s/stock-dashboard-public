@@ -41,7 +41,7 @@
     ddGe: "DD（売り抜け日）がしきい値以上",
     rsiLe: "RSI（14日）がしきい値以上"
   };
-  var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 };
+  var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 , ftd: 1 };
   var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
 
   function sma(arr, i, n) {
@@ -130,6 +130,8 @@
           if (hi == null || !(c >= hi * 0.75)) return false;
         } else if (id === "rsiGe") {
           if (cfg.rsiBuy == null || rsi[i] == null || !(rsi[i] <= cfg.rsiBuy)) return false;
+        } else if (id === "ftd") {
+          if (!cfg.ftdByDate || !cfg.ftdByDate.has(dates[i])) return false;
         }
       }
       return ddOk(i);
@@ -420,23 +422,25 @@
     }
 
     function loadMarketDd(years) {
-      var map = new Map();
+      var map = new Map(), ftd = new Set();
       var jobs = years.map(function (y) {
         return loadJson("history-" + y + ".json").then(function (h) {
           if (MARKET === "us") {
             (h.rows || []).forEach(function (row) {
               var sp = row && row.sp500;
               if (sp && sp.dd_count != null) map.set(row.date, sp.dd_count);
+              if (sp && sp.judge === "ftd") ftd.add(row.date);
             });
           } else {
             (h.tse_rows || []).forEach(function (row) {
               var prime = row && row.prime;
               if (prime && prime.dd_count != null) map.set(row.date, prime.dd_count);
+              if (prime && prime.judge === "ftd") ftd.add(row.date);
             });
           }
         }).catch(function () {});
       });
-      return Promise.all(jobs).then(function () { return map; });
+      return Promise.all(jobs).then(function () { return { ddMap: map, ftdSet: ftd }; });
     }
 
     var INDEX_LABELS = { nikkei: "日経225", prime: "東証プライム", standard: "東証スタンダード", growth: "東証グロース", sp500: "S&P500", nasdaq100: "NASDAQ100", nasdaq: "NASDAQ総合", dow: "ダウ" };
@@ -485,7 +489,7 @@
           }
           var res = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell,
-            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
+            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, ftdByDate: cfgBase.ftdSet, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
           });
           out.push({ title: title, out: res });
         });
@@ -778,8 +782,8 @@
             for (var y = y0; y <= y1; y++) if (!years.includes(y)) years.push(y);
           }
         });
-        var ddPromise = ddLimit != null && years.length ? loadMarketDd(years) : Promise.resolve(new Map());
-        return ddPromise.then(function (ddMap) { ctx.ddMap = ddMap; return ctx; });
+        var ddPromise = (ddLimit != null || buyAll.includes("ftd")) && years.length ? loadMarketDd(years) : Promise.resolve({ ddMap: new Map(), ftdSet: new Set() });
+        return ddPromise.then(function (mc) { ctx.ddMap = mc.ddMap; ctx.ftdSet = mc.ftdSet; return ctx; });
       }).then(function (ctx) {
         if (!ctx) return;
         var summaries = [], details = {};
@@ -794,7 +798,7 @@
             if (toIdx <= fromIdx) return;
             var out = runBacktest(rows, {
               fromIdx: fromIdx, toIdx: toIdx, buy: buy, sell: sell,
-              ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
+              ddLimit: ddLimit, ddByDate: ctx.ddMap, ftdByDate: ctx.ftdSet, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
             entries.push({ title: title, out: out });
@@ -914,8 +918,8 @@
             for (var y = y0; y <= y1; y++) if (!years.includes(y)) years.push(y);
           }
         });
-        var ddPromise = ddLimit != null && years.length ? loadMarketDd(years) : Promise.resolve(new Map());
-        return ddPromise.then(function (ddMap) { return { names: ctx.names, loaded: ctx.loaded, ddMap: ddMap }; });
+        var ddPromise = (ddLimit != null || buyAll.includes("ftd")) && years.length ? loadMarketDd(years) : Promise.resolve({ ddMap: new Map(), ftdSet: new Set() });
+        return ddPromise.then(function (mc) { return { names: ctx.names, loaded: ctx.loaded, ddMap: mc.ddMap, ftdSet: mc.ftdSet }; });
       }).then(function (ctx) {
         var entries = [];
         ctx.loaded.forEach(function (item) {
@@ -943,7 +947,7 @@
           }
           var out = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: entry, sell: sell,
-            ddLimit: ddLimit, ddByDate: ctx.ddMap, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
+            ddLimit: ddLimit, ddByDate: ctx.ddMap, ftdByDate: ctx.ftdSet, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
           });
           entries.push({ title: title, out: out });
         });
@@ -964,7 +968,7 @@
           var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
           var indexYears = [];
           for (var iy = startYear - 1; iy <= endYear; iy++) indexYears.push(iy);
-          loadIndexEntries(indexKeys, indexYears, { buy: entry, sell: sell, ddLimit: ddLimit, ddMap: ctx.ddMap }, fromVal, toVal, periodYears)
+          loadIndexEntries(indexKeys, indexYears, { buy: entry, sell: sell, ddLimit: ddLimit, ddMap: ctx.ddMap, ftdSet: ctx.ftdSet }, fromVal, toVal, periodYears)
             .then(function (ixEntries) { entries.push.apply(entries, ixEntries); finish(); })
             .catch(function () { finish(); });
         } else {

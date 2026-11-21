@@ -702,6 +702,23 @@ def main():
     else:
         print('TSE third-party ingestion disabled via ALLOW_TSE_THIRD_PARTY_DATA=false')
     tse_rows, snapshots, tse_full = prepare_tse(previous, volume, indices)
+    # FTD labels for the Prime market: the TSE source has closes and
+    # trading volume but no intraday lows, so the follow-through machine
+    # runs on the TOPIX ETF (1306), which tracks the Prime market and
+    # has full OHLCV on Yahoo. Only judge / ra_day are upgraded.
+    try:
+        topix = enrich_us(jp_prices('1306.T'))
+        ftd_days = 0
+        for row in tse_full:
+            prime = row.get('prime')
+            rec = topix.get(row['date'])
+            if prime is not None and rec is not None and rec.get('judge') == 'ftd':
+                prime['judge'] = 'ftd'
+                prime['ra_day'] = rec.get('ra_day')
+                ftd_days += 1
+        print(f'TOPIX(1306) FTD: {ftd_days} sessions labelled')
+    except Exception as exc:
+        print('WARNING TOPIX FTD labelling failed:', repr(exc))
     nikkei_vi = {}
     try:
         nikkei_vi = fetch_nikkei_vi()
