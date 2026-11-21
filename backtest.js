@@ -16,7 +16,7 @@
     vol15: "出来高が20日平均の1.5倍以上",
     eps25: "EPS増加率（前年同期比）が25%以上",
     roe17: "ROEが17%以上",
-    rsiGe: "RSI（14日）がしきい値以下",
+    rsiGe: "RSI（14日）が閾値以下",
     sector: "所属セクターが上位を維持",
     tt1: "株価が150日・200日移動平均線より上",
     tt2: "150日MAが200日MAより上",
@@ -25,21 +25,21 @@
     tt5: "株価が50日MAより上",
     tt6: "52週安値から30%以上上昇",
     tt7: "52週高値から25%以内",
-    tt8: "RS指数がしきい値以上",
+    tt8: "RS指数が閾値以上",
     ftd: "FTD（フォロースルーデー）が発生",
-    ad: "AD（買い集め日）がしきい値以上",
-    dd: "DD（売り抜け日）がしきい値以下"
+    ad: "AD（買い集め日）が閾値以上",
+    dd: "DD（売り抜け日）が閾値以下"
   };
   var SELL_LABELS = {
     ma50: "株価が50日移動平均を下回る",
     loss8: "買値から8%下落",
-    dropPct: "前日終値からしきい値%以上下落",
+    dropPct: "前日終値から閾値%以上下落",
     ma200: "株価が200日移動平均を下回る",
     rs70: "RS指数が70以下に低下",
     high25: "52週高値から25%以上下落",
     dd3: "出来高を伴う下落日（DD）が3日出る",
-    ddGe: "DD（売り抜け日）がしきい値以上",
-    rsiLe: "RSI（14日）がしきい値以上"
+    ddGe: "DD（売り抜け日）が閾値以上",
+    rsiLe: "RSI（14日）が閾値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 , ftd: 1 };
   var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
@@ -578,10 +578,10 @@
           return;
         }
         var p = e.out.perf;
-        html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td rowspan="2" style="text-align:left">' + e.title + "</td><td>戦略</td><td>" + pct(p.totalReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
+        html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + "</td><td>戦略</td><td>" + pct(p.totalReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
           (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" + sharpeTxt(p.sharpe) + "</td><td>" +
-          (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + '</td><td rowspan="2">' + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
-        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>—</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>—</td></tr>";
+          (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + '</td><td>' + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
+        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + '</td><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>—</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>—</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
       });
       html += "</tbody></table>";
       html += '<p class="bt-res-note">銘柄の行を選ぶと、その銘柄の売買履歴を表示します。</p>';
@@ -606,11 +606,11 @@
 
     var rsiBuyVal = null, rsiSellVal = null, dropPctVal = null, ddSellVal = null, ddGateVal = null;
     function condLabel(group, id) {
-      if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "しきい値" : rsiBuyVal) + "以下";
-      if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "しきい値" : rsiSellVal) + "以上";
-      if (id === "dropPct") return "前日終値から" + (dropPctVal == null ? "しきい値" : dropPctVal) + "%以上下落";
-      if (id === "ddGe") return "DD（売り抜け日）が" + (ddSellVal == null ? "しきい値" : ddSellVal) + "以上";
-      if (id === "dd") return "DD（売り抜け日）が" + (ddGateVal == null ? "しきい値" : ddGateVal) + "以下";
+      if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "閾値" : rsiBuyVal) + "以下";
+      if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "閾値" : rsiSellVal) + "以上";
+      if (id === "dropPct") return "前日終値から" + (dropPctVal == null ? "閾値" : dropPctVal) + "%以上下落";
+      if (id === "ddGe") return "DD（売り抜け日）が" + (ddSellVal == null ? "閾値" : ddSellVal) + "以上";
+      if (id === "dd") return "DD（売り抜け日）が" + (ddGateVal == null ? "閾値" : ddGateVal) + "以下";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
     function readRsi(buyAll, sellAll) {
