@@ -205,7 +205,7 @@
 <button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
 </div>
 <div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="sp500">S&P500</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq100">NASDAQ100</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq">NASDAQ総合</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="dow">ダウ</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="QQQ">NASDAQ100連動（QQQ）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="SPY">S&P500連動（SPY）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
-<div class="bt-strat-row"><span class="bt-index-cap">戦略</span><input type="text" id="bt-strat-name" placeholder="戦略名" autocomplete="off"><button type="button" id="bt-strat-save">チェック中の条件を保存</button><span class="bt-strat-list" id="bt-strat-list"></span><span class="bt-note">保存した戦略は名前をクリックで読み込み、左の□は比較用に選択します。</span></div>
+<div class="bt-strat-row"><span class="bt-index-cap">戦略</span><input type="text" id="bt-strat-name" placeholder="戦略名" autocomplete="off"><button type="button" id="bt-strat-save">チェック中の条件を保存</button><button type="button" id="bt-strat-compare">比較実行</button><span class="bt-strat-list" id="bt-strat-list"></span><span class="bt-note">保存した戦略は名前をクリックで読み込み、左の□は比較用に選択します。</span></div>
 <div class="bt-grid">
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
@@ -617,5 +617,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261121ftd" defer></script>
+</script><script src="./backtest.js?v=20261121cmp" defer></script>
 </body></html>
