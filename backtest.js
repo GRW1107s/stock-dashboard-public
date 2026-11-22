@@ -32,11 +32,11 @@
   };
   var SELL_LABELS = {
     ma50: "株価が50日移動平均を下回る",
-    loss8: "買値から8%下落",
+    loss8: "買値から閾値%下落",
     dropPct: "前日終値から閾値%以上下落",
     ma200: "株価が200日移動平均を下回る",
     rs70: "RS指数が70以下に低下",
-    high25: "52週高値から25%以上下落",
+    high25: "52週高値から閾値%以上下落",
     dd3: "有効DDが3回以上（25取引日・5%失効）",
     ddGe: "DD5到達後の警戒状態（FTDで解除）",
     rsiLe: "RSI（14日）が閾値以上"
@@ -64,7 +64,8 @@
 
   // rows: [[date, open, high, low, close, volume], ...] ascending by date.
   // cfg: {fromIdx, toIdx, buy:[ids], sell:[ids], ddLimit:null|number,
-  //       ddByDate:Map<date, ddCount>|null, rsiBuy:null|number, rsiSell:null|number}
+  //       rsiBuy:null|number, rsiSell:null|number} — DD counts, FTD and the
+  //       warning state are computed from the rows themselves (Pine rules).
   function runBacktest(rows, cfg) {
     var dates = [], opens = [], highs = [], lows = [], closes = [], vols = [];
     rows.forEach(function (r) {
@@ -187,11 +188,11 @@
       for (var j = 0; j < cfg.sell.length; j++) {
         var id = cfg.sell[j], c = closes[i];
         if (id === "ma50" && ma50[i] != null && c < ma50[i]) return id;
-        if (id === "loss8" && c <= pos.price * 0.92) return id;
+        if (id === "loss8" && c <= pos.price * (1 - (cfg.lossPct == null ? 8 : cfg.lossPct) / 100)) return id;
         if (id === "ma200" && ma200[i] != null && c < ma200[i]) return id;
         if (id === "high25") {
           var hi2 = extreme(highs, i, 252, true);
-          if (hi2 != null && c <= hi2 * 0.75) return id;
+          if (hi2 != null && c <= hi2 * (1 - (cfg.highPct == null ? 25 : cfg.highPct) / 100)) return id;
         }
         if (id === "rsiLe" && cfg.rsiSell != null && rsi[i] != null && rsi[i] >= cfg.rsiSell) return id;
         if (id === "dropPct" && cfg.dropPct != null && i > 0 && closes[i - 1] > 0 && c / closes[i - 1] - 1 <= -cfg.dropPct / 100) return id;
@@ -463,28 +464,6 @@
       });
     }
 
-    function loadMarketDd(years) {
-      var map = new Map(), ftd = new Set();
-      var jobs = years.map(function (y) {
-        return loadJson("history-" + y + ".json").then(function (h) {
-          if (MARKET === "us") {
-            (h.rows || []).forEach(function (row) {
-              var sp = row && row.sp500;
-              if (sp && sp.dd_count != null) map.set(row.date, sp.dd_count);
-              if (sp && sp.judge === "ftd") ftd.add(row.date);
-            });
-          } else {
-            (h.tse_rows || []).forEach(function (row) {
-              var prime = row && row.prime;
-              if (prime && prime.dd_count != null) map.set(row.date, prime.dd_count);
-              if (prime && prime.judge === "ftd") ftd.add(row.date);
-            });
-          }
-        }).catch(function () {});
-      });
-      return Promise.all(jobs).then(function () { return { ddMap: map, ftdSet: ftd }; });
-    }
-
     var INDEX_LABELS = { nikkei: "日経225", prime: "東証プライム", standard: "東証スタンダード", growth: "東証グロース", sp500: "S&P500", nasdaq100: "NASDAQ100", nasdaq: "NASDAQ総合", dow: "ダウ" };
     var ETF_NAMES = { "1321": "NEXT FUNDS 日経225連動型上場投信", "1306": "NEXT FUNDS TOPIX連動型上場投信", "QQQ": "インベスコ QQQ（NASDAQ100連動）", "SPY": "SPDR S&P500 ETF（SPY）" };
 
@@ -531,7 +510,7 @@
           }
           var res = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell,
-            ddLimit: cfgBase.ddLimit, ddByDate: cfgBase.ddMap, ftdByDate: cfgBase.ftdSet, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
+            ddLimit: cfgBase.ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal
           });
           out.push({ title: title, out: res });
         });
@@ -800,13 +779,14 @@
     function renderStockResults(container, entries) {
       var html = '<table class="bt-res-table bt-stock-table"><thead><tr><th>銘柄</th><th>区分</th><th>リターン</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>シャープレシオ</th><th>平均保有</th><th>期間</th></tr></thead><tbody>';
       entries.forEach(function (e, idx) {
+        var short = (e.title || "").split(" ")[0];
         if (!e.out) {
-          html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + '</td><td colspan="9" style="text-align:left">' + esc(e.noData || "") + "</td></tr>";
+          html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + short + '</td><td colspan="9" style="text-align:left">' + esc(e.noData || "") + "</td></tr>";
           return;
         }
         var p = e.out.perf;
-        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + '</td><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>—</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>—</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
-        html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + "</td><td>戦略</td><td>" + pct(p.totalReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
+        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + short + '</td><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>—</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>—</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
+        html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + short + "</td><td>戦略</td><td>" + pct(p.totalReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
           (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" + sharpeTxt(p.sharpe) + "</td><td>" +
           (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + '</td><td>' + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
       });
@@ -832,11 +812,13 @@
       if (entries.length) select(0);
     }
 
-    var rsiBuyVal = null, rsiSellVal = null, dropPctVal = null, ddSellVal = null, ddGateVal = null;
+    var rsiBuyVal = null, rsiSellVal = null, dropPctVal = null, ddSellVal = null, ddGateVal = null, lossPctVal = null, highPctVal = null;
     function condLabel(group, id) {
       if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "閾値" : rsiBuyVal) + "以下";
       if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "閾値" : rsiSellVal) + "以上";
       if (id === "dropPct") return "前日終値から" + (dropPctVal == null ? "閾値" : dropPctVal) + "%以上下落";
+      if (id === "loss8") return "買値から" + (lossPctVal == null ? "閾値" : lossPctVal) + "%下落";
+      if (id === "high25") return "52週高値から" + (highPctVal == null ? "閾値" : highPctVal) + "%以上下落";
       if (id === "ddGe") return "DD5到達後の警戒状態（FTDで解除、5回設定時）";
       if (id === "dd") return "DD（売り抜け日）が" + (ddGateVal == null ? "閾値" : ddGateVal) + "以下";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
@@ -845,6 +827,8 @@
       if (buyAll.includes("rsiGe")) { var v = numOf("rsiBuy"); rsiBuyVal = isFinite(v) ? v : 30; } else rsiBuyVal = null;
       if (sellAll.includes("rsiLe")) { var w = numOf("rsiSell"); rsiSellVal = isFinite(w) ? w : 70; } else rsiSellVal = null;
       if (sellAll.includes("dropPct")) { var d = numOf("dropSell"); dropPctVal = isFinite(d) ? d : 5; } else dropPctVal = null;
+      if (sellAll.includes("loss8")) { var l = numOf("lossPct"); lossPctVal = isFinite(l) ? l : 8; } else lossPctVal = null;
+      if (sellAll.includes("high25")) { var h = numOf("highPct"); highPctVal = isFinite(h) ? h : 25; } else highPctVal = null;
       if (sellAll.includes("ddGe")) { var g = numOf("ddSell"); ddSellVal = isFinite(g) ? g : 5; } else ddSellVal = null;
       if (buyAll.includes("dd")) { var dv = numOf("dd"); ddGateVal = isFinite(dv) ? dv : 5; } else ddGateVal = null;
     }
@@ -1003,16 +987,7 @@
         });
       }).then(function (ctx) {
         if (!ctx) return null;
-        var years = [];
-        Object.keys(ctx.store).forEach(function (code) {
-          var rows = ctx.store[code];
-          if (rows && rows.length) {
-            var y0 = +rows[0][0].slice(0, 4), y1 = +rows[rows.length - 1][0].slice(0, 4);
-            for (var y = y0; y <= y1; y++) if (!years.includes(y)) years.push(y);
-          }
-        });
-        var ddPromise = (ddLimit != null || buyAll.includes("ftd")) && years.length ? loadMarketDd(years) : Promise.resolve({ ddMap: new Map(), ftdSet: new Set() });
-        return ddPromise.then(function (mc) { ctx.ddMap = mc.ddMap; ctx.ftdSet = mc.ftdSet; return ctx; });
+        return ctx;
       }).then(function (ctx) {
         if (!ctx) return;
         var summaries = [], details = {};
@@ -1027,7 +1002,7 @@
             if (toIdx <= fromIdx) return;
             var out = runBacktest(rows, {
               fromIdx: fromIdx, toIdx: toIdx, buy: buy, sell: sell,
-              ddLimit: ddLimit, ddByDate: ctx.ddMap, ftdByDate: ctx.ftdSet, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
+              ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
             entries.push({ title: title, out: out });
@@ -1142,15 +1117,7 @@
         });
         return Promise.all(jobs).then(function (loaded) { return { names: names, loaded: loaded }; });
       }).then(function (ctx) {
-        var years = [];
-        ctx.loaded.forEach(function (item) {
-          if (item.rows && item.rows.length) {
-            var y0 = +item.rows[0][0].slice(0, 4), y1 = +item.rows[item.rows.length - 1][0].slice(0, 4);
-            for (var y = y0; y <= y1; y++) if (!years.includes(y)) years.push(y);
-          }
-        });
-        var ddPromise = (ddLimit != null || buyAll.includes("ftd")) && years.length ? loadMarketDd(years) : Promise.resolve({ ddMap: new Map(), ftdSet: new Set() });
-        return ddPromise.then(function (mc) { return { names: ctx.names, loaded: ctx.loaded, ddMap: mc.ddMap, ftdSet: mc.ftdSet }; });
+        return { names: ctx.names, loaded: ctx.loaded };
       }).then(function (ctx) {
         var entries = [];
         ctx.loaded.forEach(function (item) {
@@ -1178,7 +1145,7 @@
           }
           var out = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: entry, sell: sell,
-            ddLimit: ddLimit, ddByDate: ctx.ddMap, ftdByDate: ctx.ftdSet, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal
+            ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal
           });
           entries.push({ title: title, out: out });
         });
@@ -1199,7 +1166,7 @@
           var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
           var indexYears = [];
           for (var iy = startYear - 1; iy <= endYear; iy++) indexYears.push(iy);
-          loadIndexEntries(indexKeys, indexYears, { buy: entry, sell: sell, ddLimit: ddLimit, ddMap: ctx.ddMap, ftdSet: ctx.ftdSet }, fromVal, toVal, periodYears)
+          loadIndexEntries(indexKeys, indexYears, { buy: entry, sell: sell, ddLimit: ddLimit }, fromVal, toVal, periodYears)
             .then(function (ixEntries) { entries.push.apply(entries, ixEntries); finish(); })
             .catch(function () { finish(); });
         } else {
@@ -1221,9 +1188,8 @@
       return {
         buy: entry, sell: sell,
         ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
-        ddByDate: ctx.ddMap, ftdByDate: ctx.ftdSet,
         rsiBuy: num("rsiBuy", 30), rsiSell: num("rsiSell", 70),
-        dropPct: num("dropSell", 5), ddSell: num("ddSell", 5)
+        dropPct: num("dropSell", 5), ddSell: num("ddSell", 5), lossPct: num("lossPct", 8), highPct: num("highPct", 25)
       };
     }
     function aggregate(entries) {
@@ -1280,16 +1246,7 @@
         });
         return Promise.all(jobs).then(function (loaded) { return { names: names, loaded: loaded }; });
       }).then(function (ctx) {
-        var years = [];
-        ctx.loaded.forEach(function (item) {
-          if (item.rows && item.rows.length) {
-            var y0 = +item.rows[0][0].slice(0, 4), y1 = +item.rows[item.rows.length - 1][0].slice(0, 4);
-            for (var y = y0; y <= y1; y++) if (!years.includes(y)) years.push(y);
-          }
-        });
-        var need = selected.some(function (it) { return (it.state.buy || []).includes("dd") || (it.state.buy || []).includes("ftd"); });
-        var ddPromise = need && years.length ? loadMarketDd(years) : Promise.resolve({ ddMap: new Map(), ftdSet: new Set() });
-        return ddPromise.then(function (mc) { return { names: ctx.names, loaded: ctx.loaded, ddMap: mc.ddMap, ftdSet: mc.ftdSet }; });
+        return { names: ctx.names, loaded: ctx.loaded };
       }).then(function (ctx) {
         var perStrat = selected.map(function (it) {
           var cfg = stratCfg(it.state, ctx);
@@ -1327,7 +1284,7 @@
           var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
           var indexYears = [];
           for (var iy = startYear - 1; iy <= endYear; iy++) indexYears.push(iy);
-          return loadIndexEntries(indexKeys, indexYears, { buy: ps.cfg.buy, sell: ps.cfg.sell, ddLimit: ps.cfg.ddLimit, ddMap: ctx.ddMap, ftdSet: ctx.ftdSet }, fromVal, toVal, periodYears)
+          return loadIndexEntries(indexKeys, indexYears, { buy: ps.cfg.buy, sell: ps.cfg.sell, ddLimit: ps.cfg.ddLimit }, fromVal, toVal, periodYears)
             .then(function (ixEntries) { ps.entries.push.apply(ps.entries, ixEntries); })
             .catch(function () {});
         });
