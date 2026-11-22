@@ -97,6 +97,21 @@
         }
       }
     })();
+    // Active distribution-day count, aligned with the Pine indicator:
+    // a DD is a session down 0.2% or more on higher volume; it stays
+    // active for 25 sessions and expires early once the close recovers
+    // 5% or more from the DD session's close. Expiry is applied before
+    // the current session's DD is added, as in the Pine script.
+    var ddActive = [];
+    (function () {
+      var active = [];
+      for (var i = 0; i < n; i++) {
+        var c = closes[i];
+        active = active.filter(function (a) { return i - a[0] < 25 && c < a[1] * 1.05; });
+        if (i > 0 && closes[i - 1] > 0 && c <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1]) active.push([i, c]);
+        ddActive.push(active.length);
+      }
+    })();
     function ddOk(i) {
       if (cfg.ddLimit == null) return true;
       if (!cfg.ddByDate) return false;
@@ -154,11 +169,7 @@
           }
         }
         if (id === "dd3") {
-          var cnt = 0;
-          for (var k = pos.execIdx + 1; k <= i; k++) {
-            if (closes[k] < closes[k - 1] && vols[k] > vols[k - 1]) cnt++;
-          }
-          if (cnt >= 3) return id;
+          if (ddActive[i] >= 3) return id;
         }
       }
       return null;
@@ -503,12 +514,13 @@
       var html = '<div class="bt-res-block"><h4>' + title + '</h4>';
       html += '<p class="bt-res-range">期間：' + esc(out.range.from) + " 〜 " + esc(out.range.to) + "（" + out.range.sessions + '営業日）</p>';
       if (out.trades.length) {
-        html += '<table class="bt-res-table"><thead><tr><th>買い日</th><th>買い値</th><th>売り日</th><th>売り値</th><th>損益</th><th>保有</th><th>売り理由</th></tr></thead><tbody>';
+        html += '<table class="bt-res-table bt-trades-table"><thead><tr><th data-bt-col="buyDate">買い日</th><th data-bt-col="buyPrice">買い値</th><th data-bt-col="sellDate">売り日</th><th data-bt-col="sellPrice">売り値</th><th data-bt-col="ret">損益</th><th data-bt-col="hold">保有</th><th data-bt-col="reason">売り理由</th></tr></thead><tbody>';
         out.trades.forEach(function (t) {
-          html += "<tr><td>" + esc(t.buyDate) + "</td><td>" + price(t.buyPrice) + "</td><td>" + esc(t.sellDate) + (t.open ? "（期末評価）" : "") + "</td><td>" + price(t.sellPrice) + "</td><td>" + pct(t.ret) + "</td><td>" + t.hold + "日</td><td>" +
+          html += '<tr><td data-bt-col="buyDate">' + esc(t.buyDate) + '</td><td data-bt-col="buyPrice">' + price(t.buyPrice) + '</td><td data-bt-col="sellDate">' + esc(t.sellDate) + (t.open ? "（期末評価）" : "") + '</td><td data-bt-col="sellPrice">' + price(t.sellPrice) + '</td><td data-bt-col="ret">' + pct(t.ret) + '</td><td data-bt-col="hold">' + t.hold + '日</td><td data-bt-col="reason">' +
             esc(t.open ? "期間終了" : (SELL_LABELS[t.reason] || t.reason)) + "</td></tr>";
         });
         html += "</tbody></table>";
+        html += '<p class="bt-res-note">列の見出しをドラッグすると順番を入れ替えられます。列の右端をドラッグすると幅を変えられます（どちらも保存されます）。</p>';
       } else {
         html += '<p class="bt-res-note">この期間に買い条件を満たす日はありませんでした。</p>';
       }
@@ -517,6 +529,100 @@
     }
 
     function sharpeTxt(v) { return v == null || !isFinite(v) ? "—" : v.toFixed(2); }
+
+    // Trade-history table: draggable column order and column widths,
+    // both saved per market and keyed by column id so they stay attached
+    // to their column when the order changes.
+    var TRADE_COLS = ["buyDate", "buyPrice", "sellDate", "sellPrice", "ret", "hold", "reason"];
+    function setupTradesTable(table) {
+      if (!table) return;
+      var orderKey = "stock-dashboard-bt-trades-order-" + MARKET + "-v1";
+      var widthKey = "stock-dashboard-bt-trades-widths-" + MARKET + "-v1";
+      var order = TRADE_COLS.slice();
+      try {
+        var savedOrder = JSON.parse(localStorage.getItem(orderKey) || "null");
+        if (Array.isArray(savedOrder)) {
+          var filtered = savedOrder.filter(function (c) { return TRADE_COLS.includes(c); });
+          TRADE_COLS.forEach(function (c) { if (!filtered.includes(c)) filtered.push(c); });
+          if (filtered.length === TRADE_COLS.length) order = filtered;
+        }
+      } catch (e) {}
+      var cg = document.createElement("colgroup");
+      TRADE_COLS.forEach(function (c) { var col = document.createElement("col"); col.dataset.btCol = c; cg.appendChild(col); });
+      table.insertBefore(cg, table.firstChild);
+      function reorder(ord) {
+        Array.from(table.querySelectorAll("tr")).forEach(function (tr) {
+          var cells = {};
+          Array.from(tr.children).forEach(function (cell) { cells[cell.dataset.btCol] = cell; });
+          ord.forEach(function (c) { if (cells[c]) tr.appendChild(cells[c]); });
+        });
+        var colsById = {};
+        Array.from(cg.children).forEach(function (col) { colsById[col.dataset.btCol] = col; });
+        ord.forEach(function (c) { if (colsById[c]) cg.appendChild(colsById[c]); });
+      }
+      reorder(order);
+      var widths = {};
+      try { widths = JSON.parse(localStorage.getItem(widthKey) || "{}") || {}; } catch (e) { widths = {}; }
+      function applyWidths() {
+        var total = 0, any = false;
+        Array.from(cg.children).forEach(function (col) {
+          var w = widths[col.dataset.btCol];
+          if (w) { col.style.width = w + "px"; total += w; any = true; } else col.style.width = "";
+        });
+        table.style.tableLayout = any ? "fixed" : "";
+        table.style.width = any ? total + "px" : "";
+      }
+      applyWidths();
+      Array.from(table.querySelectorAll("thead th")).forEach(function (th) {
+        th.style.position = "relative";
+        var h = document.createElement("span");
+        h.className = "bt-col-resizer";
+        h.title = "ドラッグで列幅を変更（ダブルクリックでリセット）";
+        th.appendChild(h);
+        h.addEventListener("click", function (e) { e.stopPropagation(); });
+        h.addEventListener("dblclick", function (e) {
+          e.stopPropagation();
+          widths = {};
+          try { localStorage.removeItem(widthKey); } catch (err) {}
+          applyWidths();
+        });
+        h.addEventListener("pointerdown", function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var id = th.dataset.btCol;
+          Array.from(table.querySelectorAll("thead th")).forEach(function (t) { if (!widths[t.dataset.btCol]) widths[t.dataset.btCol] = t.offsetWidth; });
+          var startX = e.clientX, startW = widths[id] || th.offsetWidth;
+          function move(ev) { widths[id] = Math.max(36, startW + ev.clientX - startX); applyWidths(); }
+          function up() {
+            document.removeEventListener("pointermove", move);
+            document.removeEventListener("pointerup", up);
+            try { localStorage.setItem(widthKey, JSON.stringify(widths)); } catch (err) {}
+          }
+          document.addEventListener("pointermove", move);
+          document.addEventListener("pointerup", up);
+        });
+        th.addEventListener("pointerdown", function (e) {
+          if (e.target === h) return;
+          var startX = e.clientX, moved = false;
+          function move(ev) { if (Math.abs(ev.clientX - startX) > 6) moved = true; }
+          function up(ev) {
+            document.removeEventListener("pointermove", move);
+            document.removeEventListener("pointerup", up);
+            if (!moved) return;
+            var curThs = Array.from(table.querySelectorAll("thead th"));
+            var curIds = curThs.map(function (t) { return t.dataset.btCol; });
+            var dragId = th.dataset.btCol;
+            var rest = curThs.filter(function (t) { return t !== th; });
+            var insert = rest.filter(function (t) { var r = t.getBoundingClientRect(); return ev.clientX > r.left + r.width / 2; }).length;
+            curIds.splice(curIds.indexOf(dragId), 1);
+            curIds.splice(insert, 0, dragId);
+            reorder(curIds);
+            try { localStorage.setItem(orderKey, JSON.stringify(curIds)); } catch (err) {}
+          }
+          document.addEventListener("pointermove", move);
+          document.addEventListener("pointerup", up);
+        });
+      });
+    }
 
     // Draggable column widths for result tables, saved per table kind.
     function makeResizable(table, key) {
@@ -597,6 +703,7 @@
         tr.classList.add("bt-stock-sel");
         var e = entries[idx];
         detail.innerHTML = e.out ? stockTradesHtml(e.title, e.out) : '<div class="bt-res-block"><h4>' + e.title + '</h4><p class="bt-res-note">' + esc(e.noData || "") + "</p></div>";
+        setupTradesTable(detail.querySelector(".bt-trades-table"));
       }
       rowsEls.forEach(function (tr) {
         tr.addEventListener("click", function () { select(parseInt(tr.dataset.btStock, 10)); });
