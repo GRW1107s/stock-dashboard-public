@@ -131,6 +131,14 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-settings input[type="text"]{width:210px}
 .bt-settings .bt-hint{font-size:11px;color:#64748b}
 .bt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}
+.bt-main{display:flex;gap:14px;align-items:flex-start;margin-top:12px}
+.bt-strat-tabs{display:flex;flex-direction:column;gap:6px;min-width:148px}
+.bt-strat-tab{display:flex;align-items:center;gap:7px;border:1px solid #d7e0ea;border-radius:8px;padding:8px 10px;background:#f8fafc;cursor:pointer;font-size:14px;text-align:left;width:100%}
+.bt-strat-tab.active{background:#e8eefc;border-color:#2563eb;font-weight:700}
+.bt-main .bt-grid{flex:1;min-width:0}
+.bt-block.screen{margin-top:12px}
+@media (max-width:760px){.bt-main{flex-direction:column}.bt-strat-tabs{flex-direction:row;flex-wrap:wrap}.bt-strat-tab{width:auto}}
+
 @media (max-width:640px){.bt-grid{grid-template-columns:1fr}}
 .bt-block{border:1px solid #d7e0ea;border-radius:10px;padding:12px 14px;background:#fff}
 .bt-block.buy{border-top:4px solid #16a34a}
@@ -208,13 +216,11 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label>銘柄コード<input type="text" id="bt-symbols" placeholder="例：7203, 6988" autocomplete="off"></label>
 <label>開始日<input type="text" id="bt-from" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
+<button type="button" class="bt-run" id="bt-run">実行</button>
 <span class="bt-hint" id="bt-normal-hint">銘柄コードを入れると、その銘柄だけが対象になります。銘柄スクリーニングの表でチェックした銘柄もここに入ります。開始日・終了日を入れると、テスト期間より優先されます。</span>
 <span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日としてテストします。銘柄コードを入れるとその銘柄が全開始日の対象になり（スクリーニング条件は使いません）、空欄のときは開始日時点でスクリーニング条件を満たす銘柄が対象です。</span>
-<button type="button" class="bt-run" id="bt-run">実行</button>
 </div>
 <div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="nikkei">日経225</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="prime">東証プライム</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="standard">東証スタンダード</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="growth">東証グロース</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1321">日経225連動（1321）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1306">TOPIX連動（1306）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
-<div class="bt-strat-row"><span class="bt-index-cap">戦略</span><input type="text" id="bt-strat-name" placeholder="戦略名" autocomplete="off"><button type="button" id="bt-strat-save">チェック中の条件を保存</button><span class="bt-strat-list" id="bt-strat-list"></span><span class="bt-note">保存した戦略は名前をクリックで読み込み。左の□で戦略を選ぶと「実行」で比較します。</span></div>
-<div class="bt-grid">
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="sector"><span>所属セクターが上位を維持</span></label>
@@ -232,6 +238,9 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="tt8"><span>RS指数が<select class="bt-select" id="bt-tt-rs" aria-label="RS指数の閾値"><option value="70">70</option><option value="80">80</option><option value="90">90</option></select>以上</span></label>
 <div class="bt-block-foot"><span class="bt-screen-note" id="bt-screen-note"></span><button type="button" class="bt-screen-run" id="bt-screen-run">実行</button></div>
 </div>
+<div class="bt-main">
+<div class="bt-strat-tabs" id="bt-strat-tabs"></div>
+<div class="bt-grid">
 <div class="bt-block buy">
 <div class="bt-block-head"><h3>買いシグナル</h3><button type="button" class="bt-clear" data-bt-clear="buy">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="buy" value="vol15"><span>出来高が20日平均の1.5倍以上</span></label>
@@ -257,6 +266,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="ddGe"><span>DD（売り抜け日）が<select class="bt-select" data-bt-num="ddSell" aria-label="売りのDD閾値"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>以上（直近25取引日）</span></label>
 <p class="bt-group">RSI Strategy</p>
 <label class="bt-item"><input type="checkbox" data-bt="sell" value="rsiLe"><span>RSI（14日）が<select class="bt-select" data-bt-num="rsiSell" aria-label="売りのRSI閾値"><option value="0">0</option><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option><option value="55">55</option><option value="60">60</option><option value="65">65</option><option value="70" selected>70</option><option value="75">75</option><option value="80">80</option><option value="85">85</option><option value="90">90</option><option value="95">95</option><option value="100">100</option></select>以上</span></label>
+</div>
 </div>
 </div>
 <p class="bt-summary" id="bt-summary"></p>
@@ -1088,5 +1098,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261123bounce" defer></script>
+<script src="./backtest.js?v=20261123tabs" defer></script>
 </body></html>

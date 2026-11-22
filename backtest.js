@@ -384,68 +384,98 @@
       });
     })();
 
-    // Named strategies: save / load / delete the checked condition set.
-    var stratApi = (function setupStrategies() {
-      var nameInput = document.getElementById("bt-strat-name");
-      var saveBtn = document.getElementById("bt-strat-save");
-      var listEl = document.getElementById("bt-strat-list");
-      if (!saveBtn || !listEl) return;
-      var KEY = "stock-dashboard-bt-strategies-" + MARKET;
-      var items = [];
-      try { items = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { items = []; }
-      if (!Array.isArray(items)) items = [];
-      function persist() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {} }
-      function collect() {
-        var st = { screen: checked("screen"), buy: checked("buy"), sell: checked("sell"), nums: {}, ttRs: "70" };
+    // Strategy slots: ten fixed tabs (戦略1-10), each holding its own buy/sell
+    // condition set, edited through the single buy/sell blocks. The screening
+    // block and the target/period settings are shared across slots. A checkbox
+    // on each tab marks the slot for comparison runs. The old named-strategy
+    // store is discarded (GRW, 2026-11-23).
+    var slotsApi = (function setupSlots() {
+      var tabsEl = document.getElementById("bt-strat-tabs");
+      var KEY = "stock-dashboard-bt-slots-" + MARKET;
+      var store = null;
+      try { store = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { store = null; }
+      try { localStorage.removeItem("stock-dashboard-bt-strategies-" + MARKET); } catch (e) {}
+      function blank() { return { buy: [], sell: [], nums: {}, cmp: false }; }
+      function collectDom() {
+        var st = { buy: checked("buy"), sell: checked("sell"), nums: {} };
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
-        var tt = document.getElementById("bt-tt-rs");
-        if (tt) st.ttRs = tt.value;
         return st;
       }
-      function apply(st) {
-        panel.querySelectorAll('input[type="checkbox"][data-bt]').forEach(function (b) {
-          var list = st[b.getAttribute("data-bt")] || [];
-          if (b.getAttribute("data-bt") === "buy" && st.market) list = list.concat(st.market);
+      if (!store || !Array.isArray(store.slots) || store.slots.length !== 10) {
+        var seed = collectDom();
+        store = { active: 0, slots: [] };
+        for (var i = 0; i < 10; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, nums: seed.nums, cmp: false } : blank());
+      }
+      store.slots.forEach(function (sl) {
+        if (!sl || !Array.isArray(sl.buy) || !Array.isArray(sl.sell) || !sl.nums) { sl.buy = []; sl.sell = []; sl.nums = {}; }
+        sl.cmp = !!sl.cmp;
+      });
+      var active = store.active >= 0 && store.active < 10 ? store.active : 0;
+      var applying = false;
+      function persist() { store.active = active; try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+      function syncFromDom() {
+        var st = collectDom();
+        store.slots[active].buy = st.buy; store.slots[active].sell = st.sell; store.slots[active].nums = st.nums;
+      }
+      function applySlot(idx) {
+        var st = store.slots[idx];
+        applying = true;
+        panel.querySelectorAll('input[type="checkbox"][data-bt="buy"], input[type="checkbox"][data-bt="sell"]').forEach(function (b) {
+          var list = b.getAttribute("data-bt") === "buy" ? st.buy : st.sell;
           var on = list.indexOf(b.value) >= 0;
           if (b.checked !== on) { b.checked = on; b.dispatchEvent(new Event("change", { bubbles: true })); }
         });
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) {
-          var v = st.nums ? st.nums[n.getAttribute("data-bt-num")] : undefined;
+          var v = st.nums[n.getAttribute("data-bt-num")];
           if (v !== undefined && n.value !== String(v)) { n.value = String(v); n.dispatchEvent(new Event("change", { bubbles: true })); }
         });
-        var tt = document.getElementById("bt-tt-rs");
-        if (tt && st.ttRs && tt.value !== String(st.ttRs)) { tt.value = String(st.ttRs); tt.dispatchEvent(new Event("change", { bubbles: true })); }
+        applying = false;
       }
-      function render() {
-        listEl.innerHTML = "";
-        items.forEach(function (it, idx) {
-          var chip = document.createElement("span");
-          chip.className = "bt-strat-chip";
+      var buyHead = panel.querySelector(".bt-block.buy .bt-block-head h3");
+      var sellHead = panel.querySelector(".bt-block.sell .bt-block-head h3");
+      function paintTabs() {
+        if (buyHead) buyHead.textContent = "買いシグナル（戦略" + (active + 1) + "）";
+        if (sellHead) sellHead.textContent = "売りシグナル（戦略" + (active + 1) + "）";
+        if (tabsEl) Array.from(tabsEl.children).forEach(function (el, i) { el.classList.toggle("active", i === active); });
+      }
+      if (tabsEl) {
+        for (var t = 0; t < 10; t++) (function (idx) {
+          var tab = document.createElement("button");
+          tab.type = "button"; tab.className = "bt-strat-tab";
           var cmp = document.createElement("input");
-          cmp.type = "checkbox"; cmp.checked = !!it.cmp; cmp.title = "比較用に選択";
-          cmp.addEventListener("change", function () { it.cmp = cmp.checked; persist(); });
-          var name = document.createElement("button");
-          name.type = "button"; name.className = "bt-strat-load"; name.textContent = it.name; name.title = "クリックで読み込み";
-          name.addEventListener("click", function () { apply(it.state); });
-          var del = document.createElement("button");
-          del.type = "button"; del.className = "bt-strat-del"; del.textContent = "×"; del.title = "削除";
-          del.addEventListener("click", function () { items.splice(idx, 1); persist(); render(); });
-          chip.appendChild(cmp); chip.appendChild(name); chip.appendChild(del);
-          listEl.appendChild(chip);
-        });
+          cmp.type = "checkbox"; cmp.checked = !!store.slots[idx].cmp; cmp.title = "比較用に選択";
+          cmp.addEventListener("click", function (e) { e.stopPropagation(); });
+          cmp.addEventListener("change", function () { store.slots[idx].cmp = cmp.checked; persist(); });
+          var lab = document.createElement("span"); lab.textContent = "戦略" + (idx + 1);
+          tab.appendChild(cmp); tab.appendChild(lab);
+          tab.addEventListener("click", function () {
+            if (idx === active) return;
+            syncFromDom();
+            active = idx;
+            applySlot(active);
+            persist(); paintTabs();
+          });
+          tabsEl.appendChild(tab);
+        })(t);
       }
-      saveBtn.addEventListener("click", function () {
-        var nm = nameInput ? String(nameInput.value || "").trim() : "";
-        if (!nm) nm = "戦略" + (items.length + 1);
-        var st = collect();
-        var ex = null;
-        items.forEach(function (i) { if (i.name === nm) ex = i; });
-        if (ex) ex.state = st; else items.push({ name: nm, state: st, cmp: false });
-        persist(); render();
-        if (nameInput) nameInput.value = "";
+      panel.addEventListener("change", function (e) {
+        if (applying) return;
+        var tg = e.target;
+        if (!tg || !tg.getAttribute) return;
+        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num")) { syncFromDom(); persist(); }
       });
-      render();
-      return { selected: function () { return items.filter(function (i) { return i.cmp; }); } };
+      applySlot(active);
+      persist(); paintTabs();
+      return {
+        selected: function () {
+          var screen = checked("screen");
+          var out = [];
+          store.slots.forEach(function (sl, i) {
+            if (sl.cmp) out.push({ name: "戦略" + (i + 1), state: { screen: screen, buy: sl.buy.slice(), sell: sl.sell.slice(), nums: Object.assign({}, sl.nums) } });
+          });
+          return out;
+        }
+      };
     })();
 
     function checked(group) {
@@ -1045,7 +1075,7 @@
     }
 
     runBtn.addEventListener("click", function () {
-      var cmpSel = stratApi && stratApi.selected ? stratApi.selected() : [];
+      var cmpSel = slotsApi.selected();
       if (cmpSel.length) { runCompare(); return; }
       if (((document.getElementById("bt-mode") || {}).value || "normal") === "rolling") { runRolling(); return; }
       var symbolsRaw = (document.getElementById("bt-symbols") || {}).value || "";
@@ -1185,7 +1215,7 @@
       };
     }
     function runCompare() {
-      var selected = stratApi && stratApi.selected ? stratApi.selected() : [];
+      var selected = slotsApi.selected();
       if (!selected.length) {
         results.innerHTML = '<p class="bt-res-note">比較する戦略を、戦略チップの□で1つ以上選んでください。</p>';
         return;
