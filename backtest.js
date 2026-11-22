@@ -550,7 +550,7 @@
             esc(t.open ? "期間終了" : (SELL_LABELS[t.reason] || t.reason)) + "</td></tr>";
         });
         html += "</tbody></table>";
-        html += '<p class="bt-res-note">列の見出しをドラッグすると順番を入れ替えられます。列の右端をドラッグすると幅を変えられます（どちらも保存されます）。</p>';
+        html += '<p class="bt-res-note">見出しをドラッグで列順変更、右端のつまみで幅調整。Ctrl+クリックで複数列を選ぶと幅を一括調整できます（どちらも保存されます）。</p>';
       } else {
         html += '<p class="bt-res-note">この期間に買い条件を満たす日はありませんでした。</p>';
       }
@@ -560,9 +560,13 @@
 
     function sharpeTxt(v) { return v == null || !isFinite(v) ? "—" : v.toFixed(2); }
 
-    // Trade-history table: draggable column order and column widths,
-    // both saved per market and keyed by column id so they stay attached
-    // to their column when the order changes.
+    // Trade-history table: column order and widths with the same
+    // behaviour as the stock screener — drag a heading to reorder (with
+    // drop indicators), drag the heading's right-edge grip to resize,
+    // Ctrl+click headings to select several columns and resize them
+    // together, Alt+arrow keys to move a column, Escape clears the
+    // selection. Order and widths are saved per market, keyed by
+    // column id.
     var TRADE_COLS = ["buyDate", "buyPrice", "sellDate", "sellPrice", "ret", "hold", "reason"];
     function setupTradesTable(table) {
       if (!table) return;
@@ -578,7 +582,8 @@
         }
       } catch (e) {}
       var cg = document.createElement("colgroup");
-      TRADE_COLS.forEach(function (c) { var col = document.createElement("col"); col.dataset.btCol = c; cg.appendChild(col); });
+      var colById = {};
+      TRADE_COLS.forEach(function (c) { var col = document.createElement("col"); col.dataset.btCol = c; colById[c] = col; cg.appendChild(col); });
       table.insertBefore(cg, table.firstChild);
       function reorder(ord) {
         Array.from(table.querySelectorAll("tr")).forEach(function (tr) {
@@ -586,73 +591,159 @@
           Array.from(tr.children).forEach(function (cell) { cells[cell.dataset.btCol] = cell; });
           ord.forEach(function (c) { if (cells[c]) tr.appendChild(cells[c]); });
         });
-        var colsById = {};
-        Array.from(cg.children).forEach(function (col) { colsById[col.dataset.btCol] = col; });
-        ord.forEach(function (c) { if (colsById[c]) cg.appendChild(colsById[c]); });
+        ord.forEach(function (c) { if (colById[c]) cg.appendChild(colById[c]); });
       }
       reorder(order);
-      var widths = {};
-      try { widths = JSON.parse(localStorage.getItem(widthKey) || "{}") || {}; } catch (e) { widths = {}; }
-      function applyWidths() {
-        var total = 0, any = false;
-        Array.from(cg.children).forEach(function (col) {
-          var w = widths[col.dataset.btCol];
-          if (w) { col.style.width = w + "px"; total += w; any = true; } else col.style.width = "";
-        });
-        table.style.tableLayout = any ? "fixed" : "";
-        table.style.width = any ? total + "px" : "";
+      var thById = {};
+      Array.from(table.querySelectorAll("thead th")).forEach(function (th) { thById[th.dataset.btCol] = th; });
+      var clampW = function (v) { return Math.max(58, Math.min(650, Math.round(v))); };
+      var defaults = {}, widths = {};
+      var savedWidths = null;
+      try { savedWidths = JSON.parse(localStorage.getItem(widthKey) || "null"); } catch (e) {}
+      TRADE_COLS.forEach(function (c) {
+        var th = thById[c];
+        defaults[c] = clampW((th && th.offsetWidth) || 90);
+        widths[c] = savedWidths && typeof savedWidths[c] === "number" && isFinite(savedWidths[c]) ? clampW(savedWidths[c]) : defaults[c];
+      });
+      function draw() {
+        var total = 0;
+        TRADE_COLS.forEach(function (c) { colById[c].style.width = widths[c] + "px"; total += widths[c]; });
+        table.style.tableLayout = "fixed";
+        table.style.width = total + "px";
+        table.style.minWidth = total + "px";
       }
-      applyWidths();
-      Array.from(table.querySelectorAll("thead th")).forEach(function (th) {
-        th.style.position = "relative";
-        var h = document.createElement("span");
-        h.className = "bt-col-resizer";
-        h.title = "ドラッグで列幅を変更（ダブルクリックでリセット）";
-        th.appendChild(h);
-        h.addEventListener("click", function (e) { e.stopPropagation(); });
-        h.addEventListener("dblclick", function (e) {
-          e.stopPropagation();
-          widths = {};
-          try { localStorage.removeItem(widthKey); } catch (err) {}
-          applyWidths();
-        });
-        h.addEventListener("pointerdown", function (e) {
+      function persistWidths() { try { localStorage.setItem(widthKey, JSON.stringify(widths)); } catch (e) {} }
+      draw();
+      var selectedCols = new Set();
+      function paintSelection() {
+        TRADE_COLS.forEach(function (c) { if (thById[c]) thById[c].classList.toggle("bt-col-selected", selectedCols.has(c)); });
+      }
+      table.addEventListener("pointerdown", function (e) {
+        if (e.button !== 0) return;
+        if (!(e.ctrlKey || e.metaKey)) {
+          if (selectedCols.size && !(e.target && e.target.closest && e.target.closest(".bt-col-resizer"))) { selectedCols.clear(); paintSelection(); }
+          return;
+        }
+        var th = e.target && e.target.closest ? e.target.closest("th[data-bt-col]") : null;
+        if (!th || !table.contains(th)) return;
+        if (e.target.closest(".bt-col-resizer")) return;
+        var id = th.dataset.btCol;
+        if (!TRADE_COLS.includes(id)) return;
+        e.preventDefault(); e.stopPropagation();
+        if (selectedCols.has(id)) selectedCols.delete(id); else selectedCols.add(id);
+        paintSelection();
+      }, true);
+      table.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && selectedCols.size) { selectedCols.clear(); paintSelection(); }
+      });
+      function widthTargets(id) { return selectedCols.has(id) && selectedCols.size > 1 ? Array.from(selectedCols) : [id]; }
+      TRADE_COLS.forEach(function (id) {
+        var th = thById[id];
+        if (!th) return;
+        th.classList.add("bt-reorderable");
+        th.tabIndex = 0;
+        th.title = "ドラッグで列順を変更（保存）。Ctrl+クリックで複数選択。Alt+左右キーでも移動可能。";
+        var grip = document.createElement("span");
+        grip.className = "bt-col-resizer";
+        grip.setAttribute("tabindex", "0");
+        grip.title = "ドラッグで幅を調整・自動保存。ダブルクリックで元に戻す";
+        th.appendChild(grip);
+        grip.addEventListener("pointerdown", function (e) {
+          if (e.button !== 0 || e.isPrimary === false) return;
           e.preventDefault(); e.stopPropagation();
-          var id = th.dataset.btCol;
-          Array.from(table.querySelectorAll("thead th")).forEach(function (t) { if (!widths[t.dataset.btCol]) widths[t.dataset.btCol] = t.offsetWidth; });
-          var startX = e.clientX, startW = widths[id] || th.offsetWidth;
-          function move(ev) { widths[id] = Math.max(36, startW + ev.clientX - startX); applyWidths(); }
-          function up() {
-            document.removeEventListener("pointermove", move);
-            document.removeEventListener("pointerup", up);
-            try { localStorage.setItem(widthKey, JSON.stringify(widths)); } catch (err) {}
+          var startX = e.clientX, startWidth = widths[id], pointerId = e.pointerId;
+          function move(ev) {
+            if (ev.pointerId !== pointerId) return;
+            var raw = startWidth + (ev.clientX - startX);
+            widthTargets(id).forEach(function (t) { widths[t] = clampW(raw); });
+            draw();
           }
-          document.addEventListener("pointermove", move);
-          document.addEventListener("pointerup", up);
-        });
-        th.addEventListener("pointerdown", function (e) {
-          if (e.target === h) return;
-          var startX = e.clientX, moved = false;
-          function move(ev) { if (Math.abs(ev.clientX - startX) > 6) moved = true; }
           function up(ev) {
-            document.removeEventListener("pointermove", move);
-            document.removeEventListener("pointerup", up);
-            if (!moved) return;
-            var curThs = Array.from(table.querySelectorAll("thead th"));
-            var curIds = curThs.map(function (t) { return t.dataset.btCol; });
-            var dragId = th.dataset.btCol;
-            var rest = curThs.filter(function (t) { return t !== th; });
-            var insert = rest.filter(function (t) { var r = t.getBoundingClientRect(); return ev.clientX > r.left + r.width / 2; }).length;
-            curIds.splice(curIds.indexOf(dragId), 1);
-            curIds.splice(insert, 0, dragId);
-            reorder(curIds);
-            try { localStorage.setItem(orderKey, JSON.stringify(curIds)); } catch (err) {}
+            if (ev.pointerId !== pointerId) return;
+            window.removeEventListener("pointermove", move, true);
+            window.removeEventListener("pointerup", up, true);
+            window.removeEventListener("pointercancel", up, true);
+            persistWidths();
           }
-          document.addEventListener("pointermove", move);
-          document.addEventListener("pointerup", up);
+          window.addEventListener("pointermove", move, true);
+          window.addEventListener("pointerup", up, true);
+          window.addEventListener("pointercancel", up, true);
+        });
+        grip.addEventListener("click", function (e) { e.stopPropagation(); });
+        grip.addEventListener("dblclick", function (e) {
+          e.preventDefault(); e.stopPropagation();
+          widthTargets(id).forEach(function (t) { widths[t] = defaults[t]; });
+          draw(); persistWidths();
+        });
+        grip.addEventListener("keydown", function (e) {
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+          e.preventDefault();
+          var raw = widths[id] + (e.key === "ArrowRight" ? 10 : -10);
+          widthTargets(id).forEach(function (t) { widths[t] = clampW(raw); });
+          draw(); persistWidths();
+        });
+        var drag = null, hover = null, after = false;
+        function highlight(next, right) {
+          if (hover) hover.classList.remove("bt-drop-before", "bt-drop-after");
+          hover = next; after = right;
+          if (hover) hover.classList.add(right ? "bt-drop-after" : "bt-drop-before");
+        }
+        function endDrag(pointerId, cancel) {
+          if (!drag || drag.id !== pointerId) return;
+          var target = hover, right = after;
+          drag = null;
+          th.classList.remove("bt-column-dragging");
+          highlight(null, false);
+          try { if (th.hasPointerCapture && th.hasPointerCapture(pointerId)) th.releasePointerCapture(pointerId); } catch (err) {}
+          if (!cancel && target) {
+            var cur = Array.from(table.querySelectorAll("thead th")).map(function (t) { return t.dataset.btCol; });
+            cur.splice(cur.indexOf(id), 1);
+            var ti = cur.indexOf(target.dataset.btCol);
+            cur.splice(right ? ti + 1 : ti, 0, id);
+            reorder(cur);
+            try { localStorage.setItem(orderKey, JSON.stringify(cur)); } catch (err) {}
+          }
+        }
+        th.addEventListener("pointerdown", function (e) {
+          if (e.button !== 0 || e.isPrimary === false || e.pointerType === "touch") return;
+          if (e.target.closest(".bt-col-resizer")) return;
+          drag = { id: e.pointerId, x: e.clientX, y: e.clientY, active: false };
+          try { th.setPointerCapture(e.pointerId); } catch (err) {}
+          e.preventDefault();
+        });
+        th.addEventListener("pointermove", function (e) {
+          if (!drag || drag.id !== e.pointerId) return;
+          if (!drag.active) {
+            if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+            drag.active = true;
+            th.classList.add("bt-column-dragging");
+          }
+          var under = document.elementFromPoint ? document.elementFromPoint(e.clientX, e.clientY) : null;
+          var target = under && under.closest ? under.closest("thead th[data-bt-col]") : null;
+          var next = target && target !== th && table.contains(target) ? target : null;
+          var right = next ? e.clientX > next.getBoundingClientRect().left + next.getBoundingClientRect().width / 2 : false;
+          if (next !== hover || right !== after) highlight(next, right);
+        });
+        th.addEventListener("pointerup", function (e) { if (drag && drag.active) endDrag(e.pointerId, false); else drag = null; });
+        th.addEventListener("pointercancel", function (e) { endDrag(e.pointerId, true); });
+        th.addEventListener("keydown", function (e) {
+          if (e.target !== th || !e.altKey || e.ctrlKey || e.metaKey) return;
+          var delta = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
+          if (!delta) return;
+          e.preventDefault();
+          var cur = Array.from(table.querySelectorAll("thead th")).map(function (t) { return t.dataset.btCol; });
+          var idx = cur.indexOf(id), swap = idx + delta;
+          if (swap < 0 || swap >= cur.length) return;
+          var other = cur[swap];
+          cur[swap] = id; cur[idx] = other;
+          reorder(cur);
+          try { localStorage.setItem(orderKey, JSON.stringify(cur)); } catch (err) {}
+          th.focus();
         });
       });
     }
+
+
 
     // Draggable column widths for result tables, saved per table kind.
     function makeResizable(table, key) {
@@ -714,10 +805,10 @@
           return;
         }
         var p = e.out.perf;
+        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + '</td><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>—</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>—</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
         html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + "</td><td>戦略</td><td>" + pct(p.totalReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
           (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" + sharpeTxt(p.sharpe) + "</td><td>" +
           (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + '</td><td>' + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
-        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + e.title + '</td><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>—</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>—</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
       });
       html += "</tbody></table>";
       html += '<p class="bt-res-note">銘柄の行を選ぶと、その銘柄の売買履歴を表示します。</p>';
@@ -728,9 +819,9 @@
       var rowsEls = Array.from(container.querySelectorAll(".bt-stock-row"));
       function select(idx) {
         rowsEls.forEach(function (x) { x.classList.remove("bt-stock-sel"); });
-        var tr = rowsEls[idx];
-        if (!tr) { detail.innerHTML = ""; return; }
-        tr.classList.add("bt-stock-sel");
+        var pair = rowsEls.filter(function (x) { return parseInt(x.dataset.btStock, 10) === idx; });
+        if (!pair.length) { detail.innerHTML = ""; return; }
+        pair.forEach(function (x) { x.classList.add("bt-stock-sel"); });
         var e = entries[idx];
         detail.innerHTML = e.out ? stockTradesHtml(e.title, e.out) : '<div class="bt-res-block"><h4>' + e.title + '</h4><p class="bt-res-note">' + esc(e.noData || "") + "</p></div>";
         setupTradesTable(detail.querySelector(".bt-trades-table"));
@@ -968,12 +1059,12 @@
           var bhShVals = valid.map(function (x) { return x.bhSharpeAvg; }).filter(function (v) { return v != null; });
           var totSharpe = shVals.length ? shVals.reduce(function (a, b) { return a + b; }, 0) / shVals.length : null;
           var totBhSharpe = bhShVals.length ? bhShVals.reduce(function (a, b) { return a + b; }, 0) / bhShVals.length : null;
-          html += '<tr class="bt-roll-total"><td rowspan="2">全開始日の平均</td><td>戦略</td><td rowspan="2">' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + sharpeTxt(totSharpe) + '</td></tr>';
-          html += '<tr class="bt-roll-total bt-bh-row"><td>買い持ち</td><td>' + pct(totBh) + '</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(totBhSharpe) + '</td></tr>';
+          html += '<tr class="bt-roll-total bt-bh-row"><td rowspan="2">全開始日の平均</td><td>買い持ち</td><td rowspan="2">' + totCount + '</td><td>' + pct(totBh) + '</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(totBhSharpe) + '</td></tr>';
+          html += '<tr class="bt-roll-total"><td>戦略</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + sharpeTxt(totSharpe) + '</td></tr>';
         }
         summaries.forEach(function (s) {
-          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td rowspan="2">' + s.date + '</td><td>戦略</td><td rowspan="2">' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td></tr>';
-          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td>買い持ち</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>—</td><td>—</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td rowspan="2">' + s.date + '</td><td>買い持ち</td><td rowspan="2">' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>—</td><td>—</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>戦略</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td></tr>';
         });
         html += '</tbody></table>';
         html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。' + (fixedCodes ? "対象銘柄は入力した銘柄です（スクリーニング条件は使っていません）。" : "対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。") + '</p>';
