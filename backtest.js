@@ -427,7 +427,18 @@
         });
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) {
           var v = st.nums[n.getAttribute("data-bt-num")];
-          if (v !== undefined && n.value !== String(v)) { n.value = String(v); n.dispatchEvent(new Event("change", { bubbles: true })); }
+          if (v === undefined) return;
+          if (n.value !== String(v)) {
+            n.value = String(v);
+            if (n.tagName === "SELECT" && n.value !== String(v)) {
+              // Stored value outside the current option range (e.g. the RSI
+              // ranges were narrowed): clamp to the nearest option.
+              var num = parseFloat(v), best = null, bestD = Infinity;
+              Array.from(n.options).forEach(function (o) { var dd2 = Math.abs(parseFloat(o.value) - num); if (isFinite(dd2) && dd2 < bestD) { bestD = dd2; best = o.value; } });
+              n.value = best != null ? best : n.defaultValue;
+            }
+            n.dispatchEvent(new Event("change", { bubbles: true }));
+          }
         });
         applying = false;
       }
@@ -1190,7 +1201,7 @@
       return {
         buy: entry, sell: sell,
         ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
-        rsiBuy: num("rsiBuy", 30), rsiSell: num("rsiSell", 70),
+        rsiBuy: Math.min(50, num("rsiBuy", 30)), rsiSell: Math.max(50, num("rsiSell", 70)),
         dropPct: num("dropSell", 5), ddSell: num("ddSell", 5), lossPct: num("lossPct", 8), highPct: num("highPct", 25), bounceSigma: num("bounceSigma", 2)
       };
     }
