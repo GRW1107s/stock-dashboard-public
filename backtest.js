@@ -37,8 +37,8 @@
     ma200: "株価が200日移動平均を下回る",
     rs70: "RS指数が70以下に低下",
     high25: "52週高値から25%以上下落",
-    dd3: "出来高を伴う下落日（DD）が3日出る",
-    ddGe: "DD（売り抜け日）が閾値以上",
+    dd3: "有効DDが3回以上（25取引日・5%失効）",
+    ddGe: "DD5到達後の警戒状態（FTDで解除）",
     rsiLe: "RSI（14日）が閾値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 , ftd: 1 };
@@ -112,14 +112,46 @@
         ddActive.push(active.length);
       }
     })();
-    function ddOk(i) {
-      if (cfg.ddLimit == null) return true;
-      if (!cfg.ddByDate) return false;
-      // carry the most recent known count forward
-      for (var k = i; k >= 0; k--) {
-        if (cfg.ddByDate.has(dates[k])) return cfg.ddByDate.get(dates[k]) <= cfg.ddLimit;
+    // Pine Script parity: DD5 starts the warning, FTD ends it, but DD
+    // history itself is NOT cleared. Use the charted instrument's OHLCV.
+    var pineFtd = [], pineWarning = [], pineWarningStart = [];
+    (function () {
+      var warningActive = false, rallyDay = 0, rallyLow = null;
+      for (var i = 0; i < n; i++) {
+        var isDd = i > 0 && closes[i] <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1];
+        var reachedDd5 = isDd && ddActive[i] >= 5 && (i === 0 || ddActive[i - 1] < 5);
+        var isFtd = false;
+        if (reachedDd5 && !warningActive) {
+          warningActive = true;
+          rallyDay = 0;
+          rallyLow = null;
+        } else if (warningActive && i > 0) {
+          if (rallyDay > 0 && lows[i] < rallyLow) {
+            rallyDay = 0;
+            rallyLow = null;
+          }
+          if (rallyDay === 0) {
+            if (closes[i] > closes[i - 1]) {
+              rallyDay = 1;
+              rallyLow = lows[i];
+            }
+          } else {
+            rallyDay++;
+          }
+          if (rallyDay >= 4 && closes[i] >= closes[i - 1] * 1.0125 && vols[i] > vols[i - 1]) {
+            isFtd = true;
+            warningActive = false;
+            rallyDay = 0;
+            rallyLow = null;
+          }
+        }
+        pineFtd.push(isFtd);
+        pineWarning.push(warningActive || isFtd);
+        pineWarningStart.push(reachedDd5);
       }
-      return false;
+    })();
+    function ddOk(i) {
+      return cfg.ddLimit == null || ddActive[i] <= cfg.ddLimit;
     }
     function buyOk(i) {
       for (var j = 0; j < cfg.buy.length; j++) {
@@ -146,7 +178,7 @@
         } else if (id === "rsiGe") {
           if (cfg.rsiBuy == null || rsi[i] == null || !(rsi[i] <= cfg.rsiBuy)) return false;
         } else if (id === "ftd") {
-          if (!cfg.ftdByDate || !cfg.ftdByDate.has(dates[i])) return false;
+          if (!pineFtd[i]) return false;
         }
       }
       return ddOk(i);
@@ -163,11 +195,9 @@
         }
         if (id === "rsiLe" && cfg.rsiSell != null && rsi[i] != null && rsi[i] >= cfg.rsiSell) return id;
         if (id === "dropPct" && cfg.dropPct != null && i > 0 && closes[i - 1] > 0 && c / closes[i - 1] - 1 <= -cfg.dropPct / 100) return id;
-        if (id === "ddGe" && cfg.ddSell != null && cfg.ddByDate) {
-          for (var k2 = i; k2 >= 0; k2--) {
-            if (cfg.ddByDate.has(dates[k2])) { if (cfg.ddByDate.get(dates[k2]) >= cfg.ddSell) return id; break; }
-          }
-        }
+        // Pine's orange warning remains active until FTD even if DD falls below 5.
+        // A new FTD bar is the final orange bar, but is not a sell signal.
+        if (id === "ddGe" && cfg.ddSell != null && cfg.ddSell === 5 && pineWarning[i] && !pineFtd[i]) return id;
         if (id === "dd3") {
           if (ddActive[i] >= 3) return id;
         }
@@ -716,7 +746,7 @@
       if (id === "rsiGe") return "RSI（14日）が" + (rsiBuyVal == null ? "閾値" : rsiBuyVal) + "以下";
       if (id === "rsiLe") return "RSI（14日）が" + (rsiSellVal == null ? "閾値" : rsiSellVal) + "以上";
       if (id === "dropPct") return "前日終値から" + (dropPctVal == null ? "閾値" : dropPctVal) + "%以上下落";
-      if (id === "ddGe") return "DD（売り抜け日）が" + (ddSellVal == null ? "閾値" : ddSellVal) + "以上";
+      if (id === "ddGe") return "DD5到達後の警戒状態（FTDで解除、5回設定時）";
       if (id === "dd") return "DD（売り抜け日）が" + (ddGateVal == null ? "閾値" : ddGateVal) + "以下";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
