@@ -124,6 +124,19 @@
 .bt-settings input[type="text"]{width:210px}
 .bt-settings .bt-hint{font-size:11px;color:#64748b}
 .bt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}
+.bt-sweep-matrix{border-collapse:collapse;margin:10px 0;font-size:11.5px}
+.bt-sweep-matrix th,.bt-sweep-matrix td{border:1px solid #ffffff;padding:4px 5px;text-align:center;min-width:54px}
+.bt-sweep-matrix th{background:#f1f5f9;color:#475569;font-weight:600}
+.bt-sweep-cell{cursor:pointer}
+.bt-sweep-cell.best{box-shadow:inset 0 0 0 2px #2563eb}
+.bt-sweep-cell.sel{box-shadow:inset 0 0 0 2px #1d4ed8}
+.bt-sweep-table th{cursor:pointer}
+.bt-sweep-table tr.sel td{box-shadow:inset 0 2px 0 #2563eb,inset 0 -2px 0 #2563eb}
+.bt-sweep-dates tr.sel td{box-shadow:inset 0 2px 0 #2563eb,inset 0 -2px 0 #2563eb}
+.bt-sweep-dates tbody tr{cursor:pointer}
+.bt-sweep-table tr.sel td:first-child{box-shadow:inset 2px 0 0 #2563eb,inset 0 2px 0 #2563eb,inset 0 -2px 0 #2563eb}
+.bt-sweep-table tr.sel td:last-child{box-shadow:inset -2px 0 0 #2563eb,inset 0 2px 0 #2563eb,inset 0 -2px 0 #2563eb}
+
 .bt-main{display:flex;gap:14px;align-items:flex-start;margin-top:12px}
 .bt-strat-tabs{display:flex;flex-direction:column;gap:6px;min-width:148px}
 .bt-strat-tab{display:flex;align-items:center;gap:7px;border:1px solid #d7e0ea;border-radius:8px;padding:8px 10px;background:#f8fafc;cursor:pointer;font-size:14px;text-align:left;width:100%}
@@ -202,7 +215,7 @@
 <p class="bt-note">市場動向・スクリーニング・買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。ティッカーと期間を指定して「バックテスト実行」を押すと、保存済みの日足データで検証します。チャート表示は今後追加予定です。</p>
 <p class="bt-data-note" id="bt-data-note" style="font-size:12px;color:var(--muted,#666);margin:2px 0 8px">データ量を読み込んでいます…</p>
 <div class="bt-settings">
-<label>実行方法<select id="bt-mode"><option value="normal">通常</option><option value="rolling">ローリング</option></select></label>
+<label>実行方法<select id="bt-mode"><option value="normal">通常</option><option value="rolling">ローリング</option><option value="sweep">RSI全通り</option><option value="sweepRoll">RSI全通り（ローリング）</option></select></label>
 <label>対象<select id="bt-universe"><option value="all">米国株 全銘柄</option><option value="sp500">S&P 500のみ</option></select></label>
 <label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
 <label id="bt-roll-horizon-label" style="display:none">テスト期間（各回）<select id="bt-roll-horizon"><option value="21">1ヶ月</option><option value="42">2ヶ月</option><option value="63">3ヶ月</option><option value="126">6ヶ月</option></select></label>
@@ -327,7 +340,7 @@
   universe.addEventListener('change',save);
   period.addEventListener('change',save);
   function applyMode(){
-    const rolling=mode&&mode.value==='rolling';
+    const rolling=mode&&(mode.value==='rolling'||mode.value==='sweepRoll');
     const periodLabel=period.closest('label');
     if(periodLabel)periodLabel.style.display=rolling?'none':'';
     const horizonLabel=document.getElementById('bt-roll-horizon-label');
@@ -336,7 +349,7 @@
     if(normalHint)normalHint.style.display=rolling?'none':'';
     const rollHint=document.getElementById('bt-roll-hint');
     if(rollHint)rollHint.style.display=rolling?'':'none';
-    if(symbols)symbols.disabled=!!rolling;
+    if(symbols)symbols.disabled=mode&&mode.value==='rolling';
   }
   if(mode)mode.addEventListener('change',()=>{applyMode();save();});
   if(rollHorizon)rollHorizon.addEventListener('change',save);
@@ -629,5 +642,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261123rsi" defer></script>
+</script><script src="./backtest.js?v=20261123sweep2" defer></script>
 </body></html>
