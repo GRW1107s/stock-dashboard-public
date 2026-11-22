@@ -37,7 +37,7 @@
     ma200: "株価が200日移動平均を下回る",
     rs70: "RS指数が70以下に低下",
     high25: "52週高値から閾値%以上下落",
-    ddGe: "DD5到達後の警戒状態（FTDで解除）",
+    ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
     rsiLe: "RSI（14日）が閾値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 , ftd: 1 };
@@ -774,7 +774,7 @@
       if (id === "dropPct") return "前日終値から" + (dropPctVal == null ? "閾値" : dropPctVal) + "%以上下落";
       if (id === "loss8") return "買値から" + (lossPctVal == null ? "閾値" : lossPctVal) + "%下落";
       if (id === "high25") return "52週高値から" + (highPctVal == null ? "閾値" : highPctVal) + "%以上下落";
-      if (id === "ddGe") return "DD5到達後の警戒状態（FTDで解除、5回設定時）";
+      if (id === "ddGe") return "DD（売り抜け日）が" + (ddSellVal == null ? "閾値" : ddSellVal) + "以上（直近25取引日）";
       if (id === "dd") return "DD（売り抜け日）が" + (ddGateVal == null ? "閾値" : ddGateVal) + "以下";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
