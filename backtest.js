@@ -400,16 +400,17 @@
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
         return st;
       }
-      if (!store || !Array.isArray(store.slots) || store.slots.length !== 10) {
+      if (!store || !Array.isArray(store.slots) || (store.slots.length !== 8 && store.slots.length !== 10)) {
         var seed = collectDom();
         store = { active: 0, slots: [] };
-        for (var i = 0; i < 10; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, nums: seed.nums, cmp: false } : blank());
+        for (var i = 0; i < 8; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, nums: seed.nums, cmp: false } : blank());
       }
+      if (store.slots.length === 10) store.slots = store.slots.slice(0, 8);
       store.slots.forEach(function (sl) {
         if (!sl || !Array.isArray(sl.buy) || !Array.isArray(sl.sell) || !sl.nums) { sl.buy = []; sl.sell = []; sl.nums = {}; }
         sl.cmp = !!sl.cmp;
       });
-      var active = store.active >= 0 && store.active < 10 ? store.active : 0;
+      var active = store.active >= 0 && store.active < 8 ? store.active : 0;
       var applying = false;
       function persist() { store.active = active; try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
       function syncFromDom() {
@@ -449,7 +450,7 @@
         if (tabsEl) Array.from(tabsEl.children).forEach(function (el, i) { el.classList.toggle("active", i === active); });
       }
       if (tabsEl) {
-        for (var t = 0; t < 10; t++) (function (idx) {
+        for (var t = 0; t < store.slots.length; t++) (function (idx) {
           var tab = document.createElement("button");
           tab.type = "button"; tab.className = "bt-strat-tab";
           var cmp = document.createElement("input");
@@ -1254,7 +1255,7 @@
       return {
         buy: entry, sell: sell,
         ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
-        rsiBuy: Math.min(50, num("rsiBuy", 30)), rsiSell: Math.max(50, num("rsiSell", 70)),
+        rsiBuy: Math.min(50, Math.max(20, num("rsiBuy", 30))), rsiSell: Math.min(90, Math.max(50, num("rsiSell", 70))),
         dropPct: num("dropSell", 5), ddSell: num("ddSell", 5), lossPct: num("lossPct", 8), highPct: num("highPct", 25), bounceSigma: num("bounceSigma", 2), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50)
       };
     }
@@ -1523,8 +1524,8 @@
         });
       }).then(function (targets) {
         var BUYS = [], SELLS = [], b, sv;
-        for (b = 0; b <= 50; b += 5) BUYS.push(b);
-        for (sv = 50; sv <= 100; sv += 5) SELLS.push(sv);
+        for (b = 20; b <= 50; b += 5) BUYS.push(b);
+        for (sv = 50; sv <= 90; sv += 5) SELLS.push(sv);
         function comboCfg(bb, ss, t) {
           return {
             fromIdx: t.fromIdx, toIdx: t.toIdx, buy: entry, sell: sell,
@@ -1556,7 +1557,7 @@
             .concat(buy.filter(function (id) { return id !== "rsiGe"; }).map(function (id) { return "買い：" + condLabel("buy", id); }))
             .concat(sell.filter(function (id) { return id !== "rsiLe"; }).map(function (id) { return "売り：" + condLabel("sell", id); }));
           if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
-          var html = '<p class="bt-res-note">RSI全通り検証 / 銘柄：' + targetNames.join("、") + "<br>買いRSI 0〜50 × 売りRSI 50〜100（5刻み・121通り）。" + (targetNames.length > 1 ? "複数銘柄の値は平均です（勝率・平均損益・平均保有は全取引の合算、取引回数は合計）。" : "") + (forced ? "RSIの買い・売り条件は全通り検証のため自動で有効にしました。" : "") + "</p>";
+          var html = '<p class="bt-res-note">RSI全通り検証 / 銘柄：' + targetNames.join("、") + "<br>買いRSI 20〜50 × 売りRSI 50〜90（5刻み・63通り）。" + (targetNames.length > 1 ? "複数銘柄の値は平均です（勝率・平均損益・平均保有は全取引の合算、取引回数は合計）。" : "") + (forced ? "RSIの買い・売り条件は全通り検証のため自動で有効にしました。" : "") + "</p>";
           var valid = combos.filter(function (c) { return c.agg; });
           if (!valid.length) {
             html += '<p class="bt-res-note">対象銘柄のデータがありませんでした。</p>';
@@ -1796,8 +1797,8 @@
         // every (start date x code) window and aggregated across all runs.
         var totalRuns = 0;
         ctx.perDate.forEach(function (pd) { totalRuns += pd.codes.length; });
-        if (totalRuns * 121 > 250000) {
-          results.innerHTML = '<p class="bt-res-note">対象が多すぎます（開始日×銘柄×121通り＝約' + Math.round(totalRuns * 121 / 10000) + '万回の計算）。開始日〜終了日の範囲を狭めるか、銘柄を絞ってください。</p>';
+        if (totalRuns * 63 > 250000) {
+          results.innerHTML = '<p class="bt-res-note">対象が多すぎます（開始日×銘柄×63通り＝約' + Math.round(totalRuns * 63 / 10000) + '万回の計算）。開始日〜終了日の範囲を狭めるか、銘柄を絞ってください。</p>';
           runBtn.disabled = false;
           return;
         }
@@ -1821,8 +1822,8 @@
           return;
         }
         var BUYS = [], SELLS = [], bq, sq;
-        for (bq = 0; bq <= 50; bq += 5) BUYS.push(bq);
-        for (sq = 50; sq <= 100; sq += 5) SELLS.push(sq);
+        for (bq = 20; bq <= 50; bq += 5) BUYS.push(bq);
+        for (sq = 50; sq <= 90; sq += 5) SELLS.push(sq);
         function cfgFor(bb, ss, w) {
           return { fromIdx: w.fromIdx, toIdx: w.toIdx, buy: buy, sell: sell, ddLimit: ddLimit, rsiBuy: bb, rsiSell: ss, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceSigma: bounceSigmaVal, maDays: maDaysVal };
         }
@@ -1861,7 +1862,7 @@
           var valid = combos.filter(function (c) { return c.agg; });
           var html = '<p class="bt-res-note">RSI全通り検証（ローリング） / 開始日 ' + dateWins.length + '日（' + dateWins[0].date + ' 〜 ' + dateWins[dateWins.length - 1].date + '）・各回 ' + horizon + '営業日'
             + (fixedCodes ? ' / 銘柄：' + fixedCodes.join("、") : ' / 対象は各開始日のスクリーニング条件で選定')
-            + '<br>買いRSI 0〜50 × 売りRSI 50〜100（5刻み・121通り）。数値は全開始日×全銘柄の平均です（勝率・取引回数は全取引の合算）。'
+            + '<br>買いRSI 20〜50 × 売りRSI 50〜90（5刻み・63通り）。数値は全開始日×全銘柄の平均です（勝率・取引回数は全取引の合算）。'
             + (forcedRsi ? 'RSIの買い・売り条件は全通り検証のため自動で有効にしました。' : '') + '</p>';
           if (!valid.length) {
             html += '<p class="bt-res-note">対象データがありませんでした。</p>';
