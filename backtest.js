@@ -1098,6 +1098,8 @@
     }
 
     runBtn.addEventListener("click", function () {
+      var cmpSel = stratApi && stratApi.selected ? stratApi.selected() : [];
+      if (cmpSel.length) { runCompare(); return; }
       if (((document.getElementById("bt-mode") || {}).value || "normal") === "rolling") { runRolling(); return; }
       var symbolsRaw = (document.getElementById("bt-symbols") || {}).value || "";
       var codes = symbolsRaw.split(/[\s,、，]+/).map(function (s) { return s.trim(); }).filter(Boolean)
@@ -1210,7 +1212,6 @@
       });
     });
     // ---- strategy comparison (table only, GRW chose layout 3) ----
-    var cmpBtn = document.getElementById("bt-strat-compare");
     function stratCfg(st, ctx) {
       var nums = st.nums || {};
       var num = function (k, dflt) { var v = parseFloat(nums[k]); return isFinite(v) ? v : dflt; };
@@ -1268,7 +1269,6 @@
       var fromVal = normDate((document.getElementById("bt-from") || {}).value);
       var toVal = normDate((document.getElementById("bt-to") || {}).value);
       var periodYears = parseInt((document.getElementById("bt-period") || {}).value || "3", 10);
-      if (cmpBtn) cmpBtn.disabled = true;
       runBtn.disabled = true;
       results.innerHTML = '<p class="bt-res-note">比較を実行中…</p>';
       loadJson("sector-leaders.json").catch(function () { return null; }).then(function (leaders) {
@@ -1368,15 +1368,12 @@
           tr.addEventListener("click", function () { select(parseInt(tr.dataset.cmpIdx, 10)); });
         });
         if (perStrat.length) select(0);
-        if (cmpBtn) cmpBtn.disabled = false;
         runBtn.disabled = false;
       }).catch(function () {
         results.innerHTML = '<p class="bt-res-note">比較の実行中にエラーが発生しました。銘柄コードと期間を確認してください。</p>';
-        if (cmpBtn) cmpBtn.disabled = false;
         runBtn.disabled = false;
       });
     }
-    if (cmpBtn) cmpBtn.addEventListener("click", runCompare);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

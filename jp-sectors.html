@@ -210,10 +210,10 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <span class="bt-hint" id="bt-normal-hint">銘柄コードを入れると、その銘柄だけが対象になります。銘柄スクリーニングの表でチェックした銘柄もここに入ります。開始日・終了日を入れると、テスト期間より優先されます。</span>
 <span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日としてテストします。銘柄コードを入れるとその銘柄が全開始日の対象になり（スクリーニング条件は使いません）、空欄のときは開始日時点でスクリーニング条件を満たす銘柄が対象です。</span>
-<button type="button" class="bt-run" id="bt-run">バックテスト実行</button>
+<button type="button" class="bt-run" id="bt-run">実行</button>
 </div>
 <div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="nikkei">日経225</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="prime">東証プライム</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="standard">東証スタンダード</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="growth">東証グロース</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1321">日経225連動（1321）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1306">TOPIX連動（1306）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
-<div class="bt-strat-row"><span class="bt-index-cap">戦略</span><input type="text" id="bt-strat-name" placeholder="戦略名" autocomplete="off"><button type="button" id="bt-strat-save">チェック中の条件を保存</button><button type="button" id="bt-strat-compare">比較実行</button><span class="bt-strat-list" id="bt-strat-list"></span><span class="bt-note">保存した戦略は名前をクリックで読み込み、左の□は比較用に選択します。</span></div>
+<div class="bt-strat-row"><span class="bt-index-cap">戦略</span><input type="text" id="bt-strat-name" placeholder="戦略名" autocomplete="off"><button type="button" id="bt-strat-save">チェック中の条件を保存</button><span class="bt-strat-list" id="bt-strat-list"></span><span class="bt-note">保存した戦略は名前をクリックで読み込み。左の□で戦略を選ぶと「実行」で比較します。</span></div>
 <div class="bt-grid">
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
@@ -1087,5 +1087,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261122align" defer></script>
+<script src="./backtest.js?v=20261122onebtn" defer></script>
 </body></html>
