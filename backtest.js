@@ -37,12 +37,11 @@
     ma200: "株価が200日移動平均を下回る",
     rs70: "RS指数が70以下に低下",
     high25: "52週高値から閾値%以上下落",
-    dd3: "有効DDが3回以上（25取引日・5%失効）",
     ddGe: "DD5到達後の警戒状態（FTDで解除）",
     rsiLe: "RSI（14日）が閾値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1 , ftd: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, dd3: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -199,9 +198,6 @@
         // Pine's orange warning remains active until FTD even if DD falls below 5.
         // A new FTD bar is the final orange bar, but is not a sell signal.
         if (id === "ddGe" && cfg.ddSell != null && cfg.ddSell === 5 && pineWarning[i] && !pineFtd[i]) return id;
-        if (id === "dd3") {
-          if (ddActive[i] >= 3) return id;
-        }
       }
       return null;
     }
