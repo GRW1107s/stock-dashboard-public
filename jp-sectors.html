@@ -227,9 +227,9 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <p class="bt-note">市場動向・スクリーニング・買い・売りの条件を選んで過去データで検証する画面です。チェックを入れた条件はすべて満たす必要があり、入れるほど条件は厳しくなります。銘柄コードと期間を指定して「バックテスト実行」を押すと、保存済みの日足データで検証します。チャート表示は今後追加予定です。</p>
 <p class="bt-data-note" id="bt-data-note" style="font-size:12px;color:var(--muted,#666);margin:2px 0 8px">データ量を読み込んでいます…</p>
 <div class="bt-settings">
-<label>実行方法<select id="bt-mode"><option value="normal">通常</option><option value="rolling">ローリング</option><option value="sweep">RSI全通り</option><option value="sweepRoll">RSI全通り（ローリング）</option></select></label>
+<label>実行方法<select id="bt-mode"><option value="normal">通常</option><option value="rolling">ローリング</option></select></label>
 <label>対象<select id="bt-universe"><option value="all">日本株 全銘柄</option><option value="prime">プライムのみ</option><option value="standard">スタンダードのみ</option><option value="growth">グロースのみ</option></select></label>
-<label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option></select></label>
+<label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option><option value="20">直近20年</option><option value="30">直近30年</option></select></label>
 <label id="bt-roll-horizon-label" style="display:none">テスト期間（各回）<select id="bt-roll-horizon"><option value="21">1ヶ月</option><option value="42">2ヶ月</option><option value="63">3ヶ月</option><option value="126">6ヶ月</option></select></label>
 <label>銘柄コード<input type="text" id="bt-symbols" placeholder="例：7203, 6988" autocomplete="off"></label>
 <label>開始日<input type="text" id="bt-from" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
@@ -351,7 +351,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
   universe.addEventListener('change',save);
   period.addEventListener('change',save);
   function applyMode(){
-    const rolling=mode&&(mode.value==='rolling'||mode.value==='sweepRoll');
+    const rolling=mode&&(mode.value==='rolling');
     const periodLabel=period.closest('label');
     if(periodLabel)periodLabel.style.display=rolling?'none':'';
     const horizonLabel=document.getElementById('bt-roll-horizon-label');
@@ -1115,5 +1115,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261123slot8" defer></script>
+<script src="./backtest.js?v=20261123modes" defer></script>
 </body></html>
