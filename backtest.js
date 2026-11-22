@@ -543,22 +543,33 @@
     // selection. Order and widths are saved per market, keyed by
     // column id.
     var TRADE_COLS = ["buyDate", "buyPrice", "sellDate", "sellPrice", "ret", "hold", "reason"];
-    function setupTradesTable(table) {
+    var STOCK_COLS = ["title", "kind", "ret", "count", "win", "avg", "maxdd", "sharpe", "hold", "period"];
+    var ROLL_COLS = ["start", "kind", "n", "avg", "median", "count", "win", "sharpe"];
+    var CMP_COLS = ["strat", "ret", "bh", "win", "count", "avg", "maxdd", "hold", "sharpe"];
+    // Column reorder + width adjustment shared by every backtest table:
+    // heading drag reorders, the right-edge grip resizes, Ctrl+click selects
+    // several columns for a bulk resize. Order and widths persist by column id.
+    function setupFlexTable(table, cols, kind) {
       if (!table) return;
-      var orderKey = "stock-dashboard-bt-trades-order-" + MARKET + "-v1";
-      var widthKey = "stock-dashboard-bt-trades-widths-" + MARKET + "-v1";
-      var order = TRADE_COLS.slice();
+      Array.from(table.querySelectorAll("thead th")).forEach(function (th, i) { if (cols[i]) th.dataset.btCol = cols[i]; });
+      Array.from(table.querySelectorAll("tbody tr")).forEach(function (tr) {
+        var tds = Array.from(tr.children);
+        if (tds.length === cols.length) tds.forEach(function (td, i) { td.dataset.btCol = cols[i]; });
+      });
+      var orderKey = "stock-dashboard-bt-" + kind + "-order-" + MARKET + "-v1";
+      var widthKey = "stock-dashboard-bt-" + kind + "-widths-" + MARKET + "-v1";
+      var order = cols.slice();
       try {
         var savedOrder = JSON.parse(localStorage.getItem(orderKey) || "null");
         if (Array.isArray(savedOrder)) {
-          var filtered = savedOrder.filter(function (c) { return TRADE_COLS.includes(c); });
-          TRADE_COLS.forEach(function (c) { if (!filtered.includes(c)) filtered.push(c); });
-          if (filtered.length === TRADE_COLS.length) order = filtered;
+          var filtered = savedOrder.filter(function (c) { return cols.includes(c); });
+          cols.forEach(function (c) { if (!filtered.includes(c)) filtered.push(c); });
+          if (filtered.length === cols.length) order = filtered;
         }
       } catch (e) {}
       var cg = document.createElement("colgroup");
       var colById = {};
-      TRADE_COLS.forEach(function (c) { var col = document.createElement("col"); col.dataset.btCol = c; colById[c] = col; cg.appendChild(col); });
+      cols.forEach(function (c) { var col = document.createElement("col"); col.dataset.btCol = c; colById[c] = col; cg.appendChild(col); });
       table.insertBefore(cg, table.firstChild);
       function reorder(ord) {
         Array.from(table.querySelectorAll("tr")).forEach(function (tr) {
@@ -575,14 +586,14 @@
       var defaults = {}, widths = {};
       var savedWidths = null;
       try { savedWidths = JSON.parse(localStorage.getItem(widthKey) || "null"); } catch (e) {}
-      TRADE_COLS.forEach(function (c) {
+      cols.forEach(function (c) {
         var th = thById[c];
         defaults[c] = clampW((th && th.offsetWidth) || 90);
         widths[c] = savedWidths && typeof savedWidths[c] === "number" && isFinite(savedWidths[c]) ? clampW(savedWidths[c]) : defaults[c];
       });
       function draw() {
         var total = 0;
-        TRADE_COLS.forEach(function (c) { colById[c].style.width = widths[c] + "px"; total += widths[c]; });
+        cols.forEach(function (c) { colById[c].style.width = widths[c] + "px"; total += widths[c]; });
         table.style.tableLayout = "fixed";
         table.style.width = total + "px";
         table.style.minWidth = total + "px";
@@ -591,7 +602,7 @@
       draw();
       var selectedCols = new Set();
       function paintSelection() {
-        TRADE_COLS.forEach(function (c) { if (thById[c]) thById[c].classList.toggle("bt-col-selected", selectedCols.has(c)); });
+        cols.forEach(function (c) { if (thById[c]) thById[c].classList.toggle("bt-col-selected", selectedCols.has(c)); });
       }
       table.addEventListener("pointerdown", function (e) {
         if (e.button !== 0) return;
@@ -603,7 +614,7 @@
         if (!th || !table.contains(th)) return;
         if (e.target.closest(".bt-col-resizer")) return;
         var id = th.dataset.btCol;
-        if (!TRADE_COLS.includes(id)) return;
+        if (!cols.includes(id)) return;
         e.preventDefault(); e.stopPropagation();
         if (selectedCols.has(id)) selectedCols.delete(id); else selectedCols.add(id);
         paintSelection();
@@ -612,7 +623,7 @@
         if (e.key === "Escape" && selectedCols.size) { selectedCols.clear(); paintSelection(); }
       });
       function widthTargets(id) { return selectedCols.has(id) && selectedCols.size > 1 ? Array.from(selectedCols) : [id]; }
-      TRADE_COLS.forEach(function (id) {
+      cols.forEach(function (id) {
         var th = thById[id];
         if (!th) return;
         th.classList.add("bt-reorderable");
@@ -720,64 +731,12 @@
 
 
 
-    // Draggable column widths for result tables, saved per table kind.
-    function makeResizable(table, key) {
-      if (!table) return;
-      var ths = Array.from(table.querySelectorAll("thead th"));
-      if (!ths.length) return;
-      var cg = document.createElement("colgroup");
-      ths.forEach(function () { cg.appendChild(document.createElement("col")); });
-      table.insertBefore(cg, table.firstChild);
-      var cols = Array.from(cg.children);
-      function apply(widths) {
-        if (!widths) return;
-        table.style.tableLayout = "fixed";
-        var total = 0;
-        cols.forEach(function (c, i) { var w = widths[i]; if (w) { c.style.width = w + "px"; total += w; } });
-        if (total) table.style.width = total + "px";
-      }
-      var saved = null;
-      try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { saved = null; }
-      if (Array.isArray(saved) && saved.length === ths.length) apply(saved);
-      ths.forEach(function (th, i) {
-        th.style.position = "relative";
-        var h = document.createElement("span");
-        h.className = "bt-col-resizer";
-        h.title = "ドラッグで列幅を変更（ダブルクリックでリセット）";
-        th.appendChild(h);
-        h.addEventListener("click", function (e) { e.stopPropagation(); });
-        h.addEventListener("dblclick", function (e) {
-          e.stopPropagation();
-          try { localStorage.removeItem(key); } catch (err) {}
-          table.style.tableLayout = ""; table.style.width = "";
-          cols.forEach(function (c) { c.style.width = ""; });
-        });
-        h.addEventListener("pointerdown", function (e) {
-          e.preventDefault(); e.stopPropagation();
-          var widths = cols.map(function (c, j) { return c.style.width ? parseInt(c.style.width, 10) : ths[j].offsetWidth; });
-          apply(widths);
-          var startX = e.clientX, startW = widths[i];
-          function move(ev) { widths[i] = Math.max(36, startW + ev.clientX - startX); apply(widths); }
-          function up() {
-            document.removeEventListener("pointermove", move);
-            document.removeEventListener("pointerup", up);
-            try { localStorage.setItem(key, JSON.stringify(widths)); } catch (err) {}
-          }
-          document.addEventListener("pointermove", move);
-          document.addEventListener("pointerup", up);
-        });
-      });
-    }
-
-    // Summary table with two rows per stock (the strategy and buy & hold
-    // as separate rows); clicking a row shows that stock's trade list underneath.
-    // entries: [{title, out|null, noData|null}] (title is pre-escaped).
     function renderStockResults(container, entries) {
       var html = '<table class="bt-res-table bt-stock-table"><thead><tr><th>銘柄</th><th>区分</th><th>リターン</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>シャープレシオ</th><th>平均保有</th><th>期間</th></tr></thead><tbody>';
       entries.forEach(function (e, idx) {
         var short = (e.title || "").split(" ")[0];
         if (!e.out) {
-          html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + short + '</td><td colspan="9" style="text-align:left">' + esc(e.noData || "") + "</td></tr>";
+          html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td colspan="10" style="text-align:left">' + short + "：" + esc(e.noData || "") + "</td></tr>";
           return;
         }
         var p = e.out.perf;
@@ -787,10 +746,10 @@
           (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + '</td><td>' + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
       });
       html += "</tbody></table>";
-      html += '<p class="bt-res-note">銘柄の行を選ぶと、その銘柄の売買履歴を表示します。</p>';
+      html += '<p class="bt-res-note">銘柄の行を選ぶと、その銘柄の売買履歴を表示します。見出しをドラッグで列順変更、右端のつまみで幅調整できます（どちらも保存されます）。</p>';
       html += '<div class="bt-stock-detail"></div>';
       container.innerHTML = html;
-      makeResizable(container.querySelector(".bt-stock-table"), "stock-dashboard-bt-widths-stock-" + MARKET + "-v1");
+      setupFlexTable(container.querySelector(".bt-stock-table"), STOCK_COLS, "stock");
       var detail = container.querySelector(".bt-stock-detail");
       var rowsEls = Array.from(container.querySelectorAll(".bt-stock-row"));
       function select(idx) {
@@ -800,7 +759,7 @@
         pair.forEach(function (x) { x.classList.add("bt-stock-sel"); });
         var e = entries[idx];
         detail.innerHTML = e.out ? stockTradesHtml(e.title, e.out) : '<div class="bt-res-block"><h4>' + e.title + '</h4><p class="bt-res-note">' + esc(e.noData || "") + "</p></div>";
-        setupTradesTable(detail.querySelector(".bt-trades-table"));
+        setupFlexTable(detail.querySelector(".bt-trades-table"), TRADE_COLS, "trades");
       }
       rowsEls.forEach(function (tr) {
         tr.addEventListener("click", function () { select(parseInt(tr.dataset.btStock, 10)); });
@@ -1030,12 +989,12 @@
           var bhShVals = valid.map(function (x) { return x.bhSharpeAvg; }).filter(function (v) { return v != null; });
           var totSharpe = shVals.length ? shVals.reduce(function (a, b) { return a + b; }, 0) / shVals.length : null;
           var totBhSharpe = bhShVals.length ? bhShVals.reduce(function (a, b) { return a + b; }, 0) / bhShVals.length : null;
-          html += '<tr class="bt-roll-total bt-bh-row"><td rowspan="2">全開始日の平均</td><td>買い持ち</td><td rowspan="2">' + totCount + '</td><td>' + pct(totBh) + '</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(totBhSharpe) + '</td></tr>';
-          html += '<tr class="bt-roll-total"><td>戦略</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + sharpeTxt(totSharpe) + '</td></tr>';
+          html += '<tr class="bt-roll-total bt-bh-row"><td>全開始日の平均</td><td>買い持ち</td><td>' + totCount + '</td><td>' + pct(totBh) + '</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(totBhSharpe) + '</td></tr>';
+          html += '<tr class="bt-roll-total"><td>全開始日の平均</td><td>戦略</td><td>' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + sharpeTxt(totSharpe) + '</td></tr>';
         }
         summaries.forEach(function (s) {
-          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td rowspan="2">' + s.date + '</td><td>買い持ち</td><td rowspan="2">' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>—</td><td>—</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td></tr>';
-          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>戦略</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>買い持ち</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>—</td><td>—</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>戦略</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td></tr>';
         });
         html += '</tbody></table>';
         html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。' + (fixedCodes ? "対象銘柄は入力した銘柄です（スクリーニング条件は使っていません）。" : "対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。") + '</p>';
@@ -1049,7 +1008,7 @@
           html += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
         }
         results.innerHTML = html;
-        makeResizable(results.querySelector(".bt-roll-table"), "stock-dashboard-bt-widths-roll-" + MARKET + "-v1");
+        setupFlexTable(results.querySelector(".bt-roll-table"), ROLL_COLS, "roll");
         var detail = document.getElementById("bt-roll-detail");
         results.querySelectorAll(".bt-roll-row").forEach(function (tr) {
           tr.addEventListener("click", function () {
@@ -1293,7 +1252,7 @@
         perStrat.forEach(function (ps, idx) {
           var a = aggregate(ps.entries);
           if (!a) {
-            html += '<tr class="bt-cmp-row" data-cmp-idx="' + idx + '"><td style="text-align:left">' + esc(ps.name) + '</td><td colspan="8" style="text-align:left">対象銘柄のデータがありませんでした</td></tr>';
+            html += '<tr class="bt-cmp-row" data-cmp-idx="' + idx + '"><td colspan="9" style="text-align:left">' + esc(ps.name) + "：対象銘柄のデータがありませんでした</td></tr>";
             return;
           }
           html += '<tr class="bt-cmp-row" data-cmp-idx="' + idx + '"><td style="text-align:left">' + esc(ps.name) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.bh) + "</td><td>" +
@@ -1305,7 +1264,7 @@
         html += '<p class="bt-res-note">判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。スクリーニング条件のうち過去データで判定できないもの（EPS・ROE・セクター等）は比較でも対象外です。</p>';
         html += '<div id="bt-cmp-detail"></div>';
         results.innerHTML = html;
-        makeResizable(results.querySelector(".bt-cmp-table"), "stock-dashboard-bt-widths-cmp-" + MARKET + "-v1");
+        setupFlexTable(results.querySelector(".bt-cmp-table"), CMP_COLS, "cmp");
         var detail = document.getElementById("bt-cmp-detail");
         var rowsEls = Array.from(results.querySelectorAll(".bt-cmp-row"));
         function select(idx) {
