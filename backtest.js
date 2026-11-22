@@ -35,13 +35,12 @@
     ma50: "株価が閾値日移動平均を下回る",
     loss8: "買値から閾値%下落",
     dropPct: "前日終値から閾値%以上下落",
-    ma200: "株価が200日移動平均を下回る",
     high25: "52週高値から閾値%以上下落",
     ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
     rsiLe: "RSI（14日）が閾値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounce: 1, ftd: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, ma200: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -204,7 +203,6 @@
         var id = cfg.sell[j], c = closes[i];
         if (id === "ma50" && maSell[i] != null && c < maSell[i]) return id;
         if (id === "loss8" && c <= pos.price * (1 - (cfg.lossPct == null ? 8 : cfg.lossPct) / 100)) return id;
-        if (id === "ma200" && ma200[i] != null && c < ma200[i]) return id;
         if (id === "high25") {
           var hi2 = extreme(highs, i, 252, true);
           if (hi2 != null && c <= hi2 * (1 - (cfg.highPct == null ? 25 : cfg.highPct) / 100)) return id;
@@ -479,6 +477,7 @@
       applySlot(active);
       persist(); paintTabs();
       return {
+        activeName: function () { return "戦略" + (store.active + 1); },
         selected: function () {
           var screen = checked("screen");
           var out = [];
@@ -572,13 +571,13 @@
     }
 
     // One stock's trade list, shown under the summary table.
-    function stockTradesHtml(title, out) {
+    function stockTradesHtml(title, out, stratName) {
       var html = '<div class="bt-res-block"><h4>' + title + '</h4>';
       html += '<p class="bt-res-range">期間：' + esc(out.range.from) + " 〜 " + esc(out.range.to) + "（" + out.range.sessions + '営業日）</p>';
       if (out.trades.length) {
-        html += '<table class="bt-res-table bt-trades-table"><thead><tr><th data-bt-col="buyDate">買い日</th><th data-bt-col="buyPrice">買い値</th><th data-bt-col="sellDate">売り日</th><th data-bt-col="sellPrice">売り値</th><th data-bt-col="ret">損益</th><th data-bt-col="hold">保有</th><th data-bt-col="reason">売り理由</th></tr></thead><tbody>';
+        html += '<table class="bt-res-table bt-trades-table"><thead><tr>' + (stratName ? '<th data-bt-col="strat">戦略</th>' : '') + '<th data-bt-col="buyDate">買い日</th><th data-bt-col="buyPrice">買い値</th><th data-bt-col="sellDate">売り日</th><th data-bt-col="sellPrice">売り値</th><th data-bt-col="ret">損益</th><th data-bt-col="hold">保有</th><th data-bt-col="reason">売り理由</th></tr></thead><tbody>';
         out.trades.forEach(function (t) {
-          html += '<tr><td data-bt-col="buyDate">' + esc(t.buyDate) + '</td><td data-bt-col="buyPrice">' + price(t.buyPrice) + '</td><td data-bt-col="sellDate">' + esc(t.sellDate) + (t.open ? "（期末評価）" : "") + '</td><td data-bt-col="sellPrice">' + price(t.sellPrice) + '</td><td data-bt-col="ret">' + pct(t.ret) + '</td><td data-bt-col="hold">' + t.hold + '日</td><td data-bt-col="reason">' +
+          html += '<tr>' + (stratName ? '<td data-bt-col="strat">' + esc(stratName) + '</td>' : '') + '<td data-bt-col="buyDate">' + esc(t.buyDate) + '</td><td data-bt-col="buyPrice">' + price(t.buyPrice) + '</td><td data-bt-col="sellDate">' + esc(t.sellDate) + (t.open ? "（期末評価）" : "") + '</td><td data-bt-col="sellPrice">' + price(t.sellPrice) + '</td><td data-bt-col="ret">' + pct(t.ret) + '</td><td data-bt-col="hold">' + t.hold + '日</td><td data-bt-col="reason">' +
             esc(t.open ? "期間終了" : (SELL_LABELS[t.reason] || t.reason)) + "</td></tr>";
         });
         html += "</tbody></table>";
@@ -600,12 +599,18 @@
     // selection. Order and widths are saved per market, keyed by
     // column id.
     var TRADE_COLS = ["buyDate", "buyPrice", "sellDate", "sellPrice", "ret", "hold", "reason"];
+    var STRAT_TRADE_COLS = ["strat"].concat(TRADE_COLS);
     var STOCK_COLS = ["title", "kind", "ret", "count", "win", "avg", "maxdd", "sharpe", "hold", "period"];
     var ROLL_COLS = ["start", "kind", "n", "avg", "median", "count", "win", "sharpe"];
-    var CMP_COLS = ["strat", "ret", "bh", "win", "count", "avg", "maxdd", "hold", "sharpe"];
+    var CMP_COLS = ["strat", "ret", "win", "count", "avg", "maxdd", "hold", "sharpe"];
     // Column reorder + width adjustment shared by every backtest table:
     // heading drag reorders, the right-edge grip resizes, Ctrl+click selects
     // several columns for a bulk resize. Order and widths persist by column id.
+    function setThLabel(th, txt) {
+      var n = th.firstChild;
+      if (n && n.nodeType === 3) n.nodeValue = txt;
+      else th.insertBefore(document.createTextNode(txt), th.firstChild);
+    }
     function setupFlexTable(table, cols, kind) {
       if (!table) return;
       Array.from(table.querySelectorAll("thead th")).forEach(function (th, i) { if (cols[i]) th.dataset.btCol = cols[i]; });
@@ -784,11 +789,52 @@
           th.focus();
         });
       });
+      return {
+        restamp: function () {
+          Array.from(table.querySelectorAll("tbody tr")).forEach(function (tr) {
+            var tds = Array.from(tr.children);
+            if (tds.length === cols.length) tds.forEach(function (td, i) { td.dataset.btCol = cols[i]; });
+          });
+          var cur = Array.from(table.querySelectorAll("thead th")).map(function (t) { return t.dataset.btCol; });
+          reorder(cur);
+        }
+      };
     }
 
 
 
-    function renderStockResults(container, entries) {
+    function renderStockResults(container, entries, opts) {
+      opts = opts || {};
+      var tradesFor = function (e) {
+        if (!e.out) return '<div class="bt-res-block"><h4>' + e.title + '</h4><p class="bt-res-note">' + esc(e.noData || "") + "</p></div>";
+        return opts.tradesHtml ? opts.tradesHtml(e) : stockTradesHtml(e.title, e.out, opts.stratName);
+      };
+      var wireTrades = function (root) {
+        var tbl = root.querySelector(".bt-trades-table");
+        if (tbl) setupFlexTable(tbl, tbl.querySelector("th") && tbl.querySelector("th").getAttribute("data-bt-col") === "strat" ? STRAT_TRADE_COLS : TRADE_COLS, "trades");
+        var block = root.querySelector(".bt-res-block");
+        if (block && tbl && !block.querySelector(".bt-trades-toggle")) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "bt-trades-toggle";
+          btn.textContent = "売買履歴を非表示";
+          block.insertBefore(btn, tbl);
+          btn.addEventListener("click", function () {
+            var hidden = tbl.style.display === "none";
+            tbl.style.display = hidden ? "" : "none";
+            var hint = tbl.nextElementSibling;
+            if (hint) hint.style.display = tbl.style.display;
+            btn.textContent = hidden ? "売買履歴を非表示" : "売買履歴を表示";
+          });
+        }
+      };
+      // With a single tested stock the per-stock table adds nothing (its rows
+      // are the aggregate), so show that stock's trades directly (GRW).
+      if (entries.length === 1 && entries[0].out) {
+        container.innerHTML = tradesFor(entries[0]);
+        wireTrades(container);
+        return;
+      }
       var html = '<table class="bt-res-table bt-stock-table"><thead><tr><th>銘柄</th><th>区分</th><th>リターン</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>シャープレシオ</th><th>平均保有</th><th>期間</th></tr></thead><tbody>';
       entries.forEach(function (e, idx) {
         var short = (e.title || "").split(" ")[0];
@@ -815,8 +861,8 @@
         if (!pair.length) { detail.innerHTML = ""; return; }
         pair.forEach(function (x) { x.classList.add("bt-stock-sel"); });
         var e = entries[idx];
-        detail.innerHTML = e.out ? stockTradesHtml(e.title, e.out) : '<div class="bt-res-block"><h4>' + e.title + '</h4><p class="bt-res-note">' + esc(e.noData || "") + "</p></div>";
-        setupFlexTable(detail.querySelector(".bt-trades-table"), TRADE_COLS, "trades");
+        detail.innerHTML = tradesFor(e);
+        wireTrades(detail);
       }
       rowsEls.forEach(function (tr) {
         tr.addEventListener("click", function () { select(parseInt(tr.dataset.btStock, 10)); });
@@ -1077,7 +1123,7 @@
             tr.classList.add("bt-roll-sel");
             detail.innerHTML = '<h3 class="bt-roll-detail-title">' + esc(tr.dataset.rollDate) + ' 開始の銘柄別結果</h3><div class="bt-roll-stocks"></div>';
             var ents = details[tr.dataset.rollDate];
-            if (ents && ents.length) renderStockResults(detail.querySelector(".bt-roll-stocks"), ents);
+            if (ents && ents.length) renderStockResults(detail.querySelector(".bt-roll-stocks"), ents, { stratName: slotsApi.activeName() });
             else detail.insertAdjacentHTML("beforeend", '<p class="bt-res-note">対象銘柄がありませんでした。</p>');
           });
         });
@@ -1179,7 +1225,7 @@
         }
         var finish = function () {
           results.innerHTML = '<div id="bt-stock-results"></div>' + notes;
-          renderStockResults(document.getElementById("bt-stock-results"), entries);
+          renderStockResults(document.getElementById("bt-stock-results"), entries, { stratName: slotsApi.activeName() });
         };
         if (indexKeys.length) {
           var endYear = toVal ? +toVal.slice(0, 4) : new Date().getFullYear();
@@ -1224,9 +1270,12 @@
       });
       var mean = function (f) { return outs.reduce(function (sm, o) { return sm + f(o.perf); }, 0) / outs.length; };
       var sh = outs.map(function (o) { return o.perf.sharpe; }).filter(function (x) { return x != null; });
+      var bsh = outs.map(function (o) { return o.perf.bhSharpe; }).filter(function (x) { return x != null; });
       return {
         n: outs.length, ret: mean(function (p) { return p.totalReturn; }), bh: mean(function (p) { return p.bhReturn; }),
         maxDd: mean(function (p) { return p.maxDd; }),
+        bhMaxDd: mean(function (p) { return p.bhMaxDd; }),
+        bhSharpe: bsh.length ? bsh.reduce(function (a, b) { return a + b; }, 0) / bsh.length : null,
         sharpe: sh.length ? sh.reduce(function (a, b) { return a + b; }, 0) / sh.length : null,
         closed: closed, open: open, winRate: closed ? wins / closed : null,
         avgRet: closed ? retSum / closed : null, avgHold: closed ? holdSum / closed : null
@@ -1311,16 +1360,45 @@
         return Promise.all(ixJobs).then(function () { return perStrat; });
       }).then(function (perStrat) {
         var ddTxt = function (v) { return v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
+        function mergedTradesHtml(title) {
+          var rowsAll = [];
+          var range = null;
+          perStrat.forEach(function (ps) {
+            var e = null;
+            ps.entries.forEach(function (x) { if (x.title === title) e = x; });
+            if (e && e.out) {
+              if (!range) range = e.out.range;
+              e.out.trades.forEach(function (t) { rowsAll.push({ strat: ps.name, t: t }); });
+            }
+          });
+          var html = '<div class="bt-res-block"><h4>' + title + ' の売買履歴（全戦略）</h4>';
+          if (range) html += '<p class="bt-res-range">期間：' + esc(range.from) + " 〜 " + esc(range.to) + "（" + range.sessions + '営業日）</p>';
+          if (!rowsAll.length) return html + '<p class="bt-res-note">売買履歴はありません</p></div>';
+          rowsAll.sort(function (a, b) { return a.t.buyDate < b.t.buyDate ? -1 : a.t.buyDate > b.t.buyDate ? 1 : (a.strat < b.strat ? -1 : 1); });
+          html += '<table class="bt-res-table bt-trades-table bt-trades-merged"><thead><tr><th data-bt-col="strat">戦略</th><th data-bt-col="buyDate">買い日</th><th data-bt-col="buyPrice">買い値</th><th data-bt-col="sellDate">売り日</th><th data-bt-col="sellPrice">売り値</th><th data-bt-col="ret">損益</th><th data-bt-col="hold">保有</th><th data-bt-col="reason">売り理由</th></tr></thead><tbody>';
+          rowsAll.forEach(function (r) {
+            var t = r.t;
+            html += '<tr><td data-bt-col="strat">' + esc(r.strat) + '</td><td data-bt-col="buyDate">' + esc(t.buyDate) + '</td><td data-bt-col="buyPrice">' + price(t.buyPrice) + '</td><td data-bt-col="sellDate">' + esc(t.sellDate) + (t.open ? "（期末評価）" : "") + '</td><td data-bt-col="sellPrice">' + price(t.sellPrice) + '</td><td data-bt-col="ret">' + pct(t.ret) + '</td><td data-bt-col="hold">' + t.hold + '日</td><td data-bt-col="reason">' + esc(t.open ? "期間終了" : (SELL_LABELS[t.reason] || t.reason)) + "</td></tr>";
+          });
+          html += "</tbody></table>";
+          html += '<p class="bt-res-note">見出しをドラッグで列順変更、右端のつまみで幅調整。Ctrl+クリックで複数列を選ぶと幅を一括調整できます（どちらも保存されます）。</p></div>';
+          return html;
+        }
         var targetNames = perStrat[0].entries.map(function (e) { return e.title; });
         var html = '<p class="bt-res-note">戦略比較 / 銘柄：' + targetNames.join("、") + "<br>行を選ぶと、その戦略の銘柄別結果を表示します。" + (targetNames.length > 1 ? "複数銘柄の値は平均です（勝率・平均損益・平均保有は全取引の合算、取引回数は合計）。" : "") + "</p>";
-        html += '<table class="bt-res-table bt-cmp-table"><thead><tr><th>戦略</th><th>戦略リターン</th><th>買い持ち</th><th>勝率</th><th>取引回数</th><th>平均損益</th><th>最大DD</th><th>平均保有</th><th>シャープ</th></tr></thead><tbody>';
+        html += '<table class="bt-res-table bt-cmp-table"><thead><tr><th>戦略</th><th>戦略リターン</th><th>勝率</th><th>取引回数</th><th>平均損益</th><th>最大DD</th><th>平均保有</th><th>シャープ</th></tr></thead><tbody>';
+        var bhAgg = null;
+        perStrat.forEach(function (ps) { if (!bhAgg) bhAgg = aggregate(ps.entries); });
+        if (bhAgg) {
+          html += '<tr class="bt-bh-row"><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.bh) + "</td><td>—</td><td>—</td><td>—</td><td>" + ddTxt(bhAgg.bhMaxDd) + "</td><td>—</td><td>" + sharpeTxt(bhAgg.bhSharpe) + "</td></tr>";
+        }
         perStrat.forEach(function (ps, idx) {
           var a = aggregate(ps.entries);
           if (!a) {
-            html += '<tr class="bt-cmp-row" data-cmp-idx="' + idx + '"><td colspan="9" style="text-align:left">' + esc(ps.name) + "：対象銘柄のデータがありませんでした</td></tr>";
+            html += '<tr class="bt-cmp-row" data-cmp-idx="' + idx + '"><td colspan="8" style="text-align:left">' + esc(ps.name) + "：対象銘柄のデータがありませんでした</td></tr>";
             return;
           }
-          html += '<tr class="bt-cmp-row" data-cmp-idx="' + idx + '"><td style="text-align:left">' + esc(ps.name) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.bh) + "</td><td>" +
+          html += '<tr class="bt-cmp-row" data-cmp-idx="' + idx + '"><td style="text-align:left">' + esc(ps.name) + "</td><td>" + pct(a.ret) + "</td><td>" +
             (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + a.closed + (a.open ? "（+保有中" + a.open + "）" : "") + "</td><td>" +
             (a.avgRet == null ? "—" : pct(a.avgRet)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" +
             (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
@@ -1339,7 +1417,7 @@
           tr.classList.add("bt-stock-sel");
           var ps = perStrat[idx];
           detail.innerHTML = '<h3 class="bt-roll-detail-title">' + esc(ps.name) + ' の銘柄別結果</h3><div class="bt-cmp-stocks"></div>';
-          renderStockResults(detail.querySelector(".bt-cmp-stocks"), ps.entries);
+          renderStockResults(detail.querySelector(".bt-cmp-stocks"), ps.entries, { tradesHtml: function (entry) { return mergedTradesHtml(entry.title); } });
         }
         rowsEls.forEach(function (tr) {
           tr.addEventListener("click", function () { select(parseInt(tr.dataset.cmpIdx, 10)); });
@@ -1510,6 +1588,7 @@
           html += '<div id="bt-sweep-detail"></div>';
           results.innerHTML = html;
           var tbody = results.querySelector(".bt-sweep-table tbody");
+          var flex = setupFlexTable(results.querySelector(".bt-sweep-table"), ["b", "s", "ret", "bh", "winRate", "closed", "avgRet", "maxDd", "avgHold", "sharpe"], "sweep");
           var sortKey = "ret", sortDir = -1;
           function rowHtml(c) {
             var a = c.agg;
@@ -1529,17 +1608,21 @@
               return (xv - yv) * sortDir;
             });
             tbody.innerHTML = arr.map(rowHtml).join("");
+            if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-sweep-row").forEach(function (tr) {
               tr.addEventListener("click", function () { selectCombo(+tr.dataset.b, +tr.dataset.s); });
             });
             results.querySelectorAll(".bt-sweep-table th").forEach(function (th) {
               var base = th.getAttribute("data-k") === "b" ? "買いRSI" : th.getAttribute("data-k") === "s" ? "売りRSI" : th.textContent.replace(/[▲▼]/g, "");
-              if (th.getAttribute("data-k") === sortKey) th.textContent = base + (sortDir < 0 ? "▼" : "▲");
-              else if (th.getAttribute("data-k") !== "b" && th.getAttribute("data-k") !== "s") th.textContent = base;
+              if (th.getAttribute("data-k") === sortKey) setThLabel(th, base + (sortDir < 0 ? "▼" : "▲"));
+              else if (th.getAttribute("data-k") !== "b" && th.getAttribute("data-k") !== "s") setThLabel(th, base);
             });
           }
+          var downXY = null;
+          results.querySelector(".bt-sweep-table").addEventListener("pointerdown", function (e) { downXY = [e.clientX, e.clientY]; }, true);
           results.querySelectorAll(".bt-sweep-table th").forEach(function (th) {
-            th.addEventListener("click", function () {
+            th.addEventListener("click", function (e) {
+              if (downXY && Math.abs(e.clientX - downXY[0]) + Math.abs(e.clientY - downXY[1]) > 5) return;
               var k = th.getAttribute("data-k");
               if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "b" || k === "s" ? 1 : -1; }
               renderRows();
@@ -1810,6 +1893,7 @@
           html += '<div id="bt-sweep-detail"></div>';
           results.innerHTML = html;
           var tbody = results.querySelector(".bt-sweep-table tbody");
+          var flex = setupFlexTable(results.querySelector(".bt-sweep-table"), ["b", "s", "ret", "median", "bh", "winRate", "closed", "maxDd", "sharpe"], "sweeproll");
           var sortKey = "ret", sortDir = -1;
           function rowHtml(c) {
             var a = c.agg;
@@ -1827,17 +1911,21 @@
               return (xv - yv) * sortDir;
             });
             tbody.innerHTML = arr.map(rowHtml).join("");
+            if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-sweep-row").forEach(function (tr) {
               tr.addEventListener("click", function () { selectCombo(+tr.dataset.b, +tr.dataset.s); });
             });
             results.querySelectorAll(".bt-sweep-table th").forEach(function (th) {
               var labels = { b: "買いRSI", s: "売りRSI", ret: "平均リターン", median: "中央値", bh: "買い持ち", winRate: "勝率", closed: "取引回数", maxDd: "最大DD", sharpe: "シャープ" };
               var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
-              th.textContent = th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base;
+              setThLabel(th, th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base);
             });
           }
+          var downXY = null;
+          results.querySelector(".bt-sweep-table").addEventListener("pointerdown", function (e) { downXY = [e.clientX, e.clientY]; }, true);
           results.querySelectorAll(".bt-sweep-table th").forEach(function (th) {
-            th.addEventListener("click", function () {
+            th.addEventListener("click", function (e) {
+              if (downXY && Math.abs(e.clientX - downXY[0]) + Math.abs(e.clientY - downXY[1]) > 5) return;
               var k = th.getAttribute("data-k");
               if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "b" || k === "s" ? 1 : -1; }
               renderRows();
@@ -1858,6 +1946,7 @@
             });
             html2 += '</tbody></table><div class="bt-sweep-stocks"></div>';
             detail.innerHTML = html2;
+            setupFlexTable(detail.querySelector(".bt-sweep-dates"), ["date", "n", "ret", "closed", "winRate"], "sweepdates");
             var stocks = detail.querySelector(".bt-sweep-stocks");
             detail.querySelectorAll(".bt-sweep-date-row").forEach(function (tr) {
               tr.addEventListener("click", function () {
@@ -1925,12 +2014,12 @@
         results.innerHTML = '<p class="bt-res-note">パターンを作れる項目がチェックされていません（判定できる買い・売り条件を1つ以上チェックしてください）。</p>';
         return;
       }
-      var patterns = [{ buy: [], sell: [], nums: {} }];
+      var patterns = [{ buy: [], sell: [], nums: {}, st: [] }];
       dims.forEach(function (dim) {
         var next = [];
         patterns.forEach(function (p) {
-          dim.states.forEach(function (st) {
-            var q = { buy: p.buy.slice(), sell: p.sell.slice(), nums: Object.assign({}, p.nums) };
+          dim.states.forEach(function (st, si) {
+            var q = { buy: p.buy.slice(), sell: p.sell.slice(), nums: Object.assign({}, p.nums), st: p.st.concat([si]) };
             if (st !== null) {
               q[dim.kind].push(dim.id);
               if (dim.key) q.nums[dim.key] = st;
@@ -2054,8 +2143,42 @@
         }
         function renderAll() {
           var ddTxt = function (v) { return v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
+          var AXIS_LABEL = { rsiGe: "買いRSI", bounce: "前日下落σ", dd: "DD以下", vol15: "出来高条件", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI" };
+          function heatHtml() {
+            if (dims.length < 1 || dims.length > 2) return "";
+            var dA = dims[0], dB = dims.length === 2 ? dims[1] : null;
+            var grid = {};
+            var maxAbs = 0;
+            patterns.forEach(function (p) {
+              if (!p.agg) return;
+              grid[p.st[0] + "," + (dB ? p.st[1] : 0)] = p;
+              if (Math.abs(p.agg.ret) > maxAbs) maxAbs = Math.abs(p.agg.ret);
+            });
+            if (!Object.keys(grid).length) return "";
+            var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
+            var hh = '<table class="bt-sweep-matrix bt-all-matrix"><thead><tr><th>' + esc(AXIS_LABEL[dA.id] || dA.id) + (dB ? " ＼ " + esc(AXIS_LABEL[dB.id] || dB.id) : "") + "</th>";
+            var bStates = dB ? dB.states : ["on"];
+            bStates.forEach(function (_, bi) { hh += "<th>" + esc(dB ? stateTxt(dB, bi) : "結果") + "</th>"; });
+            hh += "</tr></thead><tbody>";
+            dA.states.forEach(function (_, ai) {
+              hh += "<tr><th>" + esc(stateTxt(dA, ai)) + "</th>";
+              bStates.forEach(function (_, bi) {
+                var p = grid[ai + "," + bi];
+                if (!p || !p.agg) { hh += '<td class="na">—</td>'; return; }
+                var r = p.agg.ret;
+                var alpha = maxAbs > 0 ? Math.min(0.85, Math.abs(r) / maxAbs * 0.85) : 0;
+                var bg = r > 0 ? "background:rgba(22,163,74," + alpha.toFixed(2) + ")" : r < 0 ? "background:rgba(220,38,38," + alpha.toFixed(2) + ")" : "";
+                var title = "勝率 " + (p.agg.winRate == null ? "—" : (p.agg.winRate * 100).toFixed(0) + "%") + " / 取引 " + p.agg.closed + "回";
+                hh += '<td data-ai="' + ai + '" data-bi="' + bi + '" style="' + bg + '" title="' + esc(title) + '">' + (r * 100).toFixed(1) + "%</td>";
+              });
+              hh += "</tr>";
+            });
+            hh += "</tbody></table>";
+            return hh;
+          }
           var targetNames = targets.map(function (t) { return t.title; });
           var html = '<p class="bt-res-note">全パターン検証（' + patterns.length.toLocaleString("ja-JP") + '通り） / 銘柄：' + targetNames.join("、") + '<br>チェックした買い・売り項目の ON/OFF とパラメータの全組合せです（スクリーニングは今の設定で固定、判定できない項目は除きます）。' + (targetNames.length > 1 ? '複数銘柄の値は平均です（勝率・平均損益・平均保有は全取引の合算、取引回数は合計）。' : '') + '</p>';
+          html += heatHtml();
           html += '<table class="bt-res-table bt-all-table"><thead><tr>'
             + '<th data-k="label">パターン</th><th data-k="ret">リターン</th><th data-k="bh">買い持ち</th><th data-k="winRate">勝率</th><th data-k="closed">取引回数</th><th data-k="avgRet">平均損益</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th>'
             + '</tr></thead><tbody></tbody></table>';
@@ -2063,6 +2186,7 @@
           html += '<div id="bt-all-detail"></div>';
           results.innerHTML = html;
           var tbody = results.querySelector(".bt-all-table tbody");
+          var flex = setupFlexTable(results.querySelector(".bt-all-table"), ["label", "ret", "bh", "winRate", "closed", "avgRet", "maxDd", "avgHold", "sharpe"], "all");
           var sortKey = "ret", sortDir = -1;
           var CAP = 300;
           function rowHtml(p) {
@@ -2085,17 +2209,21 @@
             });
             var shown = arr.slice(0, CAP);
             tbody.innerHTML = shown.map(rowHtml).join("") + (arr.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arr.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
+            if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
               tr.addEventListener("click", function () { selectPattern(shown[i]); });
             });
             results.querySelectorAll(".bt-all-table th").forEach(function (th) {
               var labels = { label: "パターン", ret: "リターン", bh: "買い持ち", winRate: "勝率", closed: "取引回数", avgRet: "平均損益", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ" };
               var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
-              th.textContent = th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base;
+              setThLabel(th, th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base);
             });
           }
+          var downXY = null;
+          results.querySelector(".bt-all-table").addEventListener("pointerdown", function (e) { downXY = [e.clientX, e.clientY]; }, true);
           results.querySelectorAll(".bt-all-table th").forEach(function (th) {
-            th.addEventListener("click", function () {
+            th.addEventListener("click", function (e) {
+              if (downXY && Math.abs(e.clientX - downXY[0]) + Math.abs(e.clientY - downXY[1]) > 5) return;
               var k = th.getAttribute("data-k");
               if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "label" ? 1 : -1; }
               renderRows();
@@ -2111,6 +2239,22 @@
             var tr = e.target.closest(".bt-all-row");
             if (tr) tr.classList.add("sel");
           });
+          var matrix = results.querySelector(".bt-all-matrix");
+          if (matrix) {
+            var bestP = null, bestKey = null;
+            patterns.forEach(function (p) { if (p.agg && (!bestP || p.agg.ret > bestP.agg.ret)) { bestP = p; bestKey = p.st[0] + "," + (dims.length === 2 ? p.st[1] : 0); } });
+            matrix.querySelectorAll("td[data-ai]").forEach(function (td) {
+              var key = td.getAttribute("data-ai") + "," + td.getAttribute("data-bi");
+              if (key === bestKey) td.classList.add("best");
+              td.addEventListener("click", function () {
+                matrix.querySelectorAll("td").forEach(function (x) { x.classList.remove("sel"); });
+                td.classList.add("sel");
+                var found = null;
+                patterns.forEach(function (p) { if ((p.st[0] + "," + (dims.length === 2 ? p.st[1] : 0)) === key) found = p; });
+                if (found) selectPattern(found);
+              });
+            });
+          }
           renderRows();
           var best = patterns.filter(function (p) { return p.agg; }).sort(function (a, b) { return b.agg.ret - a.agg.ret; })[0];
           if (best) selectPattern(best);
