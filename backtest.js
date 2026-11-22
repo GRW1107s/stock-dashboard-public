@@ -1088,6 +1088,8 @@
       });
     }
 
+    var runAllBtnEl = document.getElementById("bt-run-all");
+    if (runAllBtnEl) runAllBtnEl.addEventListener("click", runAllPatterns);
     runBtn.addEventListener("click", function () {
       if (((document.getElementById("bt-mode") || {}).value || "normal") === "sweepRoll") { runSweepRolling(); return; }
       if (((document.getElementById("bt-mode") || {}).value || "normal") === "sweep") { runSweep(); return; }
@@ -1883,6 +1885,246 @@
       });
     }
 
+    // ---- All-patterns run: every on/off x parameter combination of the
+    // checked buy/sell items (full cross product, GRW 2026-11-23). Screening
+    // stays fixed at the current checks; items the engine cannot judge are
+    // left out. Results are a sortable ranking table with per-stock detail.
+    var PARAM_KEY = { rsiGe: "rsiBuy", bounce: "bounceSigma", dd: "dd", ma50: "maSellDays", loss8: "lossPct", dropPct: "dropSell", high25: "highPct", ddGe: "ddSell", rsiLe: "rsiSell" };
+    function runAllPatterns() {
+      var runAllBtn = document.getElementById("bt-run-all");
+      var symbolsRaw = (document.getElementById("bt-symbols") || {}).value || "";
+      var codes = symbolsRaw.split(/[\s,、，]+/).map(function (x) { return x.trim(); }).filter(Boolean)
+        .map(function (x) { return MARKET === "us" ? x.toUpperCase() : x.replace(/\.T$/i, ""); });
+      codes = Array.from(new Set(codes)).slice(0, 200);
+      var etfCodes = Array.from(panel.querySelectorAll('input[data-bt-etf]:checked')).map(function (b) { return b.value; });
+      etfCodes.forEach(function (c) { if (!codes.includes(c)) codes.push(c); });
+      var indexKeys = Array.from(panel.querySelectorAll('input[data-bt-index]:checked')).map(function (b) { return b.value; });
+      if (!codes.length && !indexKeys.length) {
+        results.innerHTML = MARKET === "us"
+          ? '<p class="bt-res-note">ティッカーを入力するか、指数・ETFを選んでから実行してください。</p>'
+          : '<p class="bt-res-note">銘柄コードを入力するか、指数・ETFを選んでから実行してください。</p>';
+        return;
+      }
+      function dimsFor(kind) {
+        var dims = [];
+        panel.querySelectorAll('input[type="checkbox"][data-bt="' + kind + '"]:checked').forEach(function (b) {
+          var id = b.value;
+          if (kind === "buy" && !(BUY_EVALUABLE[id] || id === "dd")) return;
+          if (kind === "sell" && !SELL_EVALUABLE[id]) return;
+          var label = b.closest("label");
+          var sel = label ? label.querySelector("select[data-bt-num]") : null;
+          var states = [null];
+          if (sel) Array.from(sel.options).forEach(function (o) { states.push(o.value); });
+          else states.push("on");
+          dims.push({ kind: kind, id: id, key: sel ? sel.getAttribute("data-bt-num") : null, states: states });
+        });
+        return dims;
+      }
+      var dims = dimsFor("buy").concat(dimsFor("sell"));
+      if (!dims.length) {
+        results.innerHTML = '<p class="bt-res-note">パターンを作れる項目がチェックされていません（判定できる買い・売り条件を1つ以上チェックしてください）。</p>';
+        return;
+      }
+      var patterns = [{ buy: [], sell: [], nums: {} }];
+      dims.forEach(function (dim) {
+        var next = [];
+        patterns.forEach(function (p) {
+          dim.states.forEach(function (st) {
+            var q = { buy: p.buy.slice(), sell: p.sell.slice(), nums: Object.assign({}, p.nums) };
+            if (st !== null) {
+              q[dim.kind].push(dim.id);
+              if (dim.key) q.nums[dim.key] = st;
+            }
+            next.push(q);
+          });
+        });
+        patterns = next;
+      });
+      var screenChecked = checked("screen");
+      function patLabel(kind, id, nums) {
+        if (id === "ddGe") return "DD（売り抜け日）が" + (nums.ddSell != null ? nums.ddSell : "5") + "以上（直近25取引日）";
+        if (id === "dd") return "DD（売り抜け日）が" + (nums.dd != null ? nums.dd : "5") + "以下（直近25取引日）";
+        var lab = (kind === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id;
+        var key = PARAM_KEY[id];
+        if (key && nums[key] != null) lab = lab.replace("閾値", nums[key]);
+        return lab;
+      }
+      patterns.forEach(function (p) {
+        var bl = p.buy.map(function (id) { return patLabel("buy", id, p.nums); });
+        var sl = p.sell.map(function (id) { return patLabel("sell", id, p.nums); });
+        p.label = "買い：" + (bl.join("、") || "（なし）") + " ／ 売り：" + (sl.join("、") || "（なし）");
+        p.cfg = stratCfg({ screen: screenChecked, buy: p.buy, sell: p.sell, nums: p.nums }, null);
+      });
+      var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
+      var fromVal = normDate((document.getElementById("bt-from") || {}).value);
+      var toVal = normDate((document.getElementById("bt-to") || {}).value);
+      var periodYears = parseInt((document.getElementById("bt-period") || {}).value || "3", 10);
+      runBtn.disabled = true;
+      if (runAllBtn) runAllBtn.disabled = true;
+      results.innerHTML = '<p class="bt-res-note">全パターンを実行中…（' + patterns.length.toLocaleString("ja-JP") + '通り）</p>';
+      function windowed(title, rows) {
+        if (!rows || !rows.length) return { title: title, rows: null, noData: "日足データがまだありません。自動更新で蓄積されてから実行できます。" };
+        var lastDate = rows[rows.length - 1][0];
+        var startDate = fromVal;
+        if (!startDate) {
+          var d = new Date(lastDate + "T00:00:00");
+          d.setFullYear(d.getFullYear() - periodYears);
+          startDate = d.toISOString().slice(0, 10);
+        }
+        var endDate = toVal || lastDate;
+        var fromIdx = rows.findIndex(function (r) { return r[0] >= startDate; });
+        var toIdx = -1;
+        for (var i = rows.length - 1; i >= 0; i--) { if (rows[i][0] <= endDate) { toIdx = i; break; } }
+        if (fromIdx < 0 || toIdx < 0 || toIdx <= fromIdx) {
+          return { title: title, rows: null, noData: "指定期間のデータがありません（保有データ：" + rows[0][0] + " 〜 " + lastDate + "）。" };
+        }
+        return { title: title, rows: rows, fromIdx: fromIdx, toIdx: toIdx };
+      }
+      loadJson("sector-leaders.json").catch(function () { return null; }).then(function (leaders) {
+        var names = buildNames(leaders);
+        var jobs = codes.map(function (code) {
+          return loadJson(ohlcvUrl(code)).then(function (data) {
+            var nm = names[code] || ETF_NAMES[code] || "";
+            return windowed(esc(code) + (nm ? " " + esc(nm) : ""), (data && data.rows) || []);
+          }).catch(function () {
+            var nm = names[code] || ETF_NAMES[code] || "";
+            return { title: esc(code) + (nm ? " " + esc(nm) : ""), rows: null, noData: "日足データがまだありません。自動更新で蓄積されてから実行できます。" };
+          });
+        });
+        return Promise.all(jobs).then(function (targets) { return targets; });
+      }).then(function (targets) {
+        if (!indexKeys.length) return targets;
+        var endYear = toVal ? +toVal.slice(0, 4) : new Date().getFullYear();
+        var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
+        var years = [];
+        for (var iy = startYear - 1; iy <= endYear; iy++) years.push(iy);
+        var jobs = years.map(function (y) { return loadJson("history-" + y + ".json").catch(function () { return null; }); });
+        return Promise.all(jobs).then(function (files) {
+          var byKey = {};
+          indexKeys.forEach(function (k) { byKey[k] = new Map(); });
+          files.forEach(function (h) {
+            if (!h) return;
+            (MARKET === "us" ? (h.rows || []) : (h.tse_rows || [])).forEach(function (row) {
+              indexKeys.forEach(function (k) {
+                var cell = row[k];
+                if (cell && cell.close != null) {
+                  var vol = cell.volume_value > 0 ? cell.volume_value : (cell.shares_10000 || 0);
+                  byKey[k].set(row.date, [row.date, cell.close, cell.close, cell.close, cell.close, vol]);
+                }
+              });
+            });
+          });
+          indexKeys.forEach(function (k) {
+            var rows = Array.from(byKey[k].values()).sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+            targets.push(windowed(esc(INDEX_LABELS[k] || k) + "（指数）", rows));
+          });
+          return targets;
+        });
+      }).then(function (targets) {
+        var validTargets = targets.filter(function (t) { return t.rows; });
+        if (!validTargets.length) {
+          results.innerHTML = '<p class="bt-res-note">対象銘柄のデータがありませんでした。</p>';
+          runBtn.disabled = false;
+          if (runAllBtn) runAllBtn.disabled = false;
+          return;
+        }
+        if (patterns.length * validTargets.length > 250000) {
+          results.innerHTML = '<p class="bt-res-note">対象が多すぎます（' + patterns.length.toLocaleString("ja-JP") + '通り × ' + validTargets.length + '銘柄 ＝ 約' + Math.round(patterns.length * validTargets.length / 10000) + '万回の計算）。チェックする項目を減らすか、銘柄を絞ってください。</p>';
+          runBtn.disabled = false;
+          if (runAllBtn) runAllBtn.disabled = false;
+          return;
+        }
+        function patEntries(p) {
+          return targets.map(function (t) {
+            return t.rows ? { title: t.title, out: runBacktest(t.rows, Object.assign({ fromIdx: t.fromIdx, toIdx: t.toIdx }, p.cfg)) } : { title: t.title, out: null, noData: t.noData };
+          });
+        }
+        var done = 0;
+        var CHUNK = 100;
+        function step() {
+          var upto = Math.min(patterns.length, done + CHUNK);
+          for (var i = done; i < upto; i++) patterns[i].agg = aggregate(patEntries(patterns[i]));
+          done = upto;
+          if (done < patterns.length) {
+            results.innerHTML = '<p class="bt-res-note">全パターンを実行中…（' + done.toLocaleString("ja-JP") + ' / ' + patterns.length.toLocaleString("ja-JP") + '通り）</p>';
+            setTimeout(step, 0);
+          } else {
+            renderAll();
+          }
+        }
+        function renderAll() {
+          var ddTxt = function (v) { return v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
+          var targetNames = targets.map(function (t) { return t.title; });
+          var html = '<p class="bt-res-note">全パターン検証（' + patterns.length.toLocaleString("ja-JP") + '通り） / 銘柄：' + targetNames.join("、") + '<br>チェックした買い・売り項目の ON/OFF とパラメータの全組合せです（スクリーニングは今の設定で固定、判定できない項目は除きます）。' + (targetNames.length > 1 ? '複数銘柄の値は平均です（勝率・平均損益・平均保有は全取引の合算、取引回数は合計）。' : '') + '</p>';
+          html += '<table class="bt-res-table bt-all-table"><thead><tr>'
+            + '<th data-k="label">パターン</th><th data-k="ret">リターン</th><th data-k="bh">買い持ち</th><th data-k="winRate">勝率</th><th data-k="closed">取引回数</th><th data-k="avgRet">平均損益</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th>'
+            + '</tr></thead><tbody></tbody></table>';
+          html += '<p class="bt-res-note">判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。行を選ぶと、そのパターンの銘柄別結果を表示します。</p>';
+          html += '<div id="bt-all-detail"></div>';
+          results.innerHTML = html;
+          var tbody = results.querySelector(".bt-all-table tbody");
+          var sortKey = "ret", sortDir = -1;
+          var CAP = 300;
+          function rowHtml(p) {
+            var a = p.agg;
+            if (!a) return '<tr class="bt-all-row"><td style="text-align:left">' + esc(p.label) + '</td><td colspan="8" style="text-align:left">データがありませんでした</td></tr>';
+            return '<tr class="bt-all-row"><td style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.bh) + "</td><td>"
+              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + a.closed + (a.open ? "（+保有中" + a.open + "）" : "") + "</td><td>"
+              + (a.avgRet == null ? "—" : pct(a.avgRet)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>"
+              + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
+          }
+          function renderRows() {
+            var arr = patterns.slice().sort(function (x, y) {
+              if (sortKey === "label") return x.label < y.label ? sortDir : x.label > y.label ? -sortDir : 0;
+              var xv = x.agg ? x.agg[sortKey] : null;
+              var yv = y.agg ? y.agg[sortKey] : null;
+              if (xv == null && yv == null) return 0;
+              if (xv == null) return 1;
+              if (yv == null) return -1;
+              return (xv - yv) * sortDir;
+            });
+            var shown = arr.slice(0, CAP);
+            tbody.innerHTML = shown.map(rowHtml).join("") + (arr.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arr.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
+            tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
+              tr.addEventListener("click", function () { selectPattern(shown[i]); });
+            });
+            results.querySelectorAll(".bt-all-table th").forEach(function (th) {
+              var labels = { label: "パターン", ret: "リターン", bh: "買い持ち", winRate: "勝率", closed: "取引回数", avgRet: "平均損益", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ" };
+              var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
+              th.textContent = th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base;
+            });
+          }
+          results.querySelectorAll(".bt-all-table th").forEach(function (th) {
+            th.addEventListener("click", function () {
+              var k = th.getAttribute("data-k");
+              if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "label" ? 1 : -1; }
+              renderRows();
+            });
+          });
+          function selectPattern(p) {
+            tbody.querySelectorAll(".bt-all-row").forEach(function (r) { r.classList.remove("sel"); });
+            var detail = document.getElementById("bt-all-detail");
+            detail.innerHTML = '<h3 class="bt-roll-detail-title">' + esc(p.label) + '</h3><div class="bt-all-stocks"></div>';
+            renderStockResults(detail.querySelector(".bt-all-stocks"), patEntries(p));
+          }
+          results.querySelector(".bt-all-table").addEventListener("click", function (e) {
+            var tr = e.target.closest(".bt-all-row");
+            if (tr) tr.classList.add("sel");
+          });
+          renderRows();
+          var best = patterns.filter(function (p) { return p.agg; }).sort(function (a, b) { return b.agg.ret - a.agg.ret; })[0];
+          if (best) selectPattern(best);
+          runBtn.disabled = false;
+          if (runAllBtn) runAllBtn.disabled = false;
+        }
+        setTimeout(step, 0);
+      }).catch(function () {
+        results.innerHTML = '<p class="bt-res-note">実行中にエラーが発生しました。銘柄コードと期間を確認してください。</p>';
+        runBtn.disabled = false;
+        var b = document.getElementById("bt-run-all");
+        if (b) b.disabled = false;
+      });
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

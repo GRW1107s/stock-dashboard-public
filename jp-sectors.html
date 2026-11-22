@@ -131,6 +131,9 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-settings input[type="text"]{width:210px}
 .bt-settings .bt-hint{font-size:11px;color:#64748b}
 .bt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px}
+.bt-all-table th{cursor:pointer}
+.bt-all-table tbody tr{cursor:pointer}
+.bt-all-table tr.sel td{box-shadow:inset 0 2px 0 #2563eb,inset 0 -2px 0 #2563eb}
 .bt-sweep-matrix{border-collapse:collapse;margin:10px 0;font-size:11.5px}
 .bt-sweep-matrix th,.bt-sweep-matrix td{border:1px solid #ffffff;padding:4px 5px;text-align:center;min-width:54px}
 .bt-sweep-matrix th{background:#f1f5f9;color:#475569;font-weight:600}
@@ -230,6 +233,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label>開始日<input type="text" id="bt-from" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <button type="button" class="bt-run" id="bt-run">実行</button>
+<button type="button" class="bt-run" id="bt-run-all">全パターンで実行</button>
 <span class="bt-hint" id="bt-normal-hint">銘柄コードを入れると、その銘柄だけが対象になります。銘柄スクリーニングの表でチェックした銘柄もここに入ります。開始日・終了日を入れると、テスト期間より優先されます。</span>
 <span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日としてテストします。銘柄コードを入れるとその銘柄が全開始日の対象になり（スクリーニング条件は使いません）、空欄のときは開始日時点でスクリーニング条件を満たす銘柄が対象です。</span>
 </div>
@@ -1110,5 +1114,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261123ma" defer></script>
+<script src="./backtest.js?v=20261123all" defer></script>
 </body></html>
