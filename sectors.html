@@ -190,7 +190,7 @@
 .bt-summary{margin:14px 0 10px;font-size:13.5px}
 .bt-run{padding:7px 18px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:6px;font-size:13.5px;cursor:pointer}
 .bt-run:disabled{opacity:.55;cursor:wait}
-.bt-filter-bar{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:12px 0 2px;font-size:12px}.bt-filter-cap{font-weight:600}.bt-filter-num{width:62px}.bt-filter-note{color:#64748b}.bt-results{margin:6px 0 18px;overflow-x:auto}
+.bt-col-filter{background:none;border:none;cursor:pointer;font-size:10px;padding:0 1px;color:#64748b}.bt-col-filter-on{color:#2563eb;font-weight:700}.bt-col-popup{position:fixed;z-index:80;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 8px 24px rgba(15,23,42,.18);padding:10px;width:252px;font-size:12px;color:#0f172a}.bt-col-popup label{display:block;margin:6px 0}.bt-col-popup input,.bt-col-popup select{width:100%;box-sizing:border-box;margin-top:2px}.bt-col-range{display:flex;gap:8px}.bt-col-range label{flex:1}.bt-col-pophead{display:flex;justify-content:space-between;align-items:center}.bt-col-pophead button{background:none;border:none;cursor:pointer;font-size:14px}.bt-col-error{color:#dc2626;min-height:14px}.bt-col-actions{display:flex;justify-content:space-between;margin-top:8px}.bt-col-apply{background:#2563eb;color:#fff;border:none;border-radius:6px;padding:4px 14px;cursor:pointer}.bt-filter-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 2px;font-size:12px}.bt-filter-chip{background:#eff6ff;border:1px solid #bfdbfe;border-radius:999px;padding:2px 6px 2px 10px;display:inline-flex;gap:6px;align-items:center}.bt-filter-chip button{background:none;border:none;cursor:pointer;color:#2563eb;font-size:13px;padding:0}.bt-filter-clearall{background:none;border:1px solid #cbd5e1;border-radius:6px;padding:2px 8px;cursor:pointer}.bt-results{margin:6px 0 18px;overflow-x:auto}
 .bt-res-block{margin:0 0 18px}
 .bt-res-block h4{margin:10px 0 4px;font-size:14.5px}
 .bt-res-range{margin:0 0 6px;font-size:12.5px;color:#475569}
@@ -294,7 +294,7 @@
 </div>
 </div>
 <p class="bt-summary" id="bt-summary"></p>
-<div class="bt-filter-bar" id="bt-filter-bar"><span class="bt-filter-cap">結果フィルター</span><label>リターン <input type="number" class="bt-filter-num" data-bt-filter="ret" step="any">%以上</label><label>勝率 <input type="number" class="bt-filter-num" data-bt-filter="win" step="any">%以上</label><label>最大DD <input type="number" class="bt-filter-num" data-bt-filter="dd" step="any">%以内</label><label>シャープ <input type="number" class="bt-filter-num" data-bt-filter="sharpe" step="any">以上</label><label>カルマー <input type="number" class="bt-filter-num" data-bt-filter="calmar" step="any">以上</label><label>取引回数 <input type="number" class="bt-filter-num" data-bt-filter="count" step="any">回以上</label><button type="button" class="bt-filter-clear">クリア</button><span class="bt-filter-note"></span></div><div class="bt-results" id="bt-results"></div>
+<div class="bt-filter-chips" id="bt-filter-chips"></div><div class="bt-results" id="bt-results"></div>
 </section>
 <script>
 (function(){
@@ -661,5 +661,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261123re20" defer></script>
+</script><script src="./backtest.js?v=20261123re21" defer></script>
 </body></html>

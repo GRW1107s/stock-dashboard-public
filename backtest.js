@@ -499,6 +499,24 @@
       }
     }
 
+    (function setupFilterChips() {
+      var host = document.getElementById("bt-filter-chips");
+      if (!host) return;
+      host.addEventListener("click", function (e) {
+        var chip = e.target.closest ? e.target.closest("[data-bt-chip]") : null;
+        if (chip) {
+          var parts = chip.getAttribute("data-bt-chip").split("|");
+          if (btFilters[parts[0]]) delete btFilters[parts[0]][parts[1]];
+          applyAllBtFilters();
+          return;
+        }
+        if (e.target.closest && e.target.closest(".bt-filter-clearall")) {
+          btFilters = {};
+          applyAllBtFilters();
+        }
+      });
+    })();
+
     (function setupEtfToSymbols() {
       var sym = document.getElementById("bt-symbols");
       if (!sym) return;
@@ -516,81 +534,6 @@
         sym.dispatchEvent(new Event("input", { bubbles: true }));
         sym.dispatchEvent(new Event("change", { bubbles: true }));
       });
-    })();
-
-    (function setupResultFilter() {
-      var bar = document.getElementById("bt-filter-bar");
-      if (!bar || !results) return;
-      var KEY = "stock-dashboard-bt-filter-" + MARKET;
-      var FIELDS = ["ret", "win", "dd", "sharpe", "calmar", "count"];
-      var saved = {};
-      try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
-      var inputs = {};
-      FIELDS.forEach(function (f) {
-        var el = bar.querySelector('[data-bt-filter="' + f + '"]');
-        if (!el) return;
-        inputs[f] = el;
-        if (saved[f] != null) el.value = saved[f];
-        el.addEventListener("input", function () { persist(); apply(); });
-      });
-      var note = bar.querySelector(".bt-filter-note");
-      var clearBtn = bar.querySelector(".bt-filter-clear");
-      if (clearBtn) clearBtn.addEventListener("click", function () {
-        FIELDS.forEach(function (f) { if (inputs[f]) inputs[f].value = ""; });
-        persist(); apply();
-      });
-      function persist() {
-        var o = {};
-        FIELDS.forEach(function (f) { if (inputs[f] && inputs[f].value !== "") o[f] = inputs[f].value; });
-        try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {}
-      }
-      function numOf(txt) {
-        if (txt == null) return null;
-        var v = parseFloat(String(txt).replace(/[,%+\s]/g, ""));
-        return isNaN(v) ? null : v;
-      }
-      function colFor(table, f) {
-        if (f === "ret") return table.classList.contains("bt-roll-table") ? "avg" : "ret";
-        if (f === "win") return table.querySelector('thead th[data-bt-col="winRate"]') ? "winRate" : "win";
-        if (f === "dd") return "maxdd";
-        if (f === "count") return table.querySelector('thead th[data-bt-col="closed"]') ? "closed" : "count";
-        return f;
-      }
-      function apply() {
-        var active = {};
-        FIELDS.forEach(function (f) {
-          var v = inputs[f] && inputs[f].value !== "" ? parseFloat(inputs[f].value) : null;
-          if (v != null && !isNaN(v)) active[f] = v;
-        });
-        var hidden = 0;
-        results.querySelectorAll("table.bt-res-table:not(.bt-trades-table)").forEach(function (table) {
-          var idx = {};
-          Array.from(table.querySelectorAll("thead th")).forEach(function (th, i) {
-            var id = th.getAttribute("data-bt-col");
-            if (id && !(id in idx)) idx[id] = i;
-          });
-          table.querySelectorAll("tbody tr").forEach(function (tr) {
-            if (tr.querySelector("td[colspan]")) { tr.style.display = ""; return; }
-            var hide = false;
-            for (var f in active) {
-              var col = colFor(table, f);
-              if (!(col in idx)) continue;
-              var cell = tr.children[idx[col]];
-              if (!cell) continue;
-              var v = numOf(cell.textContent);
-              if (v == null) continue;
-              if (f === "dd") { if (Math.abs(v) > active.dd) hide = true; }
-              else if (v < active[f]) hide = true;
-              if (hide) break;
-            }
-            tr.style.display = hide ? "none" : "";
-            if (hide) hidden++;
-          });
-        });
-        if (note) note.textContent = hidden ? hidden + "件を非表示" : "";
-      }
-      new MutationObserver(function () { apply(); }).observe(results, { childList: true, subtree: true });
-      apply();
     })();
 
     (function setupExport() {
@@ -903,6 +846,156 @@
       if (n && n.nodeType === 3) n.nodeValue = txt;
       else th.insertBefore(document.createTextNode(txt), th.firstChild);
     }
+    // Column filters for the result tables, mirroring the screener's
+    // column filter: a small triangle button in each heading opens a
+    // popup (number range + presence, text search, or a choice), active
+    // filters combine with AND across columns and show as chips above
+    // the results.
+    var BT_FILTER_KINDS = { ret: "number", bh: "number", win: "number", winRate: "number", avg: "number", avgRet: "number", median: "number", best: "number", worst: "number", maxdd: "number", sharpe: "number", calmar: "number", hold: "number", avgHold: "number", count: "number", closed: "number", n: "number", buyPrice: "number", sellPrice: "number", kind: "choice" };
+    var BT_FILTER_LABELS = { no: "番号", label: "パターン", title: "銘柄", strat: "戦略", kind: "区分", ret: "リターン", bh: "買い持ち", win: "勝率", winRate: "勝率", count: "取引回数", closed: "取引回数", avg: "平均", avgRet: "平均損益", median: "中央値", best: "最大", worst: "最小", maxdd: "最大DD", sharpe: "シャープ", calmar: "カルマー", hold: "平均保有", avgHold: "平均保有", start: "開始日", period: "期間", n: "銘柄数", buyDate: "買い日", buyPrice: "買値", sellDate: "売り日", sellPrice: "売値", reason: "売り理由" };
+    var BT_TABLE_TITLES = { stock: "銘柄別結果", cmp: "戦略比較", roll: "ローリング開始日別", all: "全パターン", allroll: "全パターン（ローリング）", allrolldates: "開始日別結果", trades: "売買履歴", sweep: "ランキング", sweeproll: "ランキング" };
+    var btFilters = {};
+    var btFilterPopup = null, btFilterCtx = null;
+    function btFilterKind(colId) { return BT_FILTER_KINDS[colId] || "text"; }
+    function btFilterMeaningful(colId, f) {
+      if (!f) return false;
+      var k = btFilterKind(colId);
+      if (k === "number") return (f.min || "") !== "" || (f.max || "") !== "" || f.presence === "has" || f.presence === "missing";
+      if (k === "choice") return !!f.choice;
+      return !!(f.text || "");
+    }
+    function btFilterActive(kind, colId) { return btFilterMeaningful(colId, btFilters[kind] && btFilters[kind][colId]); }
+    function btRowPasses(kind, tr) {
+      var fs = btFilters[kind];
+      if (!fs) return true;
+      for (var colId in fs) {
+        var f = fs[colId];
+        if (!btFilterMeaningful(colId, f)) continue;
+        var td = tr.querySelector('td[data-bt-col="' + colId + '"]');
+        if (!td) continue;
+        var txt = td.textContent;
+        var k = btFilterKind(colId);
+        if (k === "number") {
+          var v = parseFloat(String(txt).replace(/[,%+\s]/g, ""));
+          var valid = !isNaN(v);
+          if (f.presence === "missing") { if (valid) return false; continue; }
+          if (!valid) { if (f.presence === "has" || (f.min || "") !== "" || (f.max || "") !== "") return false; continue; }
+          if ((f.min || "") !== "" && v < parseFloat(f.min)) return false;
+          if ((f.max || "") !== "" && v > parseFloat(f.max)) return false;
+        } else if (k === "choice") {
+          if (txt.trim() !== f.choice) return false;
+        } else if (txt.toLocaleLowerCase().indexOf((f.text || "").toLocaleLowerCase()) < 0) return false;
+      }
+      return true;
+    }
+    function applyBtFilters(table, kind) {
+      if (!table) return;
+      table.querySelectorAll("tbody tr").forEach(function (tr) {
+        if (tr.querySelector("td[colspan]")) { tr.style.display = ""; return; }
+        tr.style.display = btRowPasses(kind, tr) ? "" : "none";
+      });
+      Array.from(table.querySelectorAll("thead th")).forEach(function (th) {
+        var b = th.querySelector(".bt-col-filter");
+        if (b) b.classList.toggle("bt-col-filter-on", btFilterActive(kind, th.dataset.btCol));
+      });
+    }
+    function applyAllBtFilters() {
+      if (!results) return;
+      results.querySelectorAll("table.bt-res-table").forEach(function (t) { if (t.dataset.btKind) applyBtFilters(t, t.dataset.btKind); });
+      renderBtFilterChips();
+    }
+    function btFilterDesc(colId, f) {
+      var k = btFilterKind(colId);
+      if (k === "number") {
+        var parts = [];
+        if (f.presence === "has") parts.push("取得済みのみ");
+        if (f.presence === "missing") parts.push("未取得のみ");
+        if ((f.min || "") !== "") parts.push(f.min + "以上");
+        if ((f.max || "") !== "") parts.push(f.max + "以下");
+        return parts.join("・");
+      }
+      if (k === "choice") return f.choice;
+      return "「" + f.text + "」を含む";
+    }
+    function renderBtFilterChips() {
+      var host = document.getElementById("bt-filter-chips");
+      if (!host) return;
+      var chips = [];
+      Object.keys(btFilters).forEach(function (kind) {
+        Object.keys(btFilters[kind]).forEach(function (colId) {
+          var f = btFilters[kind][colId];
+          if (!btFilterMeaningful(colId, f)) return;
+          chips.push('<span class="bt-filter-chip">' + esc((BT_TABLE_TITLES[kind] || kind) + "：" + (BT_FILTER_LABELS[colId] || colId) + " " + btFilterDesc(colId, f)) + '<button type="button" data-bt-chip="' + kind + "|" + colId + '" aria-label="この条件を解除">×</button></span>');
+        });
+      });
+      host.innerHTML = chips.length ? '<span class="bt-filter-cap">列フィルター：</span>' + chips.join("") + '<button type="button" class="bt-filter-clearall">全条件を解除</button>' : "";
+    }
+    function closeBtFilterPopup() { if (btFilterPopup) btFilterPopup.hidden = true; btFilterCtx = null; }
+    function openBtFilterPopup(kind, colId, anchorBtn) {
+      if (!btFilterPopup) {
+        btFilterPopup = document.createElement("div");
+        btFilterPopup.id = "bt-col-popup";
+        btFilterPopup.className = "bt-col-popup";
+        btFilterPopup.setAttribute("role", "dialog");
+        btFilterPopup.setAttribute("aria-label", "列フィルター");
+        panel.appendChild(btFilterPopup);
+        document.addEventListener("pointerdown", function (e) {
+          if (btFilterPopup && !btFilterPopup.hidden && !btFilterPopup.contains(e.target) && !(e.target.closest && e.target.closest(".bt-col-filter"))) closeBtFilterPopup();
+        });
+        btFilterPopup.addEventListener("click", function (e) {
+          var b = e.target.closest ? e.target.closest("[data-action]") : null;
+          if (!b || !btFilterCtx) return;
+          var action = b.getAttribute("data-action");
+          if (action === "close") { closeBtFilterPopup(); return; }
+          if (action === "clear") {
+            if (btFilters[btFilterCtx.kind]) delete btFilters[btFilterCtx.kind][btFilterCtx.colId];
+            closeBtFilterPopup(); applyAllBtFilters(); return;
+          }
+          if (action === "apply") {
+            var k = btFilterKind(btFilterCtx.colId);
+            var f = {};
+            if (k === "number") {
+              f.min = btFilterPopup.querySelector('[data-btf="min"]').value;
+              f.max = btFilterPopup.querySelector('[data-btf="max"]').value;
+              f.presence = btFilterPopup.querySelector('[data-btf="presence"]').value;
+              if (f.min !== "" && f.max !== "" && parseFloat(f.min) > parseFloat(f.max)) {
+                btFilterPopup.querySelector(".bt-col-error").textContent = "最小値は最大値以下にしてください";
+                return;
+              }
+            } else if (k === "choice") f.choice = btFilterPopup.querySelector('[data-btf="choice"]').value;
+            else f.text = btFilterPopup.querySelector('[data-btf="text"]').value.trim();
+            if (!btFilters[btFilterCtx.kind]) btFilters[btFilterCtx.kind] = {};
+            if (btFilterMeaningful(btFilterCtx.colId, f)) btFilters[btFilterCtx.kind][btFilterCtx.colId] = f;
+            else delete btFilters[btFilterCtx.kind][btFilterCtx.colId];
+            closeBtFilterPopup(); applyAllBtFilters();
+          }
+        });
+      }
+      btFilterCtx = { kind: kind, colId: colId };
+      var f = (btFilters[kind] && btFilters[kind][colId]) || {};
+      var k = btFilterKind(colId);
+      var label = BT_FILTER_LABELS[colId] || colId;
+      var input = "";
+      if (k === "number") {
+        var sel = function (v) { return (f.presence || "all") === v ? " selected" : ""; };
+        input = '<div class="bt-col-range"><label>最小値<input type="number" step="any" data-btf="min" placeholder="指定なし" value="' + esc(f.min || "") + '"></label><label>最大値<input type="number" step="any" data-btf="max" placeholder="指定なし" value="' + esc(f.max || "") + '"></label></div>' +
+          '<label>データの有無<select data-btf="presence"><option value="all"' + sel("all") + '>すべて</option><option value="has"' + sel("has") + '>取得済みのみ</option><option value="missing"' + sel("missing") + '>未取得のみ（数値範囲は無視）</option></select></label>';
+      } else if (k === "choice") {
+        input = '<label>区分を選択<select data-btf="choice"><option value="">すべて</option>' + ["戦略", "買い持ち"].map(function (v) { return '<option value="' + v + '"' + (f.choice === v ? " selected" : "") + '>' + v + '</option>'; }).join("") + '</select></label>';
+      } else {
+        input = '<label>この文字を含む<input type="search" data-btf="text" placeholder="文字列を入力" value="' + esc(f.text || "") + '"></label>';
+      }
+      btFilterPopup.innerHTML = '<div class="bt-col-pophead"><strong>' + esc(label) + '</strong><button type="button" data-action="close" aria-label="閉じる">×</button></div>' + input +
+        '<div class="bt-col-error" aria-live="polite"></div>' +
+        '<div class="bt-col-actions"><button type="button" data-action="clear">この列を解除</button><button type="button" data-action="apply" class="bt-col-apply">適用</button></div>';
+      btFilterPopup.hidden = false;
+      var rect = anchorBtn.getBoundingClientRect(), w = btFilterPopup.offsetWidth, h = btFilterPopup.offsetHeight;
+      btFilterPopup.style.left = Math.round(Math.max(8, Math.min(rect.left, window.innerWidth - w - 8))) + "px";
+      btFilterPopup.style.top = Math.round(rect.bottom + 6 + h > window.innerHeight - 8 ? Math.max(8, rect.top - h - 6) : rect.bottom + 6) + "px";
+      var first = btFilterPopup.querySelector("input, select");
+      if (first) first.focus({ preventScroll: true });
+    }
+
     function setupFlexTable(table, cols, kind) {
       if (!table) return;
       Array.from(table.querySelectorAll("thead th")).forEach(function (th, i) { if (cols[i]) th.dataset.btCol = cols[i]; });
@@ -1081,6 +1174,26 @@
           th.focus();
         });
       });
+      table.dataset.btKind = kind;
+      cols.forEach(function (id) {
+        if (id === "no") return;
+        var th = thById[id];
+        if (!th) return;
+        var fb = document.createElement("button");
+        fb.type = "button";
+        fb.className = "bt-col-filter";
+        fb.textContent = "▾";
+        fb.title = (BT_FILTER_LABELS[id] || id) + " の絞り込み";
+        fb.setAttribute("aria-label", (BT_FILTER_LABELS[id] || id) + " の絞り込み");
+        fb.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+        fb.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (btFilterCtx && btFilterCtx.kind === kind && btFilterCtx.colId === id && btFilterPopup && !btFilterPopup.hidden) closeBtFilterPopup();
+          else openBtFilterPopup(kind, id, fb);
+        });
+        th.appendChild(fb);
+      });
+      applyBtFilters(table, kind);
       return {
         restamp: function () {
           Array.from(table.querySelectorAll("tbody tr")).forEach(function (tr) {
@@ -1089,6 +1202,7 @@
           });
           var cur = Array.from(table.querySelectorAll("thead th")).map(function (t) { return t.dataset.btCol; });
           reorder(cur);
+          applyBtFilters(table, kind);
         }
       };
     }
