@@ -1773,8 +1773,8 @@
           var CAP = 300;
           function rowHtml(p, i) {
             var a = p.rollAgg;
-            if (!a || a.ret == null) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
-            return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
+            if (!a || a.ret == null) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
+            return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
               + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
           }
           function renderRows() {
@@ -1858,8 +1858,6 @@
             });
           }
           renderRows();
-          var best = patterns.filter(function (p) { return p.rollAgg && p.rollAgg.ret != null; }).sort(function (a, b) { return b.rollAgg.ret - a.rollAgg.ret; })[0];
-          if (best) selectRollPattern(best);
           runBtn.disabled = false;
           if (runAllBtn) runAllBtn.disabled = false;
         }
@@ -1997,8 +1995,8 @@
           var CAP = 300;
           function rowHtml(p, i) {
             var a = p.agg;
-            if (!a) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
-            return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>"
+            if (!a) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
+            return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>"
               + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + a.closed + (a.open ? "（+保有中" + a.open + "）" : "") + "</td><td>"
               + (a.avgRet == null ? "—" : pct(a.avgRet)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>"
               + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
