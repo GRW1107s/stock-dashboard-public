@@ -260,6 +260,7 @@
 
     var from = Math.max(0, cfg.fromIdx), to = Math.min(n - 1, cfg.toIdx);
     var trades = [], pos = null, pendingBuy = false, pendingSell = null, waitRule = null;
+    if (cfg.startHeld && to >= from) pos = { execIdx: from, signalIdx: from, price: opens[from], date: dates[from] };
     var equity = [], cash = 1;
     for (var d = from; d <= to; d++) {
       if (pendingBuy && !pos) {
@@ -462,29 +463,30 @@
           if (sel.value !== v) sel.value = v;
         });
       }
-      function blank() { return { buy: [], sell: [], nums: {}, cmp: false, reentry: [] }; }
+      function blank() { return { buy: [], sell: [], nums: {}, cmp: false, reentry: [], startHeld: false }; }
       function collectDom() {
-        var st = { buy: checked("buy"), sell: checked("sell"), nums: {}, reentry: readReentryDom() };
+        var st = { buy: checked("buy"), sell: checked("sell"), nums: {}, reentry: readReentryDom(), startHeld: !!((panel.querySelector("#bt-start-held") || {}).checked) };
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
         return st;
       }
       if (!store || !Array.isArray(store.slots) || (store.slots.length !== 8 && store.slots.length !== 10)) {
         var seed = collectDom();
         store = { active: 0, slots: [] };
-        for (var i = 0; i < 8; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, nums: seed.nums, cmp: false, reentry: seed.reentry || [] } : blank());
+        for (var i = 0; i < 8; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, nums: seed.nums, cmp: false, reentry: seed.reentry || [], startHeld: !!seed.startHeld } : blank());
       }
       if (store.slots.length === 10) store.slots = store.slots.slice(0, 8);
       store.slots.forEach(function (sl) {
         if (!sl || !Array.isArray(sl.buy) || !Array.isArray(sl.sell) || !sl.nums) { sl.buy = []; sl.sell = []; sl.nums = {}; }
         sl.cmp = !!sl.cmp;
         if (!Array.isArray(sl.reentry)) sl.reentry = [];
+        sl.startHeld = !!sl.startHeld;
       });
       var active = store.active >= 0 && store.active < 8 ? store.active : 0;
       var applying = false;
       function persist() { store.active = active; try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
       function syncFromDom() {
         var st = collectDom();
-        store.slots[active].buy = st.buy; store.slots[active].sell = st.sell; store.slots[active].nums = st.nums; store.slots[active].reentry = st.reentry;
+        store.slots[active].buy = st.buy; store.slots[active].sell = st.sell; store.slots[active].nums = st.nums; store.slots[active].reentry = st.reentry; store.slots[active].startHeld = st.startHeld;
       }
       function applySlot(idx) {
         var st = store.slots[idx];
@@ -510,6 +512,8 @@
           }
         });
         applyReentry(st.reentry || []);
+        var shEl = panel.querySelector("#bt-start-held");
+        if (shEl && shEl.checked !== !!st.startHeld) shEl.checked = !!st.startHeld;
         applying = false;
       }
       var buyHead = panel.querySelector(".bt-block.buy .bt-block-head h3");
@@ -543,18 +547,19 @@
         if (applying) return;
         var tg = e.target;
         if (!tg || !tg.getAttribute) return;
-        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num") || tg.classList.contains("bt-re-for")) { syncFromDom(); persist(); }
+        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num") || tg.classList.contains("bt-re-for") || tg.id === "bt-start-held") { syncFromDom(); persist(); }
       });
       applySlot(active);
       persist(); paintTabs();
       return {
         activeName: function () { return "戦略" + (store.active + 1); },
         activeReentry: function () { return (store.slots[store.active].reentry || []).map(function (r) { return { sell: r.sell, buy: r.buy }; }); },
+        activeStartHeld: function () { return !!store.slots[store.active].startHeld; },
         selected: function () {
           var screen = checked("screen");
           var out = [];
           store.slots.forEach(function (sl, i) {
-            if (sl.cmp) out.push({ name: "戦略" + (i + 1), state: { screen: screen, buy: sl.buy.slice(), sell: sl.sell.slice(), nums: Object.assign({}, sl.nums), reentry: (sl.reentry || []).map(function (r) { return { sell: r.sell, buy: r.buy }; }) } });
+            if (sl.cmp) out.push({ name: "戦略" + (i + 1), state: { screen: screen, buy: sl.buy.slice(), sell: sl.sell.slice(), nums: Object.assign({}, sl.nums), reentry: (sl.reentry || []).map(function (r) { return { sell: r.sell, buy: r.buy }; }), startHeld: !!sl.startHeld } });
           });
           return out;
         }
@@ -634,7 +639,7 @@
           }
           var res = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell,
-            ddLimit: cfgBase.ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceSigma: bounceSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry()
+            ddLimit: cfgBase.ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceSigma: bounceSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld()
           });
           out.push({ title: title, out: res });
         });
@@ -1137,7 +1142,7 @@
             if (toIdx <= fromIdx) return;
             var out = runBacktest(rows, {
               fromIdx: fromIdx, toIdx: toIdx, buy: buy, sell: sell,
-              ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceSigma: bounceSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry()
+              ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceSigma: bounceSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld()
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
             entries.push({ title: title, out: out });
@@ -1192,6 +1197,7 @@
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
         if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
         slotsApi.activeReentry().forEach(function (r) { applied.push("再エントリー：" + condLabel("sell", r.sell) + "で売った後は" + condLabel("buy", r.buy) + "で買い戻す"); });
+        if (slotsApi.activeStartHeld()) applied.push("最初から保有した状態で開始");
         html += '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ")) + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。" + (buy.length ? "" : "買い条件が未選択のため、対象銘柄は各開始日の翌営業日に買います。") + "</p>";
         if (skipped.length) {
           html += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
@@ -1297,7 +1303,7 @@
           }
           var out = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: entry, sell: sell,
-            ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceSigma: bounceSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry()
+            ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceSigma: bounceSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld()
           });
           entries.push({ title: title, out: out });
         });
@@ -1306,6 +1312,7 @@
           .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id); }));
         if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
         slotsApi.activeReentry().forEach(function (r) { applied.push("再エントリー：" + condLabel("sell", r.sell) + "で売った後は" + condLabel("buy", r.buy) + "で買い戻す"); });
+        if (slotsApi.activeStartHeld()) applied.push("最初から保有した状態で開始");
         var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。" + (entry.length ? "" : "買い条件（判定できるもの）が未選択のため、対象銘柄は期間開始の翌営業日に買います。") + "</p>";
         if (skipped.length) {
           notes += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
@@ -1343,7 +1350,8 @@
         ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
         rsiBuy: Math.min(50, Math.max(25, num("rsiBuy", 30))), rsiSell: Math.min(85, Math.max(70, num("rsiSell", 70))),
         dropPct: num("dropSell", 5), ddSell: [5, 6, 7].reduce(function (a, o) { return Math.abs(o - num("ddSell", 5)) < Math.abs(a - num("ddSell", 5)) ? o : a; }, 5), lossPct: num("lossPct", 8), highPct: num("highPct", 25), bounceSigma: num("bounceSigma", 2), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50),
-        reentry: (st.reentry || []).filter(function (r) { return r && SELL_EVALUABLE[r.sell] && ["vol15", "rsiGe", "bounce", "ftd"].indexOf(r.buy) >= 0; }).map(function (r) { return { sell: r.sell, buy: r.buy }; })
+        reentry: (st.reentry || []).filter(function (r) { return r && SELL_EVALUABLE[r.sell] && ["vol15", "rsiGe", "bounce", "ftd"].indexOf(r.buy) >= 0; }).map(function (r) { return { sell: r.sell, buy: r.buy }; }),
+        startHeld: !!st.startHeld
       };
     }
     function aggregate(entries) {
@@ -1593,7 +1601,7 @@
         var bl = p.buy.map(function (id) { return patLabel("buy", id, p.nums); });
         var sl = p.sell.map(function (id) { return patLabel("sell", id, p.nums); });
         p.label = "買い：" + (bl.join("、") || "（なし）") + " ／ 売り：" + (sl.join("、") || "（なし）");
-        p.cfg = stratCfg({ screen: screenChecked, buy: p.buy, sell: p.sell, nums: p.nums, reentry: slotsApi.activeReentry() }, null);
+        p.cfg = stratCfg({ screen: screenChecked, buy: p.buy, sell: p.sell, nums: p.nums, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld() }, null);
       });
       var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
       var fromVal = normDate((document.getElementById("bt-from") || {}).value);
