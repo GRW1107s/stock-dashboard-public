@@ -499,6 +499,100 @@
       }
     }
 
+    (function setupEtfToSymbols() {
+      var sym = document.getElementById("bt-symbols");
+      if (!sym) return;
+      panel.addEventListener("change", function (e) {
+        var box = e.target;
+        if (!box || !box.matches || !box.matches("input[data-bt-etf]")) return;
+        var code = box.value;
+        var norm = function (x) { return MARKET === "us" ? x.toUpperCase() : x.replace(/\.T$/i, ""); };
+        var parts = sym.value.split(/[\s,、，]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+        var has = parts.some(function (x) { return norm(x) === code; });
+        if (box.checked && !has) parts.push(code);
+        else if (!box.checked && has) parts = parts.filter(function (x) { return norm(x) !== code; });
+        else return;
+        sym.value = parts.join(",");
+        sym.dispatchEvent(new Event("input", { bubbles: true }));
+        sym.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    })();
+
+    (function setupResultFilter() {
+      var bar = document.getElementById("bt-filter-bar");
+      if (!bar || !results) return;
+      var KEY = "stock-dashboard-bt-filter-" + MARKET;
+      var FIELDS = ["ret", "win", "dd", "sharpe", "calmar", "count"];
+      var saved = {};
+      try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+      var inputs = {};
+      FIELDS.forEach(function (f) {
+        var el = bar.querySelector('[data-bt-filter="' + f + '"]');
+        if (!el) return;
+        inputs[f] = el;
+        if (saved[f] != null) el.value = saved[f];
+        el.addEventListener("input", function () { persist(); apply(); });
+      });
+      var note = bar.querySelector(".bt-filter-note");
+      var clearBtn = bar.querySelector(".bt-filter-clear");
+      if (clearBtn) clearBtn.addEventListener("click", function () {
+        FIELDS.forEach(function (f) { if (inputs[f]) inputs[f].value = ""; });
+        persist(); apply();
+      });
+      function persist() {
+        var o = {};
+        FIELDS.forEach(function (f) { if (inputs[f] && inputs[f].value !== "") o[f] = inputs[f].value; });
+        try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {}
+      }
+      function numOf(txt) {
+        if (txt == null) return null;
+        var v = parseFloat(String(txt).replace(/[,%+\s]/g, ""));
+        return isNaN(v) ? null : v;
+      }
+      function colFor(table, f) {
+        if (f === "ret") return table.classList.contains("bt-roll-table") ? "avg" : "ret";
+        if (f === "win") return table.querySelector('thead th[data-bt-col="winRate"]') ? "winRate" : "win";
+        if (f === "dd") return "maxdd";
+        if (f === "count") return table.querySelector('thead th[data-bt-col="closed"]') ? "closed" : "count";
+        return f;
+      }
+      function apply() {
+        var active = {};
+        FIELDS.forEach(function (f) {
+          var v = inputs[f] && inputs[f].value !== "" ? parseFloat(inputs[f].value) : null;
+          if (v != null && !isNaN(v)) active[f] = v;
+        });
+        var hidden = 0;
+        results.querySelectorAll("table.bt-res-table:not(.bt-trades-table)").forEach(function (table) {
+          var idx = {};
+          Array.from(table.querySelectorAll("thead th")).forEach(function (th, i) {
+            var id = th.getAttribute("data-bt-col");
+            if (id && !(id in idx)) idx[id] = i;
+          });
+          table.querySelectorAll("tbody tr").forEach(function (tr) {
+            if (tr.querySelector("td[colspan]")) { tr.style.display = ""; return; }
+            var hide = false;
+            for (var f in active) {
+              var col = colFor(table, f);
+              if (!(col in idx)) continue;
+              var cell = tr.children[idx[col]];
+              if (!cell) continue;
+              var v = numOf(cell.textContent);
+              if (v == null) continue;
+              if (f === "dd") { if (Math.abs(v) > active.dd) hide = true; }
+              else if (v < active[f]) hide = true;
+              if (hide) break;
+            }
+            tr.style.display = hide ? "none" : "";
+            if (hide) hidden++;
+          });
+        });
+        if (note) note.textContent = hidden ? hidden + "件を非表示" : "";
+      }
+      new MutationObserver(function () { apply(); }).observe(results, { childList: true, subtree: true });
+      apply();
+    })();
+
     (function setupExport() {
       var btn = document.getElementById("bt-export");
       if (!btn) return;

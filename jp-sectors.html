@@ -197,7 +197,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 .bt-summary{margin:14px 0 10px;font-size:13.5px}
 .bt-run{padding:7px 18px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:6px;font-size:13.5px;cursor:pointer}
 .bt-run:disabled{opacity:.55;cursor:wait}
-.bt-results{margin:6px 0 18px;overflow-x:auto}
+.bt-filter-bar{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:12px 0 2px;font-size:12px}.bt-filter-cap{font-weight:600}.bt-filter-num{width:62px}.bt-filter-note{color:#64748b}.bt-results{margin:6px 0 18px;overflow-x:auto}
 .bt-res-block{margin:0 0 18px}
 .bt-res-block h4{margin:10px 0 4px;font-size:14.5px}
 .bt-res-range{margin:0 0 6px;font-size:12.5px;color:#475569}
@@ -253,7 +253,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <span class="bt-hint" id="bt-normal-hint">銘柄コードを入れると、その銘柄だけが対象になります。銘柄スクリーニングの表でチェックした銘柄もここに入ります。開始日・終了日を入れると、テスト期間より優先されます。</span>
 <span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日としてテストします。銘柄コードを入れるとその銘柄が全開始日の対象になり（スクリーニング条件は使いません）、空欄のときは開始日時点でスクリーニング条件を満たす銘柄が対象です。</span>
 </div>
-<div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="nikkei">日経225</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="prime">東証プライム</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="standard">東証スタンダード</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="growth">東証グロース</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1321">日経225連動（1321）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1306">TOPIX連動（1306）</label><span class="bt-note">指数は通常モードのみ対象です。ETFは通常・ローリング両方で対象です。指数は終値ベースで判定します。</span></div>
+<div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="nikkei">日経225</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="prime">東証プライム</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="standard">東証スタンダード</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="growth">東証グロース</label></div><div class="bt-index-row"><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1321">日経225連動（1321）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="1306">TOPIX連動（1306）</label><span class="bt-note">指数は通常モードのみ対象です。ETFは通常・ローリング両方で対象です。指数は終値ベースで判定します。</span></div>
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="sector"><span>所属セクターが上位を維持</span></label>
@@ -301,7 +301,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 </div>
 </div>
 <p class="bt-summary" id="bt-summary"></p>
-<div class="bt-results" id="bt-results"></div>
+<div class="bt-filter-bar" id="bt-filter-bar"><span class="bt-filter-cap">結果フィルター</span><label>リターン <input type="number" class="bt-filter-num" data-bt-filter="ret" step="any">%以上</label><label>勝率 <input type="number" class="bt-filter-num" data-bt-filter="win" step="any">%以上</label><label>最大DD <input type="number" class="bt-filter-num" data-bt-filter="dd" step="any">%以内</label><label>シャープ <input type="number" class="bt-filter-num" data-bt-filter="sharpe" step="any">以上</label><label>カルマー <input type="number" class="bt-filter-num" data-bt-filter="calmar" step="any">以上</label><label>取引回数 <input type="number" class="bt-filter-num" data-bt-filter="count" step="any">回以上</label><button type="button" class="bt-filter-clear">クリア</button><span class="bt-filter-note"></span></div><div class="bt-results" id="bt-results"></div>
 </section>
 <script>
 (function(){
@@ -1130,5 +1130,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261123re18" defer></script>
+<script src="./backtest.js?v=20261123re20" defer></script>
 </body></html>
