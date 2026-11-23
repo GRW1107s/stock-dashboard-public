@@ -295,7 +295,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <div class="bt-item"><span class="bt-item-text">・前日に<select class="bt-select" data-bt-num="bounceCloseSigma" aria-label="引け成行買いのσ閾値"><option value="1.5">1.5</option><option value="1.6">1.6</option><option value="1.7">1.7</option><option value="1.8">1.8</option><option value="1.9">1.9</option><option value="2" selected>2</option><option value="2.1">2.1</option><option value="2.2">2.2</option><option value="2.3">2.3</option><option value="2.4">2.4</option><option value="2.5">2.5</option><option value="2.6">2.6</option><option value="2.7">2.7</option><option value="2.8">2.8</option><option value="2.9">2.9</option><option value="3">3</option></select>σ以上下落したとき、引け成行で買う</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="bounceClose" aria-label="条件を有効化"></span></div>
 <p class="bt-group">CAN-SLIM（オニール）</p>
 <div class="bt-item"><span class="bt-item-text">・FTD（フォロースルーデー）が発生</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="ftd" aria-label="条件を有効化"></span></div>
-<div class="bt-formula" data-formula="buy"><div class="bt-formula-head">論理式（買い）<span class="bt-formula-state"></span></div><div class="bt-formula-chips"></div><div class="bt-formula-tools"><button type="button" data-fop="and">AND</button><button type="button" data-fop="or">OR</button><button type="button" data-fop="(">(</button><button type="button" data-fop=")">)</button><button type="button" data-fop="not">NOT</button><button type="button" data-fop="del">← 消す</button><button type="button" data-fop="clear">クリア</button></div></div>
+<div class="bt-formula" data-formula="buy"><div class="bt-formula-head">論理式（買い）<span class="bt-formula-state"></span></div><div class="bt-formula-chips"></div><div class="bt-formula-tools"><button type="button" data-fop="and">AND</button><button type="button" data-fop="or">OR</button><button type="button" data-fop="(">(</button><button type="button" data-fop=")">)</button><button type="button" data-fop="del">← 消す</button><button type="button" data-fop="clear">クリア</button></div></div>
 </div>
 <div class="bt-block sell">
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
@@ -311,7 +311,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <div class="bt-item"><span class="bt-item-text">・52週高値から<select class="bt-select" data-bt-num="highPct" aria-label="52週高値からの下落率"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20" selected>20</option></select>%以上下落</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="high25" aria-label="条件を有効化"></span></div>
 <p class="bt-group">CAN-SLIM（オニール）</p>
 <div class="bt-item"><span class="bt-item-text">・DD（売り抜け日）が<select class="bt-select" data-bt-num="ddSell" aria-label="売りのDD閾値"><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option></select>以上（直近25取引日）</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="ddGe" aria-label="条件を有効化"></span></div>
-<div class="bt-formula" data-formula="sell"><div class="bt-formula-head">論理式（売り）<span class="bt-formula-state"></span></div><div class="bt-formula-chips"></div><div class="bt-formula-tools"><button type="button" data-fop="and">AND</button><button type="button" data-fop="or">OR</button><button type="button" data-fop="(">(</button><button type="button" data-fop=")">)</button><button type="button" data-fop="not">NOT</button><button type="button" data-fop="del">← 消す</button><button type="button" data-fop="clear">クリア</button></div></div>
+<div class="bt-formula" data-formula="sell"><div class="bt-formula-head">論理式（売り）<span class="bt-formula-state"></span></div><div class="bt-formula-chips"></div><div class="bt-formula-tools"><button type="button" data-fop="and">AND</button><button type="button" data-fop="or">OR</button><button type="button" data-fop="(">(</button><button type="button" data-fop=")">)</button><button type="button" data-fop="del">← 消す</button><button type="button" data-fop="clear">クリア</button></div></div>
 </div>
 </div>
 </div>
@@ -1149,5 +1149,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261123re41" defer></script>
+<script src="./backtest.js?v=20261123re42" defer></script>
 </body></html>
