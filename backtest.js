@@ -124,40 +124,47 @@
       // Pine Script parity: DD5 starts the warning, FTD ends it, but DD
       // history itself is NOT cleared. Use the charted instrument's OHLCV.
       var pineFtd = [], pineWarning = [], pineWarningStart = [];
+      var pineByN = {};
       (function () {
-        var warningActive = false, rallyDay = 0, rallyLow = null;
-        for (var i = 0; i < n; i++) {
-          var isDd = i > 0 && closes[i] <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1];
-          var reachedDd5 = isDd && ddActive[i] >= 5 && (i === 0 || ddActive[i - 1] < 5);
-          var isFtd = false;
-          if (reachedDd5 && !warningActive) {
-            warningActive = true;
-            rallyDay = 0;
-            rallyLow = null;
-          } else if (warningActive && i > 0) {
-            if (rallyDay > 0 && lows[i] < rallyLow) {
+        [5, 6, 7].forEach(function (th) {
+          var warningActive = false, rallyDay = 0, rallyLow = null;
+          var ftdArr = [], warnArr = [];
+          for (var i = 0; i < n; i++) {
+            var isDd = i > 0 && closes[i] <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1];
+            var reached = isDd && ddActive[i] >= th && (i === 0 || ddActive[i - 1] < th);
+            var isFtd = false;
+            if (reached && !warningActive) {
+              warningActive = true;
               rallyDay = 0;
               rallyLow = null;
-            }
-            if (rallyDay === 0) {
-              if (closes[i] > closes[i - 1]) {
-                rallyDay = 1;
-                rallyLow = lows[i];
+            } else if (warningActive && i > 0) {
+              if (rallyDay > 0 && lows[i] < rallyLow) {
+                rallyDay = 0;
+                rallyLow = null;
               }
-            } else {
-              rallyDay++;
+              if (rallyDay === 0) {
+                if (closes[i] > closes[i - 1]) {
+                  rallyDay = 1;
+                  rallyLow = lows[i];
+                }
+              } else {
+                rallyDay++;
+              }
+              if (rallyDay >= 4 && closes[i] >= closes[i - 1] * 1.0125 && vols[i] > vols[i - 1]) {
+                isFtd = true;
+                warningActive = false;
+                rallyDay = 0;
+                rallyLow = null;
+              }
             }
-            if (rallyDay >= 4 && closes[i] >= closes[i - 1] * 1.0125 && vols[i] > vols[i - 1]) {
-              isFtd = true;
-              warningActive = false;
-              rallyDay = 0;
-              rallyLow = null;
-            }
+            ftdArr.push(isFtd);
+            warnArr.push(warningActive || isFtd);
+            if (th === 5) pineWarningStart.push(reached);
           }
-          pineFtd.push(isFtd);
-          pineWarning.push(warningActive || isFtd);
-          pineWarningStart.push(reachedDd5);
-        }
+          pineByN[th] = { ftd: ftdArr, warning: warnArr };
+        });
+        pineFtd = pineByN[5].ftd;
+        pineWarning = pineByN[5].warning;
       })();
       // Bounce Strategy: sigma20[i] is the population standard deviation of
       // the 20 daily returns before day i (the drop day itself is excluded).
@@ -173,7 +180,7 @@
       }
       per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols,
         ma50: ma50, ma150: ma150, ma200: ma200, ma200Prev: ma200Prev, rsi: rsi,
-        ddActive: ddActive, pineFtd: pineFtd, pineWarning: pineWarning, pineWarningStart: pineWarningStart, sigma20: sigma20 };
+        ddActive: ddActive, pineFtd: pineFtd, pineWarning: pineWarning, pineWarningStart: pineWarningStart, pineByN: pineByN, sigma20: sigma20 };
     }
     if (!per.maSell[maDays]) {
       var ms = [];
@@ -183,7 +190,7 @@
     var b = per.base;
     return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols,
       ma50: b.ma50, ma150: b.ma150, ma200: b.ma200, ma200Prev: b.ma200Prev, maSell: per.maSell[maDays], rsi: b.rsi,
-      ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, sigma20: b.sigma20 };
+      ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, pineByN: b.pineByN, sigma20: b.sigma20 };
   }
 
   function runBacktest(rows, cfg) {
@@ -191,6 +198,8 @@
     var dates = ind.dates, opens = ind.opens, highs = ind.highs, lows = ind.lows, closes = ind.closes, vols = ind.vols;
     var ma50 = ind.ma50, ma150 = ind.ma150, ma200 = ind.ma200, ma200Prev = ind.ma200Prev, maSell = ind.maSell;
     var rsi = ind.rsi, ddActive = ind.ddActive, pineFtd = ind.pineFtd, pineWarning = ind.pineWarning, sigma20 = ind.sigma20;
+    var pineSel = (cfg.ddSell === 6 || cfg.ddSell === 7) ? cfg.ddSell : 5;
+    if (ind.pineByN && ind.pineByN[pineSel]) { pineFtd = ind.pineByN[pineSel].ftd; pineWarning = ind.pineByN[pineSel].warning; }
     var n = rows.length;
     function ddOk(i) {
       return cfg.ddLimit == null || ddActive[i] <= cfg.ddLimit;
@@ -240,7 +249,7 @@
         if (id === "dropPct" && cfg.dropPct != null && i > 0 && closes[i - 1] > 0 && c / closes[i - 1] - 1 <= -cfg.dropPct / 100) return id;
         // Pine's orange warning remains active until FTD even if DD falls below 5.
         // A new FTD bar is the final orange bar, but is not a sell signal.
-        if (id === "ddGe" && cfg.ddSell != null && cfg.ddSell === 5 && pineWarning[i] && !pineFtd[i]) return id;
+        if (id === "ddGe" && cfg.ddSell != null && pineWarning[i] && !pineFtd[i]) return id;
       }
       return null;
     }
@@ -1283,7 +1292,7 @@
         buy: entry, sell: sell,
         ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
         rsiBuy: Math.min(50, Math.max(25, num("rsiBuy", 30))), rsiSell: Math.min(85, Math.max(70, num("rsiSell", 70))),
-        dropPct: num("dropSell", 5), ddSell: num("ddSell", 5), lossPct: num("lossPct", 8), highPct: num("highPct", 25), bounceSigma: num("bounceSigma", 2), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50)
+        dropPct: num("dropSell", 5), ddSell: [5, 6, 7].reduce(function (a, o) { return Math.abs(o - num("ddSell", 5)) < Math.abs(a - num("ddSell", 5)) ? o : a; }, 5), lossPct: num("lossPct", 8), highPct: num("highPct", 25), bounceSigma: num("bounceSigma", 2), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50)
       };
     }
     function aggregate(entries) {
