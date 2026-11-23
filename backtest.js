@@ -386,6 +386,130 @@
     var results = document.getElementById("bt-results");
     if (!runBtn || !results) return;
 
+    // ---- Result export (CSV / Excel) -------------------------------------
+    function btCollectTables() {
+      var TITLES = [["bt-all-matrix", "ヒートマップ"], ["bt-all-table", "全パターン"], ["bt-rollall-table", "全パターン（ローリング）"], ["bt-rollall-dates", "開始日別結果"], ["bt-roll-table", "ローリング開始日別"], ["bt-cmp-table", "戦略比較"], ["bt-stock-table", "銘柄別結果"], ["bt-trades-table", "売買履歴"]];
+      var tables = [];
+      var note = results.querySelector(".bt-res-note");
+      if (note && note.textContent.trim()) tables.push({ title: "適用条件", rows: [[note.textContent.trim().replace(/\s+/g, " ")]] });
+      var used = {};
+      results.querySelectorAll("table").forEach(function (tbl) {
+        var title = "表";
+        TITLES.forEach(function (pair) { if (tbl.classList.contains(pair[0])) title = pair[1]; });
+        var rows = [];
+        tbl.querySelectorAll("tr").forEach(function (tr) {
+          var row = [];
+          tr.querySelectorAll("th,td").forEach(function (cell) {
+            row.push(cell.textContent.trim().replace(/\s+/g, " "));
+            var cs = parseInt(cell.getAttribute("colspan") || "1", 10);
+            for (var k = 1; k < cs; k++) row.push("");
+          });
+          if (row.length) rows.push(row);
+        });
+        if (!rows.length) return;
+        var name = title;
+        if (used[title]) { used[title]++; name = title + used[title]; } else used[title] = 1;
+        tables.push({ title: name, rows: rows });
+      });
+      return tables;
+    }
+    function btCsvQuote(v) { var t = String(v == null ? "" : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }
+    function btDownload(blob, filename) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
+    function btXmlEsc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    function btColName(i) { var t = ""; i++; while (i > 0) { var m = (i - 1) % 26; t = String.fromCharCode(65 + m) + t; i = Math.floor((i - 1) / 26); } return t; }
+    function btSheetXml(rows) {
+      var x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+      rows.forEach(function (r, ri) {
+        x += '<row r="' + (ri + 1) + '">';
+        r.forEach(function (v, ci) {
+          var t = String(v == null ? "" : v);
+          if (/^-?\d+(\.\d+)?$/.test(t)) x += '<c r="' + btColName(ci) + (ri + 1) + '"><v>' + Number(t) + "</v></c>";
+          else if (t !== "") x += '<c r="' + btColName(ci) + (ri + 1) + '" t="inlineStr"><is><t>' + btXmlEsc(t) + "</t></is></c>";
+        });
+        x += "</row>";
+      });
+      return x + "</sheetData></worksheet>";
+    }
+    var btCrcTable = null;
+    function btCrc(data) {
+      if (!btCrcTable) { btCrcTable = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); btCrcTable[n] = c >>> 0; } }
+      var crc = 0xFFFFFFFF;
+      for (var i = 0; i < data.length; i++) crc = btCrcTable[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    function btZipBlob(files) {
+      var enc = new TextEncoder();
+      var chunks = [], central = [], offset = 0;
+      files.forEach(function (f) {
+        var name = enc.encode(f.name), crc = btCrc(f.data);
+        var lh = new DataView(new ArrayBuffer(30));
+        lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+        lh.setUint32(14, crc, true); lh.setUint32(18, f.data.length, true); lh.setUint32(22, f.data.length, true);
+        lh.setUint16(26, name.length, true);
+        chunks.push(new Uint8Array(lh.buffer), name, f.data);
+        var ch = new DataView(new ArrayBuffer(46));
+        ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+        ch.setUint32(16, crc, true); ch.setUint32(20, f.data.length, true); ch.setUint32(24, f.data.length, true);
+        ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+        central.push(new Uint8Array(ch.buffer), name);
+        offset += 30 + name.length + f.data.length;
+      });
+      var csize = central.reduce(function (a, c) { return a + c.length; }, 0);
+      var end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+      end.setUint32(12, csize, true); end.setUint32(16, offset, true);
+      return new Blob(chunks.concat(central, [new Uint8Array(end.buffer)]), { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    function btExportResults(format) {
+      var tables = btCollectTables().filter(function (t) { return t.title !== "適用条件" || t.rows.length; });
+      var dataTables = tables.filter(function (t) { return t.title !== "適用条件"; });
+      if (!dataTables.length) {
+        var btn = document.getElementById("bt-export");
+        if (btn) { var old = btn.textContent; btn.textContent = "結果がありません"; setTimeout(function () { btn.textContent = old; }, 1400); }
+        return;
+      }
+      var now = new Date();
+      var stamp = now.getFullYear() + ("0" + (now.getMonth() + 1)).slice(-2) + ("0" + now.getDate()).slice(-2) + "-" + ("0" + now.getHours()).slice(-2) + ("0" + now.getMinutes()).slice(-2);
+      if (format === "xlsx") {
+        var enc = new TextEncoder();
+        var sheetName = function (t) { return t.replace(/[\\\/?*[\]:]/g, "").slice(0, 31) || "表"; };
+        var overrides = tables.map(function (_, i) { return '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'; }).join("");
+        var files = [
+          { name: "[Content_Types].xml", data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' + overrides + "</Types>") },
+          { name: "_rels/.rels", data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>') },
+          { name: "xl/workbook.xml", data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + tables.map(function (t, i) { return '<sheet name="' + btXmlEsc(sheetName(t.title)) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>'; }).join("") + "</sheets></workbook>") },
+          { name: "xl/_rels/workbook.xml.rels", data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + tables.map(function (_, i) { return '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>'; }).join("") + "</Relationships>") }
+        ];
+        tables.forEach(function (t, i) { files.push({ name: "xl/worksheets/sheet" + (i + 1) + ".xml", data: enc.encode(btSheetXml(t.rows)) }); });
+        btDownload(btZipBlob(files), "backtest-results-" + stamp + ".xlsx");
+      } else {
+        var parts = [];
+        tables.forEach(function (t) {
+          parts.push("■ " + t.title);
+          t.rows.forEach(function (r) { parts.push(r.map(btCsvQuote).join(",")); });
+          parts.push("");
+        });
+        btDownload(new Blob(["\uFEFF" + parts.join("\r\n")], { type: "text/csv;charset=utf-8" }), "backtest-results-" + stamp + ".csv");
+      }
+    }
+
+    (function setupExport() {
+      var btn = document.getElementById("bt-export");
+      if (!btn) return;
+      var menu = btn.parentElement.querySelector(".bt-export-menu");
+      btn.addEventListener("click", function (e) { e.stopPropagation(); if (menu) menu.hidden = !menu.hidden; });
+      document.addEventListener("click", function () { if (menu) menu.hidden = true; });
+      if (menu) menu.querySelectorAll("[data-bt-export]").forEach(function (b) {
+        b.addEventListener("click", function () { menu.hidden = true; btExportResults(b.getAttribute("data-bt-export")); });
+      });
+    })();
+
     // Collapsible blocks and groups: +/- toggles, state persisted per market.
     (function setupCollapse() {
       var KEY = "stock-dashboard-bt-collapse-" + MARKET;
