@@ -17,7 +17,7 @@
     roe17: "ROEが17%以上",
     rsiGe: "RSI（14日）が閾値以下",
     vol15: "出来高が20日平均の1.5倍以上",
-    maCross: "20日MAが50日MAより上", emaCross: "9日EMAが21日EMAより上",
+    maCross: "20日MA＞50日MA", emaCross: "9日EMA＞21日EMA",
     bounceClose: "前日にσ以上下落したとき、引け成行で買う",
     sector: "所属セクターが上位を維持",
     tt1: "株価が150日・200日移動平均線より上",
@@ -37,7 +37,7 @@
     loss8: "買値から閾値%下落",
     dropPct: "前日終値から閾値%以上下落",
     high25: "52週高値から閾値%以上下落",
-    maCrossDn: "20日MAが50日MAより下", emaCrossDn: "9日EMAが21日EMAより下", ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
+    maCrossDn: "20日MA＜50日MA", emaCrossDn: "9日EMA＜21日EMA", ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
     rsiLe: "RSI（14日）が閾値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, maCross: 1, emaCross: 1, ftd: 1 };

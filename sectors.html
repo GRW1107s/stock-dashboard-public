@@ -282,7 +282,7 @@
 
 
 <div class="bt-item"><span class="bt-item-text">・出来高が20日平均の1.5倍以上</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="vol15" aria-label="条件を有効化"></span></div>
-<p class="bt-group">移動平均</p><div class="bt-item"><span class="bt-item-text">・20日MAが50日MAより上</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross" aria-label="条件を有効化"></span></div><div class="bt-item"><span class="bt-item-text">・9日EMAが21日EMAより上</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="emaCross" aria-label="条件を有効化"></span></div><p class="bt-group">RSI Strategy</p>
+<p class="bt-group">移動平均</p><div class="bt-item"><span class="bt-item-text">・20日MA＞50日MA</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross" aria-label="条件を有効化"></span></div><div class="bt-item"><span class="bt-item-text">・9日EMA＞21日EMA</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="emaCross" aria-label="条件を有効化"></span></div><p class="bt-group">RSI Strategy</p>
 <div class="bt-item"><span class="bt-item-text">・RSI（14日）が<select class="bt-select" data-bt-num="rsiBuy" aria-label="買いのRSI閾値"><option value="25">25</option><option value="30" selected>30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>以下</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="rsiGe" aria-label="条件を有効化"></span></div>
 <p class="bt-group">Bounce Strategy</p>
 <div class="bt-item"><span class="bt-item-text">・前日に<select class="bt-select" data-bt-num="bounceCloseSigma" aria-label="引け成行買いのσ閾値"><option value="1.5">1.5</option><option value="2" selected>2</option><option value="2.5">2.5</option><option value="3">3</option></select>σ以上下落したとき、引け成行で買う</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="bounceClose" aria-label="条件を有効化"></span></div>
@@ -294,8 +294,8 @@
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
 
 <div class="bt-item"><span class="bt-item-text">・株価が<select class="bt-select" data-bt-num="maSellDays" aria-label="売りの移動平均日数"><option value="20">20</option><option value="50" selected>50</option><option value="200">200</option></select>日移動平均を下回る</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="ma50" checked aria-label="条件を有効化"></span></div>
-<div class="bt-item"><span class="bt-item-text">・20日MAが50日MAより下</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn" aria-label="条件を有効化"></span></div>
-<div class="bt-item"><span class="bt-item-text">・9日EMAが21日EMAより下</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="emaCrossDn" aria-label="条件を有効化"></span></div>
+<div class="bt-item"><span class="bt-item-text">・20日MA＜50日MA</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn" aria-label="条件を有効化"></span></div>
+<div class="bt-item"><span class="bt-item-text">・9日EMA＜21日EMA</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="emaCrossDn" aria-label="条件を有効化"></span></div>
 <div class="bt-item"><span class="bt-item-text">・買値から<select class="bt-select" data-bt-num="lossPct" aria-label="買値からの下落率"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select>%下落</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="loss8" checked aria-label="条件を有効化"></span></div>
 <div class="bt-item"><span class="bt-item-text">・前日終値から<select class="bt-select" data-bt-num="dropSell" aria-label="前日終値からの下落率"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select>%以上下落</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="dropPct" aria-label="条件を有効化"></span></div>
 <div class="bt-item"><span class="bt-item-text">・52週高値から<select class="bt-select" data-bt-num="highPct" aria-label="52週高値からの下落率"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20" selected>20</option></select>%以上下落</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="high25" aria-label="条件を有効化"></span></div>
@@ -679,5 +679,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261123re37" defer></script>
+</script><script src="./backtest.js?v=20261123re38" defer></script>
 </body></html>
