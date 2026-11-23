@@ -499,6 +499,58 @@
       }
     }
 
+    (function setupMaxPeriod() {
+      var btn = document.getElementById("bt-max-period");
+      if (!btn) return;
+      btn.addEventListener("click", function () {
+        var fromEl = document.getElementById("bt-from"), toEl = document.getElementById("bt-to");
+        if (!fromEl || !toEl) return;
+        btn.disabled = true;
+        var old = btn.textContent;
+        btn.textContent = "取得中…";
+        var minD = null, maxD = null;
+        var take = function (a, b) { if (a && (!minD || a > minD)) minD = a; if (b && (!maxD || b < maxD)) maxD = b; };
+        var jobs = [];
+        var codes = [];
+        var sym = document.getElementById("bt-symbols");
+        if (sym) codes = codes.concat(sym.value.split(/[\s,、]+/).map(function (x) { return x.trim(); }).filter(Boolean));
+        panel.querySelectorAll("input[data-bt-etf]:checked").forEach(function (b) { codes.push(b.value); });
+        codes.forEach(function (code) {
+          jobs.push(loadJson(ohlcvUrl(code)).then(function (d) {
+            var rows = d && d.rows;
+            if (rows && rows.length) take(rows[0][0], rows[rows.length - 1][0]);
+          }).catch(function () {}));
+        });
+        var idxChecked = panel.querySelectorAll("input[data-bt-index]:checked").length;
+        if (idxChecked || !codes.length) {
+          var rangeOf = function (d) {
+            var arr = d && (MARKET === "jp" ? (d.tse_rows && d.tse_rows.length ? d.tse_rows : d.rows) : d.rows);
+            if (!arr || !arr.length) return;
+            var lo = null, hi = null;
+            arr.forEach(function (r) { if (!r.date) return; if (!lo || r.date < lo) lo = r.date; if (!hi || r.date > hi) hi = r.date; });
+            take(lo, hi);
+          };
+          jobs.push(loadJson("history-1992.json").then(rangeOf).catch(function () {}));
+          jobs.push(loadJson("history-" + new Date().getFullYear() + ".json").then(rangeOf).catch(function () {}));
+        }
+        Promise.all(jobs).then(function () {
+          if (minD && maxD && minD <= maxD) {
+            fromEl.value = minD;
+            toEl.value = maxD;
+            [fromEl, toEl].forEach(function (el) {
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            });
+          } else if (minD && maxD) {
+            btn.textContent = "共通期間がありません";
+            setTimeout(function () { btn.textContent = old; }, 1600);
+          }
+          btn.disabled = false;
+          if (btn.textContent !== "共通期間がありません") btn.textContent = old;
+        });
+      });
+    })();
+
     (function setupExport() {
       var btn = document.getElementById("bt-export");
       if (!btn) return;
@@ -1123,6 +1175,7 @@
       var inputCodes = ((document.getElementById("bt-symbols") || {}).value || "").split(/[\s,、，]+/)
         .map(function (x) { return x.trim(); }).filter(Boolean)
         .map(function (x) { return MARKET === "us" ? x.toUpperCase() : x.replace(/\.T$/i, ""); });
+      panel.querySelectorAll("input[data-bt-etf]:checked").forEach(function (b) { inputCodes.push(b.value); });
       inputCodes = Array.from(new Set(inputCodes)).slice(0, 200);
       var fixedCodes = inputCodes.length ? inputCodes : null;
       var buyAll = checked("buy"), sellAll = checked("sell");
@@ -1145,11 +1198,7 @@
       var rsMin = parseInt((document.getElementById("bt-tt-rs") || {}).value || "70", 10);
       var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
       var fromVal = normDate((document.getElementById("bt-from") || {}).value);
-      var toVal = normDate((document.getElementById("bt-to") || {}).value) || fromVal;
-      if (!fromVal) {
-        results.innerHTML = '<p class="bt-res-note">開始日を入力してください（ローリングで開始日をずらす範囲の初日です）。</p>';
-        return;
-      }
+      var toVal = normDate((document.getElementById("bt-to") || {}).value) || "9999-12-31";
       var horizon = parseInt((document.getElementById("bt-roll-horizon") || {}).value || "21", 10);
       var universe = (document.getElementById("bt-universe") || {}).value || "all";
       var markets = MARKET === "us" ? null : universe === "prime" ? ["プライム"] : universe === "standard" ? ["スタンダード"] : universe === "growth" ? ["グロース"] : null;
@@ -1187,9 +1236,16 @@
       if (fixedCodes) {
         perDatePromise = loadStoreFor(fixedCodes).then(function (store) {
           fixedStore = store;
+          var lo = null, hi = null;
+          fixedCodes.forEach(function (c) {
+            var rows = store[c] || [];
+            if (rows.length) { if (!lo || rows[0][0] > lo) lo = rows[0][0]; if (!hi || rows[rows.length - 1][0] < hi) hi = rows[rows.length - 1][0]; }
+          });
+          var effFrom = fromVal || lo || "";
+          var effTo = toVal !== "9999-12-31" ? toVal : (hi || toVal);
           var grid = new Set();
           fixedCodes.forEach(function (c) {
-            (store[c] || []).forEach(function (r) { if (r[0] >= fromVal && r[0] <= toVal) grid.add(r[0]); });
+            (store[c] || []).forEach(function (r) { if (r[0] >= effFrom && r[0] <= effTo) grid.add(r[0]); });
           });
           var startDates = Array.from(grid).sort();
           if (!startDates.length) {
@@ -1741,10 +1797,6 @@
       var toVal = normDate((document.getElementById("bt-to") || {}).value);
       var periodYears = parseInt((document.getElementById("bt-period") || {}).value || "3", 10);
       var isRolling = ((document.getElementById("bt-mode") || {}).value || "normal") === "rolling";
-      if (isRolling && !fromVal) {
-        results.innerHTML = '<p class="bt-res-note">開始日を入力してください（ローリングで開始日をずらす範囲の初日です）。</p>';
-        return;
-      }
       runBtn.disabled = true;
       if (runAllBtn) runAllBtn.disabled = true;
       results.innerHTML = '<p class="bt-res-note">全パターンを実行中…（' + patterns.length.toLocaleString("ja-JP") + '通り）</p>';
@@ -1775,8 +1827,11 @@
       // are recomputed on demand when its row is clicked.
       function startRollAll(rawTargets) {
         var horizon = parseInt((document.getElementById("bt-roll-horizon") || {}).value || "21", 10);
-        var rollTo = toVal || fromVal;
         var validTargets = rawTargets.filter(function (t) { return t.rows; });
+        var lo = null, hi = null;
+        validTargets.forEach(function (t) { if (t.rows.length) { if (!lo || t.rows[0][0] > lo) lo = t.rows[0][0]; if (!hi || t.rows[t.rows.length - 1][0] < hi) hi = t.rows[t.rows.length - 1][0]; } });
+        var rollFrom = fromVal || lo || "";
+        var rollTo = toVal || hi || "9999-12-31";
         if (!validTargets.length) {
           results.innerHTML = '<p class="bt-res-note">対象銘柄のデータがありませんでした。</p>';
           runBtn.disabled = false;
@@ -1791,7 +1846,7 @@
         // the same window-end handling as runRolling.
         var gridSet = new Set();
         validTargets.forEach(function (t) {
-          t.rows.forEach(function (r) { if (r[0] >= fromVal && r[0] <= rollTo) gridSet.add(r[0]); });
+          t.rows.forEach(function (r) { if (r[0] >= rollFrom && r[0] <= rollTo) gridSet.add(r[0]); });
         });
         var dateStrs = Array.from(gridSet).sort();
         var ptrs = validTargets.map(function () { return 0; });
