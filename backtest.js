@@ -1688,6 +1688,7 @@
             ret: meanOf(rets), median: medianOf(rets),
             winRate: rets.length ? rets.filter(function (v) { return v > 0; }).length / rets.length : null,
             worst: rets.length ? Math.min.apply(null, rets) : null,
+            best: rets.length ? Math.max.apply(null, rets) : null,
             maxDd: meanOf(stats.map(function (s) { return s[ddKey]; })),
             sharpe: meanOf(stats.map(function (s) { return s[shKey]; }).filter(function (v) { return v != null; })),
             avgHold: meanOf(stats.map(function (s) { return s.avgHold; }).filter(function (v) { return v != null; }))
@@ -1773,20 +1774,20 @@
           if (exclN > 0) html += '<p class="bt-res-note">平均取引回数' + minTrades + '回未満の' + exclN + '件を除外しています。</p>';
           html += heatHtml();
           html += '<table class="bt-res-table bt-rollall-table"><thead><tr>'
-            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="worst">最悪</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th>'
+            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="best">最大</th><th data-k="worst">最小</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th>'
             + '</tr></thead><tbody></tbody></table>';
           html += '<p class="bt-res-note">判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。取引回数は開始日ごとの平均です。行を選ぶと、そのパターンの開始日別結果を表示します。</p>';
           html += '<div id="bt-all-detail"></div>';
           results.innerHTML = html;
           var tbody = results.querySelector(".bt-rollall-table tbody");
-          var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["no", "label", "ret", "median", "winRate", "worst", "closed", "maxDd", "avgHold", "sharpe"], "allroll");
+          var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["no", "label", "ret", "median", "winRate", "best", "worst", "closed", "maxDd", "avgHold", "sharpe"], "allroll");
           var sortKey = "sharpe", sortDir = -1;
           var CAP = 300;
           function rowHtml(p, i) {
             var a = p.rollAgg;
             if (!a || a.ret == null) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
             return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
-              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
+              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.best) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
           }
           function renderRows() {
             var arr = patterns.slice().sort(function (x, y) {
@@ -1800,14 +1801,14 @@
             });
             var arrF = arr.filter(function (p) { return minTrades <= 0 || !p.rollAgg || (p.rollAgg.closed || 0) >= minTrades; });
             var shown = arrF.slice(0, CAP);
-            var bhRow = bhAgg && bhAgg.ret != null ? '<tr class="bt-bh-row"><td>—</td><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.ret) + "</td><td>" + pct(bhAgg.median) + "</td><td>" + (bhAgg.winRate == null ? "—" : pct(bhAgg.winRate, 0)) + "</td><td>" + pct(bhAgg.worst) + "</td><td>—</td><td>" + ddTxt(bhAgg.maxDd) + "</td><td>—</td><td>" + sharpeTxt(bhAgg.sharpe) + "</td></tr>" : "";
+            var bhRow = bhAgg && bhAgg.ret != null ? '<tr class="bt-bh-row"><td>—</td><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.ret) + "</td><td>" + pct(bhAgg.median) + "</td><td>" + (bhAgg.winRate == null ? "—" : pct(bhAgg.winRate, 0)) + "</td><td>" + pct(bhAgg.best) + "</td><td>" + pct(bhAgg.worst) + "</td><td>—</td><td>" + ddTxt(bhAgg.maxDd) + "</td><td>—</td><td>" + sharpeTxt(bhAgg.sharpe) + "</td></tr>" : "";
             tbody.innerHTML = bhRow + shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arrF.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arrF.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
             if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
               tr.addEventListener("click", function () { selectRollPattern(shown[i]); });
             });
             results.querySelectorAll(".bt-rollall-table th").forEach(function (th) {
-              var labels = { no: "番号", label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", worst: "最悪", closed: "取引回数", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ" };
+              var labels = { no: "番号", label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", best: "最大", worst: "最小", closed: "取引回数", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ" };
               var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
               setThLabel(th, th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base);
             });
