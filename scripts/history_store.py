@@ -78,6 +78,11 @@ def _fix_decimal_glitches(rows):
     return rows
 
 
+# Tickers whose full history is kept (no retention trim): QQQ goes back to
+# its 1999 listing and GRW verifies index-linked strategies over ~30 years.
+FULL_HISTORY_TICKERS = {"QQQ"}
+
+
 def update_ohlcv(root, market, series_by_ticker, *, today=None):
     """Merge fetched daily series into per-ticker files; returns writes."""
     today = today or date.today()
@@ -99,8 +104,9 @@ def update_ohlcv(root, market, series_by_ticker, *, today=None):
                 pass
         for row in series:
             merged[row[0]] = list(row)
-        rows = _fix_decimal_glitches(
-            [merged[day] for day in sorted(merged) if day >= cutoff])
+        keep = (sorted(merged) if ticker in FULL_HISTORY_TICKERS
+                else [day for day in sorted(merged) if day >= cutoff])
+        rows = _fix_decimal_glitches([merged[day] for day in keep])
         if not rows:
             continue
         text = json.dumps({"ticker": ticker, "market": market, "rows": rows},
