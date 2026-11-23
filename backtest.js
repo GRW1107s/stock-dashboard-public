@@ -17,6 +17,7 @@
     roe17: "ROEが17%以上",
     rsiGe: "RSI（14日）が閾値以下",
     vol15: "出来高が20日平均の1.5倍以上",
+    maCross: "20日MAが50日MAより上", emaCross: "9日EMAが21日EMAより上",
     bounceClose: "前日にσ以上下落したとき、引け成行で買う",
     sector: "所属セクターが上位を維持",
     tt1: "株価が150日・200日移動平均線より上",
@@ -36,11 +37,11 @@
     loss8: "買値から閾値%下落",
     dropPct: "前日終値から閾値%以上下落",
     high25: "52週高値から閾値%以上下落",
-    ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
+    maCrossDn: "20日MAが50日MAより下", emaCrossDn: "9日EMAが21日EMAより下", ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
     rsiLe: "RSI（14日）が閾値以上"
   };
-  var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, ftd: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1 };
+  var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, maCross: 1, emaCross: 1, ftd: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1, maCrossDn: 1, emaCrossDn: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -81,8 +82,19 @@
         lows.push(r[3]); closes.push(r[4]); vols.push(r[5] || 0);
       });
       var n = rows.length;
-      var ma50 = [], ma150 = [], ma200 = [], ma200Prev = [];
+      var ma20 = [], ma50 = [], ma150 = [], ma200 = [], ma200Prev = [];
+      function emaArr(period) {
+        var out = [], k = 2 / (period + 1), e = null;
+        for (var j = 0; j < n; j++) {
+          if (j === period - 1) { var sum = 0; for (var q = 0; q < period; q++) sum += closes[q]; e = sum / period; }
+          else if (j >= period) e = closes[j] * k + e * (1 - k);
+          out.push(j >= period - 1 ? e : null);
+        }
+        return out;
+      }
+      var ema9 = emaArr(9), ema21 = emaArr(21);
       for (var i = 0; i < n; i++) {
+        ma20.push(sma(closes, i, 20));
         ma50.push(sma(closes, i, 50));
         ma150.push(sma(closes, i, 150));
         ma200.push(sma(closes, i, 200));
@@ -179,7 +191,7 @@
         sigma20.push(Math.sqrt(varSum / 20));
       }
       per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols,
-        ma50: ma50, ma150: ma150, ma200: ma200, ma200Prev: ma200Prev, rsi: rsi,
+        ma20: ma20, ema9: ema9, ema21: ema21, ma50: ma50, ma150: ma150, ma200: ma200, ma200Prev: ma200Prev, rsi: rsi,
         ddActive: ddActive, pineFtd: pineFtd, pineWarning: pineWarning, pineWarningStart: pineWarningStart, pineByN: pineByN, sigma20: sigma20 };
     }
     if (!per.maSell[maDays]) {
@@ -189,7 +201,7 @@
     }
     var b = per.base;
     return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols,
-      ma50: b.ma50, ma150: b.ma150, ma200: b.ma200, ma200Prev: b.ma200Prev, maSell: per.maSell[maDays], rsi: b.rsi,
+      ma20: b.ma20, ema9: b.ema9, ema21: b.ema21, ma50: b.ma50, ma150: b.ma150, ma200: b.ma200, ma200Prev: b.ma200Prev, maSell: per.maSell[maDays], rsi: b.rsi,
       ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, pineByN: b.pineByN, sigma20: b.sigma20 };
   }
 
@@ -282,16 +294,16 @@
     var pineSel = (cfg.ddSell === 6 || cfg.ddSell === 7) ? cfg.ddSell : 5;
     var jFtd = ind.pineFtd, jWarn = ind.pineWarning;
     if (ind.pineByN && ind.pineByN[pineSel]) { jFtd = ind.pineByN[pineSel].ftd; jWarn = ind.pineByN[pineSel].warning; }
-    var ma50, ma150, ma200, ma200Prev, maSell, rsi, ddActive, pineFtd, pineWarning, sigma20, jCloses, jVols, jHighs, jLows;
+    var ma20, ema9, ema21, ma50, ma150, ma200, ma200Prev, maSell, rsi, ddActive, pineFtd, pineWarning, sigma20, jCloses, jVols, jHighs, jLows;
     if (ind === ownInd) {
-      ma50 = ind.ma50; ma150 = ind.ma150; ma200 = ind.ma200; ma200Prev = ind.ma200Prev; maSell = ind.maSell;
+      ma20 = ind.ma20; ema9 = ind.ema9; ema21 = ind.ema21; ma50 = ind.ma50; ma150 = ind.ma150; ma200 = ind.ma200; ma200Prev = ind.ma200Prev; maSell = ind.maSell;
       rsi = ind.rsi; ddActive = ind.ddActive; pineFtd = jFtd; pineWarning = jWarn; sigma20 = ind.sigma20;
       jCloses = ind.closes; jVols = ind.vols; jHighs = ind.highs; jLows = ind.lows;
     } else {
       var jIdx = new Map();
       ind.dates.forEach(function (d, j) { jIdx.set(d, j); });
       var remap = function (arr) { return dates.map(function (d) { var j = jIdx.get(d); return j == null ? null : arr[j]; }); };
-      ma50 = remap(ind.ma50); ma150 = remap(ind.ma150); ma200 = remap(ind.ma200); ma200Prev = remap(ind.ma200Prev); maSell = remap(ind.maSell);
+      ma20 = remap(ind.ma20); ema9 = remap(ind.ema9); ema21 = remap(ind.ema21); ma50 = remap(ind.ma50); ma150 = remap(ind.ma150); ma200 = remap(ind.ma200); ma200Prev = remap(ind.ma200Prev); maSell = remap(ind.maSell);
       rsi = remap(ind.rsi); ddActive = remap(ind.ddActive); pineFtd = remap(jFtd); pineWarning = remap(jWarn); sigma20 = remap(ind.sigma20);
       jCloses = remap(ind.closes); jVols = remap(ind.vols); jHighs = remap(ind.highs); jLows = remap(ind.lows);
     }
@@ -301,6 +313,8 @@
     }
     function buyCond(id, i) {
       var c = jCloses[i];
+      if (id === "maCross") return ma20[i] != null && ma50[i] != null && ma20[i] > ma50[i];
+      if (id === "emaCross") return ema9[i] != null && ema21[i] != null && ema9[i] > ema21[i];
       if (id === "vol15") {
         var avg = sma(jVols, i - 1, 20);
         return avg != null && avg > 0 && jVols[i] >= 1.5 * avg;
@@ -354,6 +368,8 @@
     }
     function sellCond(id, i, pos) {
       var c = jCloses[i];
+      if (id === "maCrossDn") return ma20[i] != null && ma50[i] != null && ma20[i] < ma50[i];
+      if (id === "emaCrossDn") return ema9[i] != null && ema21[i] != null && ema9[i] < ema21[i];
       if (id === "ma50") return maSell[i] != null && c < maSell[i];
       if (id === "loss8") return closes[i] <= pos.price * (1 - (cfg.lossPct == null ? 8 : cfg.lossPct) / 100);
       if (id === "high25") {
@@ -1955,7 +1971,7 @@
       var sellFormula = Array.isArray(st.sellFormula) ? st.sellFormula.filter(function (tk) { return tk === "and" || tk === "or" || tk === "not" || tk === "(" || tk === ")" || sell.indexOf(tk) >= 0; }) : buildDefaultFormula(sell, st.sellOr ? st.sellOr.filter(function (id) { return sell.indexOf(id) >= 0; }) : sell.slice());
       return {
         buy: buyList, sell: sell, screen: screen, buyFormula: buyFormula, sellFormula: sellFormula,
-        ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
+        ddLimit: null,
         rsiBuy: Math.min(50, Math.max(25, num("rsiBuy", 30))), rsiSell: Math.min(85, Math.max(70, num("rsiSell", 70))),
         dropPct: Math.min(10, Math.max(3, num("dropSell", 5))), ddSell: [5, 6, 7].reduce(function (a, o) { return Math.abs(o - num("ddSell", 5)) < Math.abs(a - num("ddSell", 5)) ? o : a; }, 5), lossPct: num("lossPct", 8), highPct: [5, 10, 15, 20].reduce(function (a, o) { return Math.abs(o - num("highPct", 20)) < Math.abs(a - num("highPct", 20)) ? o : a; }, 20), bounceCloseSigma: Math.min(3, Math.max(1.5, num("bounceCloseSigma", 2))), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50),
         reentry: (st.reentry || []).filter(function (r) { return r && SELL_EVALUABLE[r.sell] && ["vol15", "rsiGe", "bounceClose", "ftd"].indexOf(r.buy) >= 0; }).map(function (r) { return { sell: r.sell, buy: r.buy }; }),
@@ -2389,7 +2405,7 @@
         }
         function renderRollAll() {
           var ddTxt = function (v) { return v == null ? "—" : v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
-          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI" };
+          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI", maCross: "20MA>50MA", emaCross: "9EMA>21EMA", maCrossDn: "20MA<50MA", emaCrossDn: "9EMA<21EMA" };
           function groupedHeat(gi) {
             var dB = dims[gi.rsiGe], dS = dims[gi.rsiLe], dD = dims[gi.ddGe];
             var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
@@ -2653,7 +2669,7 @@
         }
         function renderAll() {
           var ddTxt = function (v) { return v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
-          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI" };
+          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI", maCross: "20MA>50MA", emaCross: "9EMA>21EMA", maCrossDn: "20MA<50MA", emaCrossDn: "9EMA<21EMA" };
           function groupedHeat(gi) {
             var dB = dims[gi.rsiGe], dS = dims[gi.rsiLe], dD = dims[gi.ddGe];
             var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
