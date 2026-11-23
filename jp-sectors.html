@@ -236,7 +236,7 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <label>対象<select id="bt-universe"><option value="all">日本株 全銘柄</option><option value="prime">プライムのみ</option><option value="standard">スタンダードのみ</option><option value="growth">グロースのみ</option></select></label>
 <label>テスト期間<select id="bt-period"><option value="1">直近1年</option><option value="3" selected>直近3年</option><option value="5">直近5年</option><option value="10">直近10年</option><option value="20">直近20年</option><option value="30">直近30年</option></select></label>
 <label id="bt-roll-horizon-label" style="display:none">テスト期間（各回）<select id="bt-roll-horizon"><option value="21">1ヶ月</option><option value="42">2ヶ月</option><option value="63">3ヶ月</option><option value="126">6ヶ月</option><option value="252">1年</option></select></label>
-<label title="全パターン実行の結果に適用します">除外取引回数<select class="bt-select" id="bt-min-trades" aria-label="除外する最小取引回数"><option value="0">制限なし</option><option value="1">1回未満</option><option value="3">3回未満</option><option value="5">5回未満</option><option value="10">10回未満</option><option value="20">20回未満</option><option value="30">30回未満</option></select></label>
+<label title="全パターン実行の結果に適用します">除外取引回数<select class="bt-select" id="bt-min-trades" aria-label="除外する最小取引回数"><option value="0">制限なし</option><option value="0only">0回のみ除外</option><option value="1">1回未満</option><option value="3">3回未満</option><option value="5">5回未満</option><option value="10">10回未満</option><option value="20">20回未満</option><option value="30">30回未満</option></select></label>
 </div>
 <div class="bt-settings bt-settings2">
 <label>銘柄コード<input type="text" id="bt-symbols" placeholder="例：7203, 6988" autocomplete="off"></label>
@@ -1124,5 +1124,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261123re8" defer></script>
+<script src="./backtest.js?v=20261123re9" defer></script>
 </body></html>
