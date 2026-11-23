@@ -64,107 +64,136 @@
   // cfg: {fromIdx, toIdx, buy:[ids], sell:[ids], ddLimit:null|number,
   //       rsiBuy:null|number, rsiSell:null|number} — DD counts, FTD and the
   //       warning state are computed from the rows themselves (Pine rules).
-  function runBacktest(rows, cfg) {
-    var dates = [], opens = [], highs = [], lows = [], closes = [], vols = [];
-    rows.forEach(function (r) {
-      dates.push(r[0]); opens.push(r[1]); highs.push(r[2]);
-      lows.push(r[3]); closes.push(r[4]); vols.push(r[5] || 0);
-    });
-    var n = rows.length;
-    var ma50 = [], ma150 = [], ma200 = [], ma200Prev = [], maSell = [];
-    var maSellDays = cfg.maDays == null ? 50 : cfg.maDays;
-    for (var i = 0; i < n; i++) {
-      maSell.push(sma(closes, i, maSellDays));
-      ma50.push(sma(closes, i, 50));
-      ma150.push(sma(closes, i, 150));
-      ma200.push(sma(closes, i, 200));
-      ma200Prev.push(i >= 21 ? sma(closes, i - 21, 200) : null);
-    }
-    // Wilder's RSI(14) on closes; null until 14 changes are available.
-    var rsi = [];
-    (function () {
-      var period = 14, avgGain = 0, avgLoss = 0;
+  // Indicator series (MA / RSI / DD / FTD / sigma20) depend only on the
+  // rows themselves — maSell only on cfg.maDays — so they are computed
+  // once per rows array and memoised in a WeakMap. The all-patterns
+  // rolling sweep calls runBacktest hundreds of thousands of times on
+  // the same rows; without this cache every call re-did the full-history
+  // indicator pass (~4ms on 2,518 rows) and the sweep took ~13 minutes.
+  var indCache = new WeakMap();
+  function indicatorsFor(rows, maDays) {
+    var per = indCache.get(rows);
+    if (!per) { per = { base: null, maSell: {} }; indCache.set(rows, per); }
+    if (!per.base) {
+      var dates = [], opens = [], highs = [], lows = [], closes = [], vols = [];
+      rows.forEach(function (r) {
+        dates.push(r[0]); opens.push(r[1]); highs.push(r[2]);
+        lows.push(r[3]); closes.push(r[4]); vols.push(r[5] || 0);
+      });
+      var n = rows.length;
+      var ma50 = [], ma150 = [], ma200 = [], ma200Prev = [];
       for (var i = 0; i < n; i++) {
-        if (i === 0) { rsi.push(null); continue; }
-        var diff = closes[i] - closes[i - 1];
-        var gain = diff > 0 ? diff : 0, loss = diff < 0 ? -diff : 0;
-        if (i <= period) {
-          avgGain += gain / period; avgLoss += loss / period;
-          rsi.push(i === period ? (avgLoss === 0 ? (avgGain === 0 ? 50 : 100) : 100 - 100 / (1 + avgGain / avgLoss)) : null);
-        } else {
-          avgGain = (avgGain * (period - 1) + gain) / period;
-          avgLoss = (avgLoss * (period - 1) + loss) / period;
-          rsi.push(avgLoss === 0 ? (avgGain === 0 ? 50 : 100) : 100 - 100 / (1 + avgGain / avgLoss));
-        }
+        ma50.push(sma(closes, i, 50));
+        ma150.push(sma(closes, i, 150));
+        ma200.push(sma(closes, i, 200));
+        ma200Prev.push(i >= 21 ? sma(closes, i - 21, 200) : null);
       }
-    })();
-    // Active distribution-day count, aligned with the Pine indicator:
-    // a DD is a session down 0.2% or more on higher volume; it stays
-    // active for 25 sessions and expires early once the close recovers
-    // 5% or more from the DD session's close. Expiry is applied before
-    // the current session's DD is added, as in the Pine script.
-    var ddActive = [];
-    (function () {
-      var active = [];
-      for (var i = 0; i < n; i++) {
-        var c = closes[i];
-        active = active.filter(function (a) { return i - a[0] < 25 && c < a[1] * 1.05; });
-        if (i > 0 && closes[i - 1] > 0 && c <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1]) active.push([i, c]);
-        ddActive.push(active.length);
-      }
-    })();
-    // Pine Script parity: DD5 starts the warning, FTD ends it, but DD
-    // history itself is NOT cleared. Use the charted instrument's OHLCV.
-    var pineFtd = [], pineWarning = [], pineWarningStart = [];
-    (function () {
-      var warningActive = false, rallyDay = 0, rallyLow = null;
-      for (var i = 0; i < n; i++) {
-        var isDd = i > 0 && closes[i] <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1];
-        var reachedDd5 = isDd && ddActive[i] >= 5 && (i === 0 || ddActive[i - 1] < 5);
-        var isFtd = false;
-        if (reachedDd5 && !warningActive) {
-          warningActive = true;
-          rallyDay = 0;
-          rallyLow = null;
-        } else if (warningActive && i > 0) {
-          if (rallyDay > 0 && lows[i] < rallyLow) {
-            rallyDay = 0;
-            rallyLow = null;
-          }
-          if (rallyDay === 0) {
-            if (closes[i] > closes[i - 1]) {
-              rallyDay = 1;
-              rallyLow = lows[i];
-            }
+      // Wilder's RSI(14) on closes; null until 14 changes are available.
+      var rsi = [];
+      (function () {
+        var period = 14, avgGain = 0, avgLoss = 0;
+        for (var i = 0; i < n; i++) {
+          if (i === 0) { rsi.push(null); continue; }
+          var diff = closes[i] - closes[i - 1];
+          var gain = diff > 0 ? diff : 0, loss = diff < 0 ? -diff : 0;
+          if (i <= period) {
+            avgGain += gain / period; avgLoss += loss / period;
+            rsi.push(i === period ? (avgLoss === 0 ? (avgGain === 0 ? 50 : 100) : 100 - 100 / (1 + avgGain / avgLoss)) : null);
           } else {
-            rallyDay++;
-          }
-          if (rallyDay >= 4 && closes[i] >= closes[i - 1] * 1.0125 && vols[i] > vols[i - 1]) {
-            isFtd = true;
-            warningActive = false;
-            rallyDay = 0;
-            rallyLow = null;
+            avgGain = (avgGain * (period - 1) + gain) / period;
+            avgLoss = (avgLoss * (period - 1) + loss) / period;
+            rsi.push(avgLoss === 0 ? (avgGain === 0 ? 50 : 100) : 100 - 100 / (1 + avgGain / avgLoss));
           }
         }
-        pineFtd.push(isFtd);
-        pineWarning.push(warningActive || isFtd);
-        pineWarningStart.push(reachedDd5);
+      })();
+      // Active distribution-day count, aligned with the Pine indicator:
+      // a DD is a session down 0.2% or more on higher volume; it stays
+      // active for 25 sessions and expires early once the close recovers
+      // 5% or more from the DD session's close. Expiry is applied before
+      // the current session's DD is added, as in the Pine script.
+      var ddActive = [];
+      (function () {
+        var active = [];
+        for (var i = 0; i < n; i++) {
+          var c = closes[i];
+          active = active.filter(function (a) { return i - a[0] < 25 && c < a[1] * 1.05; });
+          if (i > 0 && closes[i - 1] > 0 && c <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1]) active.push([i, c]);
+          ddActive.push(active.length);
+        }
+      })();
+      // Pine Script parity: DD5 starts the warning, FTD ends it, but DD
+      // history itself is NOT cleared. Use the charted instrument's OHLCV.
+      var pineFtd = [], pineWarning = [], pineWarningStart = [];
+      (function () {
+        var warningActive = false, rallyDay = 0, rallyLow = null;
+        for (var i = 0; i < n; i++) {
+          var isDd = i > 0 && closes[i] <= closes[i - 1] * 0.998 && vols[i] > vols[i - 1];
+          var reachedDd5 = isDd && ddActive[i] >= 5 && (i === 0 || ddActive[i - 1] < 5);
+          var isFtd = false;
+          if (reachedDd5 && !warningActive) {
+            warningActive = true;
+            rallyDay = 0;
+            rallyLow = null;
+          } else if (warningActive && i > 0) {
+            if (rallyDay > 0 && lows[i] < rallyLow) {
+              rallyDay = 0;
+              rallyLow = null;
+            }
+            if (rallyDay === 0) {
+              if (closes[i] > closes[i - 1]) {
+                rallyDay = 1;
+                rallyLow = lows[i];
+              }
+            } else {
+              rallyDay++;
+            }
+            if (rallyDay >= 4 && closes[i] >= closes[i - 1] * 1.0125 && vols[i] > vols[i - 1]) {
+              isFtd = true;
+              warningActive = false;
+              rallyDay = 0;
+              rallyLow = null;
+            }
+          }
+          pineFtd.push(isFtd);
+          pineWarning.push(warningActive || isFtd);
+          pineWarningStart.push(reachedDd5);
+        }
+      })();
+      // Bounce Strategy: sigma20[i] is the population standard deviation of
+      // the 20 daily returns before day i (the drop day itself is excluded).
+      var sigma20 = [];
+      for (var si = 0; si < n; si++) {
+        if (si < 21) { sigma20.push(null); continue; }
+        var mean = 0, prevRets = [];
+        for (var k = si - 20; k < si; k++) { var rr = closes[k] / closes[k - 1] - 1; prevRets.push(rr); mean += rr; }
+        mean /= 20;
+        var varSum = 0;
+        prevRets.forEach(function (r) { varSum += (r - mean) * (r - mean); });
+        sigma20.push(Math.sqrt(varSum / 20));
       }
-    })();
+      per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols,
+        ma50: ma50, ma150: ma150, ma200: ma200, ma200Prev: ma200Prev, rsi: rsi,
+        ddActive: ddActive, pineFtd: pineFtd, pineWarning: pineWarning, pineWarningStart: pineWarningStart, sigma20: sigma20 };
+    }
+    if (!per.maSell[maDays]) {
+      var ms = [];
+      for (var j = 0; j < per.base.closes.length; j++) ms.push(sma(per.base.closes, j, maDays));
+      per.maSell[maDays] = ms;
+    }
+    var b = per.base;
+    return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols,
+      ma50: b.ma50, ma150: b.ma150, ma200: b.ma200, ma200Prev: b.ma200Prev, maSell: per.maSell[maDays], rsi: b.rsi,
+      ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, sigma20: b.sigma20 };
+  }
+
+  function runBacktest(rows, cfg) {
+    var ind = indicatorsFor(rows, cfg.maDays == null ? 50 : cfg.maDays);
+    var dates = ind.dates, opens = ind.opens, highs = ind.highs, lows = ind.lows, closes = ind.closes, vols = ind.vols;
+    var ma50 = ind.ma50, ma150 = ind.ma150, ma200 = ind.ma200, ma200Prev = ind.ma200Prev, maSell = ind.maSell;
+    var rsi = ind.rsi, ddActive = ind.ddActive, pineFtd = ind.pineFtd, pineWarning = ind.pineWarning, sigma20 = ind.sigma20;
+    var n = rows.length;
     function ddOk(i) {
       return cfg.ddLimit == null || ddActive[i] <= cfg.ddLimit;
-    }
-    // Bounce Strategy: sigma20[i] is the population standard deviation of
-    // the 20 daily returns before day i (the drop day itself is excluded).
-    var sigma20 = [];
-    for (var si = 0; si < n; si++) {
-      if (si < 21) { sigma20.push(null); continue; }
-      var mean = 0, prevRets = [];
-      for (var k = si - 20; k < si; k++) { var rr = closes[k] / closes[k - 1] - 1; prevRets.push(rr); mean += rr; }
-      mean /= 20;
-      var varSum = 0;
-      prevRets.forEach(function (r) { varSum += (r - mean) * (r - mean); });
-      sigma20.push(Math.sqrt(varSum / 20));
     }
     function buyOk(i) {
       for (var j = 0; j < cfg.buy.length; j++) {
@@ -1253,7 +1282,7 @@
       return {
         buy: entry, sell: sell,
         ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
-        rsiBuy: Math.min(50, Math.max(20, num("rsiBuy", 30))), rsiSell: Math.min(90, Math.max(50, num("rsiSell", 70))),
+        rsiBuy: Math.min(50, Math.max(20, num("rsiBuy", 30))), rsiSell: Math.min(90, Math.max(70, num("rsiSell", 70))),
         dropPct: num("dropSell", 5), ddSell: num("ddSell", 5), lossPct: num("lossPct", 8), highPct: num("highPct", 25), bounceSigma: num("bounceSigma", 2), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50)
       };
     }
@@ -1502,11 +1531,17 @@
       var fromVal = normDate((document.getElementById("bt-from") || {}).value);
       var toVal = normDate((document.getElementById("bt-to") || {}).value);
       var periodYears = parseInt((document.getElementById("bt-period") || {}).value || "3", 10);
+      var isRolling = ((document.getElementById("bt-mode") || {}).value || "normal") === "rolling";
+      if (isRolling && !fromVal) {
+        results.innerHTML = '<p class="bt-res-note">開始日を入力してください（ローリングで開始日をずらす範囲の初日です）。</p>';
+        return;
+      }
       runBtn.disabled = true;
       if (runAllBtn) runAllBtn.disabled = true;
       results.innerHTML = '<p class="bt-res-note">全パターンを実行中…（' + patterns.length.toLocaleString("ja-JP") + '通り）</p>';
       function windowed(title, rows) {
         if (!rows || !rows.length) return { title: title, rows: null, noData: "日足データがまだありません。自動更新で蓄積されてから実行できます。" };
+        if (isRolling) return { title: title, rows: rows };
         var lastDate = rows[rows.length - 1][0];
         var startDate = fromVal;
         if (!startDate) {
@@ -1522,6 +1557,260 @@
           return { title: title, rows: null, noData: "指定期間のデータがありません（保有データ：" + rows[0][0] + " 〜 " + lastDate + "）。" };
         }
         return { title: title, rows: rows, fromIdx: fromIdx, toIdx: toIdx };
+      }
+      // ---- Rolling variant of the all-patterns sweep (GRW 2026-11-23):
+      // every pattern runs on every start date with the bt-roll-horizon
+      // window, then results are aggregated across start dates (each start
+      // date first averaged across targets, like runRolling). Per-date
+      // entries are not kept in memory; a start date's per-stock results
+      // are recomputed on demand when its row is clicked.
+      function startRollAll(rawTargets) {
+        var horizon = parseInt((document.getElementById("bt-roll-horizon") || {}).value || "21", 10);
+        var rollTo = toVal || fromVal;
+        var validTargets = rawTargets.filter(function (t) { return t.rows; });
+        if (!validTargets.length) {
+          results.innerHTML = '<p class="bt-res-note">対象銘柄のデータがありませんでした。</p>';
+          runBtn.disabled = false;
+          if (runAllBtn) runAllBtn.disabled = false;
+          return;
+        }
+        // Start-date grid: the union of the targets' sessions inside
+        // [from, to], exactly like runRolling with fixed codes. A start
+        // date is valid for a target when fromIdx (the first session on
+        // or after the date) exists and the window end, fromIdx +
+        // horizon - 1 clipped at the last session, is after fromIdx —
+        // the same window-end handling as runRolling.
+        var gridSet = new Set();
+        validTargets.forEach(function (t) {
+          t.rows.forEach(function (r) { if (r[0] >= fromVal && r[0] <= rollTo) gridSet.add(r[0]); });
+        });
+        var dateStrs = Array.from(gridSet).sort();
+        var ptrs = validTargets.map(function () { return 0; });
+        var rollDates = [];
+        dateStrs.forEach(function (d) {
+          var wins = [];
+          validTargets.forEach(function (t, ti) {
+            var rows = t.rows;
+            var idx = ptrs[ti];
+            while (idx < rows.length && rows[idx][0] < d) idx++;
+            ptrs[ti] = idx;
+            if (idx >= rows.length) return;
+            var toIdx = Math.min(rows.length - 1, idx + horizon - 1);
+            if (toIdx <= idx) return;
+            wins.push({ t: ti, fromIdx: idx, toIdx: toIdx });
+          });
+          if (wins.length) rollDates.push({ date: d, wins: wins });
+        });
+        if (!rollDates.length) {
+          results.innerHTML = '<p class="bt-res-note">指定範囲に対象銘柄の価格データがありません。期間を広げてください。</p>';
+          runBtn.disabled = false;
+          if (runAllBtn) runAllBtn.disabled = false;
+          return;
+        }
+        var totalRuns = patterns.length * rollDates.length * validTargets.length;
+        if (totalRuns > 250000) {
+          results.innerHTML = '<p class="bt-res-note">対象が多すぎます（' + patterns.length.toLocaleString("ja-JP") + '通り × ' + rollDates.length.toLocaleString("ja-JP") + '開始日 × ' + validTargets.length.toLocaleString("ja-JP") + '銘柄 ＝ 約' + Math.round(totalRuns / 10000) + '万回の計算）。チェックする項目を減らすか、開始日の範囲を狭めてください。</p>';
+          runBtn.disabled = false;
+          if (runAllBtn) runAllBtn.disabled = false;
+          return;
+        }
+        function rollEntries(p, rd) {
+          return rd.wins.map(function (w) {
+            var t = validTargets[w.t];
+            return { title: t.title, out: runBacktest(t.rows, Object.assign({ fromIdx: w.fromIdx, toIdx: w.toIdx }, p.cfg)) };
+          });
+        }
+        function statOf(entries) {
+          var a = aggregate(entries);
+          if (!a) return null;
+          return { n: a.n, ret: a.ret, bh: a.bh, closed: a.closed, open: a.open, winRate: a.winRate, maxDd: a.maxDd, sharpe: a.sharpe, bhMaxDd: a.bhMaxDd, bhSharpe: a.bhSharpe };
+        }
+        function meanOf(vals) { return vals.length ? vals.reduce(function (a, b) { return a + b; }, 0) / vals.length : null; }
+        function medianOf(vals) {
+          if (!vals.length) return null;
+          var s = vals.slice().sort(function (a, b) { return a - b; });
+          return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+        }
+        function aggOf(stats, retKey, ddKey, shKey) {
+          var rets = stats.map(function (s) { return s[retKey]; });
+          return {
+            ret: meanOf(rets), median: medianOf(rets),
+            winRate: rets.length ? rets.filter(function (v) { return v > 0; }).length / rets.length : null,
+            worst: rets.length ? Math.min.apply(null, rets) : null,
+            maxDd: meanOf(stats.map(function (s) { return s[ddKey]; })),
+            sharpe: meanOf(stats.map(function (s) { return s[shKey]; }).filter(function (v) { return v != null; }))
+          };
+        }
+        var totalPairs = patterns.length * rollDates.length;
+        var pairDone = 0;
+        var CHUNK_PAIRS = 120;
+        function stepRoll() {
+          var upto = Math.min(totalPairs, pairDone + CHUNK_PAIRS);
+          while (pairDone < upto) {
+            var pi = Math.floor(pairDone / rollDates.length);
+            var di = pairDone - pi * rollDates.length;
+            var p = patterns[pi];
+            if (!p.rollStats) p.rollStats = [];
+            p.rollStats[di] = statOf(rollEntries(p, rollDates[di]));
+            pairDone++;
+          }
+          if (pairDone < totalPairs) {
+            results.innerHTML = '<p class="bt-res-note">全パターン（ローリング）を実行中…（' + pairDone.toLocaleString("ja-JP") + ' / ' + totalPairs.toLocaleString("ja-JP") + '組）</p>';
+            setTimeout(stepRoll, 0);
+          } else {
+            finishRoll();
+          }
+        }
+        function finishRoll() {
+          patterns.forEach(function (p) {
+            var stats = (p.rollStats || []).filter(Boolean);
+            var a = aggOf(stats, "ret", "maxDd", "sharpe");
+            a.closed = meanOf(stats.map(function (s) { return s.closed; }));
+            p.rollAgg = a;
+          });
+          var bhStats = patterns.length && patterns[0].rollStats ? patterns[0].rollStats.filter(Boolean) : [];
+          renderRollAll(aggOf(bhStats, "bh", "bhMaxDd", "bhSharpe"));
+        }
+        function renderRollAll(bhAgg) {
+          var ddTxt = function (v) { return v == null ? "—" : v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
+          var AXIS_LABEL = { rsiGe: "買いRSI", bounce: "前日下落σ", dd: "DD以下", vol15: "出来高条件", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI" };
+          function heatHtml() {
+            if (dims.length < 1 || dims.length > 2) return "";
+            var dA = dims[0], dB = dims.length === 2 ? dims[1] : null;
+            var grid = {};
+            var maxAbs = 0;
+            patterns.forEach(function (p) {
+              if (!p.rollAgg || p.rollAgg.ret == null) return;
+              grid[p.st[0] + "," + (dB ? p.st[1] : 0)] = p;
+              if (Math.abs(p.rollAgg.ret) > maxAbs) maxAbs = Math.abs(p.rollAgg.ret);
+            });
+            if (!Object.keys(grid).length) return "";
+            var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
+            var hh = '<table class="bt-sweep-matrix bt-all-matrix"><thead><tr><th>' + esc(AXIS_LABEL[dA.id] || dA.id) + (dB ? " ＼ " + esc(AXIS_LABEL[dB.id] || dB.id) : "") + "</th>";
+            var bStates = dB ? dB.states : ["on"];
+            bStates.forEach(function (_, bi) { hh += "<th>" + esc(dB ? stateTxt(dB, bi) : "結果") + "</th>"; });
+            hh += "</tr></thead><tbody>";
+            dA.states.forEach(function (_, ai) {
+              hh += "<tr><th>" + esc(stateTxt(dA, ai)) + "</th>";
+              bStates.forEach(function (_, bi) {
+                var p = grid[ai + "," + bi];
+                if (!p || !p.rollAgg || p.rollAgg.ret == null) { hh += '<td class="na">—</td>'; return; }
+                var r = p.rollAgg.ret;
+                var alpha = maxAbs > 0 ? Math.min(0.85, Math.abs(r) / maxAbs * 0.85) : 0;
+                var bg = r > 0 ? "background:rgba(22,163,74," + alpha.toFixed(2) + ")" : r < 0 ? "background:rgba(220,38,38," + alpha.toFixed(2) + ")" : "";
+                var title = "プラスの開始日 " + (p.rollAgg.winRate == null ? "—" : (p.rollAgg.winRate * 100).toFixed(0) + "%") + " / 平均取引 " + (p.rollAgg.closed == null ? "—" : p.rollAgg.closed.toFixed(1)) + "回";
+                hh += '<td data-ai="' + ai + '" data-bi="' + bi + '" style="' + bg + '" title="' + esc(title) + '">' + (r * 100).toFixed(1) + "%</td>";
+              });
+              hh += "</tr>";
+            });
+            hh += "</tbody></table>";
+            return hh;
+          }
+          var targetNames = rawTargets.map(function (t) { return t.title; });
+          var html = '<p class="bt-res-note">全パターン検証（ローリング） ' + patterns.length.toLocaleString("ja-JP") + '通り × ' + rollDates.length.toLocaleString("ja-JP") + '開始日 / 銘柄：' + targetNames.join("、") + '<br>開始日を1営業日ずつずらし、各回' + horizon + '営業日で全パターンを実行しました。値は開始日ごとの結果（対象銘柄の平均）を開始日間で集計したものです。勝率は平均リターンがプラスだった開始日の割合です（スクリーニングは今の設定で固定、判定できない項目は除きます）。</p>';
+          html += heatHtml();
+          html += '<table class="bt-res-table bt-rollall-table"><thead><tr>'
+            + '<th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="worst">最悪</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="sharpe">シャープ</th>'
+            + '</tr></thead><tbody></tbody></table>';
+          html += '<p class="bt-res-note">判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。取引回数は開始日ごとの平均です。行を選ぶと、そのパターンの開始日別結果を表示します。</p>';
+          html += '<div id="bt-all-detail"></div>';
+          results.innerHTML = html;
+          var tbody = results.querySelector(".bt-rollall-table tbody");
+          var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["label", "ret", "median", "winRate", "worst", "closed", "maxDd", "sharpe"], "allroll");
+          var sortKey = "ret", sortDir = -1;
+          var CAP = 300;
+          function rowHtml(p) {
+            var a = p.rollAgg;
+            if (!a || a.ret == null) return '<tr class="bt-all-row"><td style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
+            return '<tr class="bt-all-row"><td style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
+              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
+          }
+          function renderRows() {
+            var arr = patterns.slice().sort(function (x, y) {
+              if (sortKey === "label") return x.label < y.label ? sortDir : x.label > y.label ? -sortDir : 0;
+              var xv = x.rollAgg ? x.rollAgg[sortKey] : null;
+              var yv = y.rollAgg ? y.rollAgg[sortKey] : null;
+              if (xv == null && yv == null) return 0;
+              if (xv == null) return 1;
+              if (yv == null) return -1;
+              return (xv - yv) * sortDir;
+            });
+            var shown = arr.slice(0, CAP);
+            var bhRow = bhAgg && bhAgg.ret != null ? '<tr class="bt-bh-row"><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.ret) + "</td><td>" + pct(bhAgg.median) + "</td><td>" + (bhAgg.winRate == null ? "—" : pct(bhAgg.winRate, 0)) + "</td><td>" + pct(bhAgg.worst) + "</td><td>—</td><td>" + ddTxt(bhAgg.maxDd) + "</td><td>" + sharpeTxt(bhAgg.sharpe) + "</td></tr>" : "";
+            tbody.innerHTML = bhRow + shown.map(rowHtml).join("") + (arr.length > CAP ? '<tr><td colspan="8" style="text-align:left">上位' + CAP + '件を表示しています（全' + arr.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
+            if (flex) flex.restamp();
+            tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
+              tr.addEventListener("click", function () { selectRollPattern(shown[i]); });
+            });
+            results.querySelectorAll(".bt-rollall-table th").forEach(function (th) {
+              var labels = { label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", worst: "最悪", closed: "取引回数", maxDd: "最大DD", sharpe: "シャープ" };
+              var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
+              setThLabel(th, th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base);
+            });
+          }
+          var downXY = null;
+          results.querySelector(".bt-rollall-table").addEventListener("pointerdown", function (e) { downXY = [e.clientX, e.clientY]; }, true);
+          results.querySelectorAll(".bt-rollall-table th").forEach(function (th) {
+            th.addEventListener("click", function (e) {
+              if (downXY && Math.abs(e.clientX - downXY[0]) + Math.abs(e.clientY - downXY[1]) > 5) return;
+              var k = th.getAttribute("data-k");
+              if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "label" ? 1 : -1; }
+              renderRows();
+            });
+          });
+          function selectRollPattern(p) {
+            tbody.querySelectorAll(".bt-all-row").forEach(function (r) { r.classList.remove("sel"); });
+            var detail = document.getElementById("bt-all-detail");
+            var html = '<h3 class="bt-roll-detail-title">' + esc(p.label) + ' の開始日別結果</h3>';
+            html += '<table class="bt-res-table bt-rollall-dates"><thead><tr><th>開始日</th><th>対象銘柄数</th><th>リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>最大DD</th><th>シャープ</th></tr></thead><tbody>';
+            rollDates.forEach(function (rd, di) {
+              var s = p.rollStats && p.rollStats[di];
+              if (!s) { html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>'; return; }
+              html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td>' + s.n + '</td><td>' + pct(s.ret) + '</td><td>' + pct(s.bh) + '</td><td>' + s.closed + (s.open ? "（+保有中" + s.open + "）" : "") + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + ddTxt(s.maxDd) + '</td><td>' + sharpeTxt(s.sharpe) + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            html += '<p class="bt-res-note">開始日の行を選ぶと、その開始日の銘柄別結果を表示します。</p>';
+            html += '<div class="bt-rollall-stocks"></div>';
+            detail.innerHTML = html;
+            setupFlexTable(detail.querySelector(".bt-rollall-dates"), ["start", "n", "ret", "bh", "count", "win", "maxdd", "sharpe"], "allrolldates");
+            var stocks = detail.querySelector(".bt-rollall-stocks");
+            detail.querySelectorAll(".bt-rollall-date-row").forEach(function (tr) {
+              tr.addEventListener("click", function () {
+                detail.querySelectorAll(".bt-rollall-date-row").forEach(function (x) { x.classList.remove("bt-roll-sel"); });
+                tr.classList.add("bt-roll-sel");
+                var di = parseInt(tr.getAttribute("data-roll-di"), 10);
+                stocks.innerHTML = '<h3 class="bt-roll-detail-title">' + esc(rollDates[di].date) + ' 開始の銘柄別結果</h3><div class="bt-rollall-stocks-in"></div>';
+                renderStockResults(stocks.querySelector(".bt-rollall-stocks-in"), rollEntries(p, rollDates[di]));
+              });
+            });
+          }
+          results.querySelector(".bt-rollall-table").addEventListener("click", function (e) {
+            var tr = e.target.closest(".bt-all-row");
+            if (tr) tr.classList.add("sel");
+          });
+          var matrix = results.querySelector(".bt-all-matrix");
+          if (matrix) {
+            var bestP = null, bestKey = null;
+            patterns.forEach(function (p) { if (p.rollAgg && p.rollAgg.ret != null && (!bestP || p.rollAgg.ret > bestP.rollAgg.ret)) { bestP = p; bestKey = p.st[0] + "," + (dims.length === 2 ? p.st[1] : 0); } });
+            matrix.querySelectorAll("td[data-ai]").forEach(function (td) {
+              var key = td.getAttribute("data-ai") + "," + td.getAttribute("data-bi");
+              if (key === bestKey) td.classList.add("best");
+              td.addEventListener("click", function () {
+                matrix.querySelectorAll("td").forEach(function (x) { x.classList.remove("sel"); });
+                td.classList.add("sel");
+                var found = null;
+                patterns.forEach(function (p) { if ((p.st[0] + "," + (dims.length === 2 ? p.st[1] : 0)) === key) found = p; });
+                if (found) selectRollPattern(found);
+              });
+            });
+          }
+          renderRows();
+          var best = patterns.filter(function (p) { return p.rollAgg && p.rollAgg.ret != null; }).sort(function (a, b) { return b.rollAgg.ret - a.rollAgg.ret; })[0];
+          if (best) selectRollPattern(best);
+          runBtn.disabled = false;
+          if (runAllBtn) runAllBtn.disabled = false;
+        }
+        setTimeout(stepRoll, 0);
       }
       loadJson("sector-leaders.json").catch(function () { return null; }).then(function (leaders) {
         var names = buildNames(leaders);
@@ -1564,6 +1853,7 @@
           return targets;
         });
       }).then(function (targets) {
+        if (isRolling) { startRollAll(targets); return; }
         var validTargets = targets.filter(function (t) { return t.rows; });
         if (!validTargets.length) {
           results.innerHTML = '<p class="bt-res-note">対象銘柄のデータがありませんでした。</p>';
