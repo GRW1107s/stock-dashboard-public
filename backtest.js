@@ -1891,10 +1891,9 @@
             a.closed = meanOf(stats.map(function (s) { return s.closed; }));
             p.rollAgg = a;
           });
-          var bhStats = patterns.length && patterns[0].rollStats ? patterns[0].rollStats.filter(Boolean) : [];
-          renderRollAll(aggOf(bhStats, "bh", "bhMaxDd", "bhSharpe", "bhCalmar"));
+          renderRollAll();
         }
-        function renderRollAll(bhAgg) {
+        function renderRollAll() {
           var ddTxt = function (v) { return v == null ? "—" : v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
           var AXIS_LABEL = { rsiGe: "買いRSI", bounce: "前日下落σ", dd: "DD以下", vol15: "出来高条件", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI" };
           function groupedHeat(gi) {
@@ -1970,7 +1969,7 @@
             return hh;
           }
           var targetNames = rawTargets.map(function (t) { return t.title; });
-          var exclN = (minTrades > 0 || zeroOnly) ? patterns.filter(function (p) { return p.rollAgg && mtExcluded(p.rollAgg.closed); }).length : 0;
+          var exclN = (minTrades > 0 || zeroOnly) ? patterns.filter(function (p) { return p.rollAgg && !p.st.every(function (v) { return v === 0; }) && mtExcluded(p.rollAgg.closed); }).length : 0;
           var html = '<p class="bt-res-note">全パターン検証（ローリング） ' + patterns.length.toLocaleString("ja-JP") + '通り × ' + rollDates.length.toLocaleString("ja-JP") + '開始日 / 銘柄：' + targetNames.join("、") + '<br>開始日を1営業日ずつずらし、各回' + horizon + '営業日で全パターンを実行しました。値は開始日ごとの結果（対象銘柄の平均）を開始日間で集計したものです。勝率は平均リターンがプラスだった開始日の割合です（スクリーニングは今の設定で固定、判定できない項目は除きます）。</p>';
           if (exclN > 0) html += '<p class="bt-res-note">' + (zeroOnly ? '平均取引回数0回の' : '平均取引回数' + minTrades + '回未満の') + exclN + '件を除外しています。</p>';
           html += heatHtml();
@@ -1984,16 +1983,16 @@
           var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["no", "label", "ret", "median", "winRate", "best", "worst", "closed", "maxDd", "avgHold", "sharpe", "calmar"], "allroll");
           var sortKey = "sharpe", sortDir = -1;
           var CAP = 300;
+          function isAllOff(p) { return p.st.every(function (v) { return v === 0; }); }
           function rowHtml(p, i) {
             var a = p.rollAgg;
-            if (p.bhRow) return '<tr class="bt-all-row bt-bh-row"><td>' + (i + 1) + '</td><td style="text-align:left">買い持ち</td><td>' + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>" + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.best) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td></tr>";
             if (!a || a.ret == null) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
-            return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
+            var bh = isAllOff(p);
+            return '<tr class="bt-all-row' + (bh ? " bt-bh-row" : "") + '"><td>' + (i + 1) + '</td>' + (bh ? '<td style="text-align:left">買い持ち</td>' : '<td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td>") + "<td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
               + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.best) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td></tr>";
           }
           function renderRows() {
             var arr = patterns.slice();
-            if (bhAgg && bhAgg.ret != null) arr.push({ bhRow: true, label: "買い持ち", rollAgg: { ret: bhAgg.ret, median: bhAgg.median, winRate: bhAgg.winRate, best: bhAgg.best, worst: bhAgg.worst, closed: bhAgg.bhClosed, maxDd: bhAgg.maxDd, avgHold: bhAgg.bhAvgHold, sharpe: bhAgg.sharpe, calmar: bhAgg.calmar } });
             arr.sort(function (x, y) {
               if (sortKey === "label") return x.label < y.label ? sortDir : x.label > y.label ? -sortDir : 0;
               var xv = x.rollAgg ? x.rollAgg[sortKey] : null;
@@ -2003,13 +2002,12 @@
               if (yv == null) return -1;
               return (xv - yv) * sortDir;
             });
-            var arrF = arr.filter(function (p) { return p.bhRow || !p.rollAgg || !mtExcluded(p.rollAgg.closed); });
+            var arrF = arr.filter(function (p) { return isAllOff(p) || !p.rollAgg || !mtExcluded(p.rollAgg.closed); });
             var shown = arrF.slice(0, CAP);
-            var patCount = arrF.filter(function (p) { return !p.bhRow; }).length;
-            tbody.innerHTML = shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (patCount > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + patCount.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
+            tbody.innerHTML = shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arrF.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arrF.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
             if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
-              tr.addEventListener("click", function () { if (shown[i] && !shown[i].bhRow) selectRollPattern(shown[i]); });
+              tr.addEventListener("click", function () { selectRollPattern(shown[i]); });
             });
             results.querySelectorAll(".bt-rollall-table th").forEach(function (th) {
               var labels = { no: "番号", label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", best: "最大", worst: "最小", closed: "取引回数", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ", calmar: "カルマー" };
@@ -2235,7 +2233,7 @@
             return hh;
           }
           var targetNames = targets.map(function (t) { return t.title; });
-          var exclN = (minTrades > 0 || zeroOnly) ? patterns.filter(function (p) { return p.agg && mtExcluded(p.agg.closed); }).length : 0;
+          var exclN = (minTrades > 0 || zeroOnly) ? patterns.filter(function (p) { return p.agg && !p.st.every(function (v) { return v === 0; }) && mtExcluded(p.agg.closed); }).length : 0;
           var html = '<p class="bt-res-note">全パターン検証（' + patterns.length.toLocaleString("ja-JP") + '通り） / 銘柄：' + targetNames.join("、") + '<br>チェックした買い・売り項目の ON/OFF とパラメータの全組合せです（スクリーニングは今の設定で固定、判定できない項目は除きます）。' + (targetNames.length > 1 ? '複数銘柄の値は平均です（勝率・平均損益・平均保有は全取引の合算、取引回数は合計）。' : '') + '</p>';
           if (exclN > 0) html += '<p class="bt-res-note">' + (zeroOnly ? '取引回数0回の' : '取引回数' + minTrades + '回未満の') + exclN + '件を除外しています。</p>';
           html += heatHtml();
@@ -2249,20 +2247,18 @@
           var flex = setupFlexTable(results.querySelector(".bt-all-table"), ["no", "label", "ret", "winRate", "closed", "avgRet", "maxDd", "avgHold", "sharpe", "calmar"], "all");
           var sortKey = "sharpe", sortDir = -1;
           var CAP = 300;
+          function isAllOff(p) { return p.st.every(function (v) { return v === 0; }); }
           function rowHtml(p, i) {
             var a = p.agg;
-            if (p.bhRow) return '<tr class="bt-all-row bt-bh-row"><td>' + (i + 1) + '</td><td style="text-align:left">買い持ち</td><td>' + pct(a.ret) + "</td><td>—</td><td>" + a.closed + "</td><td>—</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td></tr>";
             if (!a) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
-            return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>"
+            var bh = isAllOff(p);
+            return '<tr class="bt-all-row' + (bh ? " bt-bh-row" : "") + '"><td>' + (i + 1) + '</td>' + (bh ? '<td style="text-align:left">買い持ち</td>' : '<td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td>") + "<td>" + pct(a.ret) + "</td><td>"
               + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + a.closed + (a.open ? "（+保有中" + a.open + "）" : "") + "</td><td>"
               + (a.avgRet == null ? "—" : pct(a.avgRet)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>"
               + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td></tr>";
           }
           function renderRows() {
             var arr = patterns.slice();
-            var bhSrc = null;
-            patterns.forEach(function (p) { if (!bhSrc && p.agg) bhSrc = p.agg; });
-            if (bhSrc) arr.push({ bhRow: true, label: "買い持ち", agg: { ret: bhSrc.bh, winRate: null, closed: bhSrc.bhClosed, avgRet: null, maxDd: bhSrc.bhMaxDd, avgHold: bhSrc.bhAvgHold, sharpe: bhSrc.bhSharpe, calmar: bhSrc.bhCalmar } });
             arr.sort(function (x, y) {
               if (sortKey === "label") return x.label < y.label ? sortDir : x.label > y.label ? -sortDir : 0;
               var xv = x.agg ? x.agg[sortKey] : null;
@@ -2272,13 +2268,12 @@
               if (yv == null) return -1;
               return (xv - yv) * sortDir;
             });
-            var arrF = arr.filter(function (p) { return p.bhRow || !p.agg || !mtExcluded(p.agg.closed); });
+            var arrF = arr.filter(function (p) { return isAllOff(p) || !p.agg || !mtExcluded(p.agg.closed); });
             var shown = arrF.slice(0, CAP);
-            var patCount = arrF.filter(function (p) { return !p.bhRow; }).length;
-            tbody.innerHTML = shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (patCount > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + patCount.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
+            tbody.innerHTML = shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arrF.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arrF.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
             if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
-              tr.addEventListener("click", function () { if (shown[i] && !shown[i].bhRow) selectPattern(shown[i]); });
+              tr.addEventListener("click", function () { selectPattern(shown[i]); });
             });
             results.querySelectorAll(".bt-all-table th").forEach(function (th) {
               var labels = { no: "番号", label: "パターン", ret: "リターン", winRate: "勝率", closed: "取引回数", avgRet: "平均損益", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ", calmar: "カルマー" };
