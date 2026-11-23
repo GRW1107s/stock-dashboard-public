@@ -301,9 +301,9 @@ div.rank-entry.ind-jump:hover{background:#eef4fc}
 <div class="bt-block-head"><h3>売りシグナル</h3><button type="button" class="bt-clear" data-bt-clear="sell">すべて外す</button></div>
 
 <p class="bt-group">移動平均</p>
-<div class="bt-item"><span class="bt-item-text">・株価が<select class="bt-select" data-bt-num="maSellDays" aria-label="売りの移動平均日数"><option value="20">20</option><option value="50" selected>50</option><option value="200">200</option></select>日移動平均を下回る</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="ma50" checked aria-label="条件を有効化"></span></div>
 <div class="bt-item"><span class="bt-item-text">・20日MA＜50日MA</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn" aria-label="条件を有効化"></span></div>
 <div class="bt-item"><span class="bt-item-text">・9日EMA＜21日EMA</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="emaCrossDn" aria-label="条件を有効化"></span></div>
+<div class="bt-item"><span class="bt-item-text">・株価が<select class="bt-select" data-bt-num="maSellDays" aria-label="売りの移動平均日数"><option value="20">20</option><option value="50" selected>50</option><option value="200">200</option></select>日移動平均を下回る</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="ma50" checked aria-label="条件を有効化"></span></div>
 <p class="bt-group">RSI Strategy</p>
 <div class="bt-item"><span class="bt-item-text">・RSI（14日）が<select class="bt-select" data-bt-num="rsiSell" aria-label="売りのRSI閾値"><option value="70" selected>70</option><option value="75">75</option><option value="80">80</option><option value="85">85</option></select>以上</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="rsiLe" aria-label="条件を有効化"></span></div>
 <div class="bt-item"><span class="bt-item-text">・買値から<select class="bt-select" data-bt-num="lossPct" aria-label="買値からの下落率"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select>%下落</span><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="loss8" checked aria-label="条件を有効化"></span></div>
@@ -1149,5 +1149,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script>
-<script src="./backtest.js?v=20261123re40" defer></script>
+<script src="./backtest.js?v=20261123re41" defer></script>
 </body></html>
