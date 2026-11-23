@@ -778,8 +778,9 @@
     var curExitRules = [];
     var BUY_RULE_IDS = ["vol15", "maCross", "emaCross", "rsiGe", "bounceClose", "ftd"];
     var SELL_RULE_IDS = ["maCrossDn", "emaCrossDn", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe"];
-    // IF rows live inside the formula frames (GRW 2026-11-24): re-entry
-    // rules in the buy frame, exit rules in the sell frame.
+    // IF rows live inside the formula frames, anchored on the TRIGGER
+    // side (GRW 2026-11-24): re-entry rules (triggered by a sell) in the
+    // sell frame, exit rules (triggered by a buy) in the buy frame.
     function makeIfSection(kind) {
       var sec = document.createElement("div");
       sec.className = "bt-if-sec";
@@ -790,8 +791,8 @@
     var sellFrameEl = panel.querySelector('.bt-formula[data-formula="sell"]');
     var reentrySec = makeIfSection("reentry");
     var exitSec = makeIfSection("exit");
-    if (buyFrameEl) buyFrameEl.appendChild(reentrySec);
-    if (sellFrameEl) sellFrameEl.appendChild(exitSec);
+    if (buyFrameEl) buyFrameEl.appendChild(exitSec);
+    if (sellFrameEl) sellFrameEl.appendChild(reentrySec);
     var rulesFrame = panel; // delegation root for rule events
     function ruleOptions(ids, labels, cur) {
       return ids.map(function (id) { return '<option value="' + id + '"' + (id === cur ? " selected" : "") + ">" + esc(labels[id] || id) + "</option>"; }).join("");
