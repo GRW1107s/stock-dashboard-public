@@ -240,7 +240,7 @@
 <div class="bt-settings bt-settings2">
 <label>ティッカー<input type="text" id="bt-symbols" placeholder="例：AAPL, MSFT" autocomplete="off"></label>
 <label>開始日<input type="text" id="bt-from" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
-<label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label><button type="button" id="bt-max-period" title="選んだ対象すべてにデータがある共通の最大期間を開始日・終了日にします">最大期間</button>
+<label>終了日<input type="text" id="bt-to" inputmode="numeric" placeholder="yyyymmdd" maxlength="10" autocomplete="off"></label>
 <button type="button" class="bt-run" id="bt-run">実行</button>
 <button type="button" class="bt-run" id="bt-run-all">全パターンで実行</button><span class="bt-export-wrap"><button type="button" id="bt-export">結果を出力</button><span class="bt-export-menu" hidden><button type="button" data-bt-export="csv">CSVで出力</button><button type="button" data-bt-export="xlsx">Excelで出力</button></span></span>
 <span class="bt-hint" id="bt-normal-hint">ティッカーを入れると、その銘柄だけが対象になります。開始日・終了日を入れると、テスト期間より優先されます。</span>
@@ -661,5 +661,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261123re17" defer></script>
+</script><script src="./backtest.js?v=20261123re18" defer></script>
 </body></html>

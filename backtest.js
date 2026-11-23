@@ -499,58 +499,6 @@
       }
     }
 
-    (function setupMaxPeriod() {
-      var btn = document.getElementById("bt-max-period");
-      if (!btn) return;
-      btn.addEventListener("click", function () {
-        var fromEl = document.getElementById("bt-from"), toEl = document.getElementById("bt-to");
-        if (!fromEl || !toEl) return;
-        btn.disabled = true;
-        var old = btn.textContent;
-        btn.textContent = "取得中…";
-        var minD = null, maxD = null;
-        var take = function (a, b) { if (a && (!minD || a > minD)) minD = a; if (b && (!maxD || b < maxD)) maxD = b; };
-        var jobs = [];
-        var codes = [];
-        var sym = document.getElementById("bt-symbols");
-        if (sym) codes = codes.concat(sym.value.split(/[\s,、]+/).map(function (x) { return x.trim(); }).filter(Boolean));
-        panel.querySelectorAll("input[data-bt-etf]:checked").forEach(function (b) { codes.push(b.value); });
-        codes.forEach(function (code) {
-          jobs.push(loadJson(ohlcvUrl(code)).then(function (d) {
-            var rows = d && d.rows;
-            if (rows && rows.length) take(rows[0][0], rows[rows.length - 1][0]);
-          }).catch(function () {}));
-        });
-        var idxChecked = panel.querySelectorAll("input[data-bt-index]:checked").length;
-        if (idxChecked || !codes.length) {
-          var rangeOf = function (d) {
-            var arr = d && (MARKET === "jp" ? (d.tse_rows && d.tse_rows.length ? d.tse_rows : d.rows) : d.rows);
-            if (!arr || !arr.length) return;
-            var lo = null, hi = null;
-            arr.forEach(function (r) { if (!r.date) return; if (!lo || r.date < lo) lo = r.date; if (!hi || r.date > hi) hi = r.date; });
-            take(lo, hi);
-          };
-          jobs.push(loadJson("history-1992.json").then(rangeOf).catch(function () {}));
-          jobs.push(loadJson("history-" + new Date().getFullYear() + ".json").then(rangeOf).catch(function () {}));
-        }
-        Promise.all(jobs).then(function () {
-          if (minD && maxD && minD <= maxD) {
-            fromEl.value = minD;
-            toEl.value = maxD;
-            [fromEl, toEl].forEach(function (el) {
-              el.dispatchEvent(new Event("input", { bubbles: true }));
-              el.dispatchEvent(new Event("change", { bubbles: true }));
-            });
-          } else if (minD && maxD) {
-            btn.textContent = "共通期間がありません";
-            setTimeout(function () { btn.textContent = old; }, 1600);
-          }
-          btn.disabled = false;
-          if (btn.textContent !== "共通期間がありません") btn.textContent = old;
-        });
-      });
-    })();
-
     (function setupExport() {
       var btn = document.getElementById("bt-export");
       if (!btn) return;
@@ -801,12 +749,7 @@
           var title = esc(INDEX_LABELS[k] || k) + "（指数）";
           if (!rows.length) { out.push({ title: title, out: null, noData: "指数データがありません。" }); return; }
           var lastDate = rows[rows.length - 1][0];
-          var startDate = fromVal;
-          if (!startDate) {
-            var d = new Date(lastDate + "T00:00:00");
-            d.setFullYear(d.getFullYear() - periodYears);
-            startDate = d.toISOString().slice(0, 10);
-          }
+          var startDate = fromVal || rows[0][0];
           var endDate = toVal || lastDate;
           var fromIdx = rows.findIndex(function (r) { return r[0] >= startDate; });
           var toIdx = -1;
@@ -1473,12 +1416,7 @@
           }
           var rows = item.rows;
           var lastDate = rows[rows.length - 1][0];
-          var startDate = fromVal;
-          if (!startDate) {
-            var d = new Date(lastDate + "T00:00:00");
-            d.setFullYear(d.getFullYear() - periodYears);
-            startDate = d.toISOString().slice(0, 10);
-          }
+          var startDate = fromVal || rows[0][0];
           var endDate = toVal || lastDate;
           var fromIdx = rows.findIndex(function (r) { return r[0] >= startDate; });
           var toIdx = -1;
@@ -1509,7 +1447,7 @@
         };
         if (indexKeys.length) {
           var endYear = toVal ? +toVal.slice(0, 4) : new Date().getFullYear();
-          var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
+          var startYear = fromVal ? +fromVal.slice(0, 4) : 1992;
           var indexYears = [];
           for (var iy = startYear - 1; iy <= endYear; iy++) indexYears.push(iy);
           loadIndexEntries(indexKeys, indexYears, { buy: entry, sell: sell, ddLimit: ddLimit }, fromVal, toVal, periodYears)
@@ -1618,12 +1556,7 @@
             }
             var rows = item.rows;
             var lastDate = rows[rows.length - 1][0];
-            var startDate = fromVal;
-            if (!startDate) {
-              var d = new Date(lastDate + "T00:00:00");
-              d.setFullYear(d.getFullYear() - periodYears);
-              startDate = d.toISOString().slice(0, 10);
-            }
+            var startDate = fromVal || rows[0][0];
             var endDate = toVal || lastDate;
             var fromIdx = rows.findIndex(function (r) { return r[0] >= startDate; });
             var toIdx = -1;
@@ -1639,7 +1572,7 @@
         var ixJobs = perStrat.map(function (ps) {
           if (!indexKeys.length) return Promise.resolve();
           var endYear = toVal ? +toVal.slice(0, 4) : new Date().getFullYear();
-          var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
+          var startYear = fromVal ? +fromVal.slice(0, 4) : 1992;
           var indexYears = [];
           for (var iy = startYear - 1; iy <= endYear; iy++) indexYears.push(iy);
           return loadIndexEntries(indexKeys, indexYears, { buy: ps.cfg.buy, sell: ps.cfg.sell, ddLimit: ps.cfg.ddLimit }, fromVal, toVal, periodYears)
@@ -1804,12 +1737,7 @@
         if (!rows || !rows.length) return { title: title, rows: null, noData: "日足データがまだありません。自動更新で蓄積されてから実行できます。" };
         if (isRolling) return { title: title, rows: rows };
         var lastDate = rows[rows.length - 1][0];
-        var startDate = fromVal;
-        if (!startDate) {
-          var d = new Date(lastDate + "T00:00:00");
-          d.setFullYear(d.getFullYear() - periodYears);
-          startDate = d.toISOString().slice(0, 10);
-        }
+        var startDate = fromVal || rows[0][0];
         var endDate = toVal || lastDate;
         var fromIdx = rows.findIndex(function (r) { return r[0] >= startDate; });
         var toIdx = -1;
@@ -2145,7 +2073,7 @@
       }).then(function (targets) {
         if (!indexKeys.length) return targets;
         var endYear = toVal ? +toVal.slice(0, 4) : new Date().getFullYear();
-        var startYear = fromVal ? +fromVal.slice(0, 4) : endYear - periodYears;
+        var startYear = fromVal ? +fromVal.slice(0, 4) : 1992;
         var years = [];
         for (var iy = startYear - 1; iy <= endYear; iy++) years.push(iy);
         var jobs = years.map(function (y) { return loadJson("history-" + y + ".json").catch(function () { return null; }); });
