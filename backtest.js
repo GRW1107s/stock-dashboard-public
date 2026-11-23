@@ -669,7 +669,7 @@
     var TRADE_COLS = ["buyDate", "buyPrice", "sellDate", "sellPrice", "ret", "hold", "reason"];
     var STRAT_TRADE_COLS = ["strat"].concat(TRADE_COLS);
     var STOCK_COLS = ["title", "kind", "ret", "count", "win", "avg", "maxdd", "sharpe", "hold", "period"];
-    var ROLL_COLS = ["start", "kind", "n", "avg", "median", "count", "win", "sharpe"];
+    var ROLL_COLS = ["start", "kind", "n", "avg", "median", "count", "win", "hold", "sharpe"];
     var CMP_COLS = ["strat", "ret", "win", "count", "avg", "maxdd", "hold", "sharpe"];
     // Column reorder + width adjustment shared by every backtest table:
     // heading drag reorders, the right-edge grip resizes, Ctrl+click selects
@@ -1123,7 +1123,7 @@
         if (!ctx) return;
         var summaries = [], details = {};
         ctx.perDate.forEach(function (pd) {
-          var entries = [], n = 0, sumRet = 0, sumBh = 0, rets = [], bhRets = [], closedTrades = 0, winTrades = 0, sumSharpe = 0, nSharpe = 0, sumBhSharpe = 0, nBhSharpe = 0;
+          var entries = [], n = 0, sumRet = 0, sumBh = 0, rets = [], bhRets = [], closedTrades = 0, winTrades = 0, holdSum = 0, sumSharpe = 0, nSharpe = 0, sumBhSharpe = 0, nBhSharpe = 0;
           pd.codes.forEach(function (code) {
             var rows = ctx.store[code];
             if (!rows || !rows.length) return;
@@ -1140,7 +1140,7 @@
             n++; sumRet += out.perf.totalReturn; sumBh += out.perf.bhReturn; rets.push(out.perf.totalReturn); bhRets.push(out.perf.bhReturn);
             if (out.perf.sharpe != null) { sumSharpe += out.perf.sharpe; nSharpe++; }
             if (out.perf.bhSharpe != null) { sumBhSharpe += out.perf.bhSharpe; nBhSharpe++; }
-            out.trades.forEach(function (t) { if (!t.open) { closedTrades++; if (t.ret > 0) winTrades++; } });
+            out.trades.forEach(function (t) { if (!t.open) { closedTrades++; holdSum += t.hold; if (t.ret > 0) winTrades++; } });
           });
           rets.sort(function (a, b) { return a - b; });
           var median = !rets.length ? null : (rets.length % 2 ? rets[(rets.length - 1) / 2] : (rets[rets.length / 2 - 1] + rets[rets.length / 2]) / 2);
@@ -1150,12 +1150,12 @@
             date: pd.date, count: n, avg: n ? sumRet / n : null, median: median,
             bhAvg: n ? sumBh / n : null, bhMedian: bhMedian, trades: closedTrades,
             sharpeAvg: nSharpe ? sumSharpe / nSharpe : null, bhSharpeAvg: nBhSharpe ? sumBhSharpe / nBhSharpe : null,
-            winRate: closedTrades ? winTrades / closedTrades : null, truncated: pd.truncated
+            avgHold: closedTrades ? holdSum / closedTrades : null, winRate: closedTrades ? winTrades / closedTrades : null, truncated: pd.truncated
           });
           details[pd.date] = entries;
         });
         var valid = summaries.filter(function (s) { return s.count > 0; });
-        var html = '<table class="bt-res-table bt-roll-table"><thead><tr><th>開始日</th><th>区分</th><th>対象銘柄数</th><th>平均リターン</th><th>中央値</th><th>取引回数</th><th>勝率</th><th>シャープレシオ</th></tr></thead><tbody>';
+        var html = '<table class="bt-res-table bt-roll-table"><thead><tr><th>開始日</th><th>区分</th><th>対象銘柄数</th><th>平均リターン</th><th>中央値</th><th>取引回数</th><th>勝率</th><th>平均保有</th><th>シャープレシオ</th></tr></thead><tbody>';
         if (valid.length) {
           var totAvg = valid.reduce(function (s, x) { return s + x.avg; }, 0) / valid.length;
           var totBh = valid.reduce(function (s, x) { return s + x.bhAvg; }, 0) / valid.length;
@@ -1165,12 +1165,14 @@
           var bhShVals = valid.map(function (x) { return x.bhSharpeAvg; }).filter(function (v) { return v != null; });
           var totSharpe = shVals.length ? shVals.reduce(function (a, b) { return a + b; }, 0) / shVals.length : null;
           var totBhSharpe = bhShVals.length ? bhShVals.reduce(function (a, b) { return a + b; }, 0) / bhShVals.length : null;
-          html += '<tr class="bt-roll-total bt-bh-row"><td>全開始日の平均</td><td>買い持ち</td><td>' + totCount + '</td><td>' + pct(totBh) + '</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(totBhSharpe) + '</td></tr>';
-          html += '<tr class="bt-roll-total"><td>全開始日の平均</td><td>戦略</td><td>' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + sharpeTxt(totSharpe) + '</td></tr>';
+          var holdVals = valid.map(function (x) { return x.avgHold; }).filter(function (v) { return v != null; });
+          var totHold = holdVals.length ? holdVals.reduce(function (a, b) { return a + b; }, 0) / holdVals.length : null;
+          html += '<tr class="bt-roll-total bt-bh-row"><td>全開始日の平均</td><td>買い持ち</td><td>' + totCount + '</td><td>' + pct(totBh) + '</td><td>—</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(totBhSharpe) + '</td></tr>';
+          html += '<tr class="bt-roll-total"><td>全開始日の平均</td><td>戦略</td><td>' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + (totHold == null ? "—" : totHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(totSharpe) + '</td></tr>';
         }
         summaries.forEach(function (s) {
-          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>買い持ち</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>—</td><td>—</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td></tr>';
-          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>戦略</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>買い持ち</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>—</td><td>—</td><td>—</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>戦略</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + (s.avgHold == null ? "—" : s.avgHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td></tr>';
         });
         html += '</tbody></table>';
         html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。' + (fixedCodes ? "対象銘柄は入力した銘柄です（スクリーニング条件は使っていません）。" : "対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。") + '</p>';
@@ -1687,7 +1689,8 @@
             winRate: rets.length ? rets.filter(function (v) { return v > 0; }).length / rets.length : null,
             worst: rets.length ? Math.min.apply(null, rets) : null,
             maxDd: meanOf(stats.map(function (s) { return s[ddKey]; })),
-            sharpe: meanOf(stats.map(function (s) { return s[shKey]; }).filter(function (v) { return v != null; }))
+            sharpe: meanOf(stats.map(function (s) { return s[shKey]; }).filter(function (v) { return v != null; })),
+            avgHold: meanOf(stats.map(function (s) { return s.avgHold; }).filter(function (v) { return v != null; }))
           };
         }
         var totalPairs = patterns.length * rollDates.length;
@@ -1770,20 +1773,20 @@
           if (exclN > 0) html += '<p class="bt-res-note">平均取引回数' + minTrades + '回未満の' + exclN + '件を除外しています。</p>';
           html += heatHtml();
           html += '<table class="bt-res-table bt-rollall-table"><thead><tr>'
-            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="worst">最悪</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="sharpe">シャープ</th>'
+            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="worst">最悪</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th>'
             + '</tr></thead><tbody></tbody></table>';
           html += '<p class="bt-res-note">判定は終値、売買は翌営業日の始値です。手数料・税金は含みません。取引回数は開始日ごとの平均です。行を選ぶと、そのパターンの開始日別結果を表示します。</p>';
           html += '<div id="bt-all-detail"></div>';
           results.innerHTML = html;
           var tbody = results.querySelector(".bt-rollall-table tbody");
-          var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["no", "label", "ret", "median", "winRate", "worst", "closed", "maxDd", "sharpe"], "allroll");
+          var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["no", "label", "ret", "median", "winRate", "worst", "closed", "maxDd", "avgHold", "sharpe"], "allroll");
           var sortKey = "sharpe", sortDir = -1;
           var CAP = 300;
           function rowHtml(p, i) {
             var a = p.rollAgg;
             if (!a || a.ret == null) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
             return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td><td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
-              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
+              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td></tr>";
           }
           function renderRows() {
             var arr = patterns.slice().sort(function (x, y) {
@@ -1797,14 +1800,14 @@
             });
             var arrF = arr.filter(function (p) { return minTrades <= 0 || !p.rollAgg || (p.rollAgg.closed || 0) >= minTrades; });
             var shown = arrF.slice(0, CAP);
-            var bhRow = bhAgg && bhAgg.ret != null ? '<tr class="bt-bh-row"><td>—</td><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.ret) + "</td><td>" + pct(bhAgg.median) + "</td><td>" + (bhAgg.winRate == null ? "—" : pct(bhAgg.winRate, 0)) + "</td><td>" + pct(bhAgg.worst) + "</td><td>—</td><td>" + ddTxt(bhAgg.maxDd) + "</td><td>" + sharpeTxt(bhAgg.sharpe) + "</td></tr>" : "";
+            var bhRow = bhAgg && bhAgg.ret != null ? '<tr class="bt-bh-row"><td>—</td><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.ret) + "</td><td>" + pct(bhAgg.median) + "</td><td>" + (bhAgg.winRate == null ? "—" : pct(bhAgg.winRate, 0)) + "</td><td>" + pct(bhAgg.worst) + "</td><td>—</td><td>" + ddTxt(bhAgg.maxDd) + "</td><td>—</td><td>" + sharpeTxt(bhAgg.sharpe) + "</td></tr>" : "";
             tbody.innerHTML = bhRow + shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arrF.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arrF.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
             if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
               tr.addEventListener("click", function () { selectRollPattern(shown[i]); });
             });
             results.querySelectorAll(".bt-rollall-table th").forEach(function (th) {
-              var labels = { no: "番号", label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", worst: "最悪", closed: "取引回数", maxDd: "最大DD", sharpe: "シャープ" };
+              var labels = { no: "番号", label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", worst: "最悪", closed: "取引回数", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ" };
               var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
               setThLabel(th, th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base);
             });
@@ -1824,17 +1827,17 @@
             tbody.querySelectorAll(".bt-all-row").forEach(function (r) { r.classList.remove("sel"); });
             var detail = document.getElementById("bt-all-detail");
             var html = '<h3 class="bt-roll-detail-title">' + esc(p.label) + ' の開始日別結果</h3>';
-            html += '<table class="bt-res-table bt-rollall-dates"><thead><tr><th>開始日</th><th>対象銘柄数</th><th>リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>最大DD</th><th>シャープ</th></tr></thead><tbody>';
+            html += '<table class="bt-res-table bt-rollall-dates"><thead><tr><th>開始日</th><th>対象銘柄数</th><th>リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>最大DD</th><th>平均保有</th><th>シャープ</th></tr></thead><tbody>';
             rollDates.forEach(function (rd, di) {
               var s = p.rollStats && p.rollStats[di];
-              if (!s) { html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>'; return; }
-              html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td>' + s.n + '</td><td>' + pct(s.ret) + '</td><td>' + pct(s.bh) + '</td><td>' + s.closed + (s.open ? "（+保有中" + s.open + "）" : "") + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + ddTxt(s.maxDd) + '</td><td>' + sharpeTxt(s.sharpe) + '</td></tr>';
+              if (!s) { html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td colspan="8" style="text-align:left">データがありませんでした</td></tr>'; return; }
+              html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td>' + s.n + '</td><td>' + pct(s.ret) + '</td><td>' + pct(s.bh) + '</td><td>' + s.closed + (s.open ? "（+保有中" + s.open + "）" : "") + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + ddTxt(s.maxDd) + '</td><td>' + (s.avgHold == null ? "—" : s.avgHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.sharpe) + '</td></tr>';
             });
             html += '</tbody></table>';
             html += '<p class="bt-res-note">開始日の行を選ぶと、その開始日の銘柄別結果を表示します。</p>';
             html += '<div class="bt-rollall-stocks"></div>';
             detail.innerHTML = html;
-            setupFlexTable(detail.querySelector(".bt-rollall-dates"), ["start", "n", "ret", "bh", "count", "win", "maxdd", "sharpe"], "allrolldates");
+            setupFlexTable(detail.querySelector(".bt-rollall-dates"), ["start", "n", "ret", "bh", "count", "win", "maxdd", "avgHold", "sharpe"], "allrolldates");
             var stocks = detail.querySelector(".bt-rollall-stocks");
             detail.querySelectorAll(".bt-rollall-date-row").forEach(function (tr) {
               tr.addEventListener("click", function () {
