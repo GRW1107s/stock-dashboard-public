@@ -443,53 +443,22 @@
       var store = null;
       try { store = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { store = null; }
       try { localStorage.removeItem("stock-dashboard-bt-strategies-" + MARKET); } catch (e) {}
-      var RE_SELL = [["ddGe", "DD（売り抜け日）が閾値以上"], ["loss8", "買値から下落"], ["ma50", "株価が移動平均を下回る"], ["dropPct", "前日終値から下落"], ["high25", "52週高値から下落"], ["rsiLe", "RSI（14日）が閾値以上"]];
-      var RE_BUY = [["ftd", "FTDが発生"], ["rsiGe", "RSI（14日）が閾値以下"], ["bounce", "前日にσ以上下落"], ["vol15", "出来高が20日平均の1.5倍以上"]];
-      var reList = document.getElementById("bt-reentry-list");
-      var reAdd = document.getElementById("bt-reentry-add");
-      function blank() { return { buy: [], sell: [], nums: {}, cmp: false, reentry: [] }; }
       function readReentryDom() {
         var out = [];
-        if (!reList) return out;
-        reList.querySelectorAll(".bt-re-row").forEach(function (row) {
-          var ss = row.querySelector(".bt-re-sell"), bb = row.querySelector(".bt-re-buy");
-          if (ss && bb) out.push({ sell: ss.value, buy: bb.value });
+        panel.querySelectorAll("select.bt-re-for").forEach(function (sel) {
+          if (sel.value) out.push({ sell: sel.getAttribute("data-re-for"), buy: sel.value });
         });
         return out;
       }
-      function renderReentry(list) {
-        if (!reList) return;
-        reList.innerHTML = "";
-        (list || []).forEach(function (r) {
-          var row = document.createElement("div");
-          row.className = "bt-re-row";
-          function mkSel(cls, opts, val) {
-            var sel = document.createElement("select");
-            sel.className = "bt-select " + cls;
-            opts.forEach(function (o) { var op = document.createElement("option"); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op); });
-            sel.value = val;
-            sel.addEventListener("change", function () { if (!applying) { syncFromDom(); persist(); } });
-            return sel;
-          }
-          var t1 = document.createElement("span"); t1.textContent = "で売った後は";
-          var t2 = document.createElement("span"); t2.textContent = "で買い戻す";
-          var del = document.createElement("button");
-          del.type = "button"; del.className = "bt-re-del"; del.textContent = "✕"; del.title = "このルールを削除";
-          del.addEventListener("click", function () { row.remove(); if (!applying) { syncFromDom(); persist(); } });
-          row.appendChild(mkSel("bt-re-sell", RE_SELL, r.sell));
-          row.appendChild(t1);
-          row.appendChild(mkSel("bt-re-buy", RE_BUY, r.buy));
-          row.appendChild(t2);
-          row.appendChild(del);
-          reList.appendChild(row);
+      function applyReentry(list) {
+        var map = {};
+        (list || []).forEach(function (r) { map[r.sell] = r.buy; });
+        panel.querySelectorAll("select.bt-re-for").forEach(function (sel) {
+          var v = map[sel.getAttribute("data-re-for")] || "";
+          if (sel.value !== v) sel.value = v;
         });
       }
-      if (reAdd) reAdd.addEventListener("click", function () {
-        var cur = readReentryDom();
-        cur.push({ sell: "ddGe", buy: "ftd" });
-        renderReentry(cur);
-        syncFromDom(); persist();
-      });
+      function blank() { return { buy: [], sell: [], nums: {}, cmp: false, reentry: [] }; }
       function collectDom() {
         var st = { buy: checked("buy"), sell: checked("sell"), nums: {}, reentry: readReentryDom() };
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
@@ -536,7 +505,7 @@
             n.dispatchEvent(new Event("change", { bubbles: true }));
           }
         });
-        renderReentry(st.reentry || []);
+        applyReentry(st.reentry || []);
         applying = false;
       }
       var buyHead = panel.querySelector(".bt-block.buy .bt-block-head h3");
@@ -570,7 +539,7 @@
         if (applying) return;
         var tg = e.target;
         if (!tg || !tg.getAttribute) return;
-        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num")) { syncFromDom(); persist(); }
+        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num") || tg.classList.contains("bt-re-for")) { syncFromDom(); persist(); }
       });
       applySlot(active);
       persist(); paintTabs();
