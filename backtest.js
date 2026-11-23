@@ -193,6 +193,84 @@
       ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, pineByN: b.pineByN, sigma20: b.sigma20 };
   }
 
+  // Tolerant formula parser: tokens are item ids plus "and" / "or" /
+  // "not" / "(" / ")". Leaves the caller does not enable (leafOk false)
+  // are pruned, and operators left without an operand collapse away, so
+  // the all-patterns sweep can reuse one formula across patterns whose
+  // item sets differ. Precedence: not > and > or.
+  function parseFormula(tokens, leafOk) {
+    var pos = 0;
+    function peek() { return tokens[pos]; }
+    function combine(op, a, b) { if (!a) return b; if (!b) return a; return { k: op, a: a, b: b }; }
+    function parseOr() { var l = parseAnd(); while (peek() === "or") { pos++; l = combine("or", l, parseAnd()); } return l; }
+    function parseAnd() { var l = parseUnary(); while (peek() === "and") { pos++; l = combine("and", l, parseUnary()); } return l; }
+    function parseUnary() {
+      var tk = peek();
+      if (tk === "not") { pos++; var x = parseUnary(); return x ? { k: "not", a: x } : null; }
+      if (tk === "(") { pos++; var e = parseOr(); if (peek() === ")") pos++; return e; }
+      if (tk == null || tk === ")" || tk === "and" || tk === "or") return null;
+      pos++;
+      return leafOk(tk) ? { k: "item", id: tk } : null;
+    }
+    return parseOr();
+  }
+  function evalFormula(node, leafVal) {
+    if (!node) return true;
+    if (node.k === "item") return !!leafVal(node.id);
+    if (node.k === "not") return !evalFormula(node.a, leafVal);
+    if (node.k === "and") return evalFormula(node.a, leafVal) && evalFormula(node.b, leafVal);
+    return evalFormula(node.a, leafVal) || evalFormula(node.b, leafVal);
+  }
+  // Default formula reproducing the legacy role grouping: AND items
+  // joined by AND, OR items parenthesised and joined by OR, combined by
+  // AND. With no AND items the OR items join plainly.
+  function buildDefaultFormula(ids, orIds) {
+    var andIds = ids.filter(function (id) { return orIds.indexOf(id) < 0; });
+    var orOnly = ids.filter(function (id) { return orIds.indexOf(id) >= 0; });
+    var out = [];
+    andIds.forEach(function (id, i) { if (i) out.push("and"); out.push(id); });
+    if (orOnly.length) {
+      if (andIds.length) { out.push("and"); if (orOnly.length > 1) out.push("("); }
+      orOnly.forEach(function (id, i) { if (i) out.push("or"); out.push(id); });
+      if (andIds.length && orOnly.length > 1) out.push(")");
+    }
+    return out;
+  }
+  function validateFormula(tokens) {
+    if (!tokens.length) return null;
+    var pos = 0;
+    function expr() { term(); while (tokens[pos] === "or") { pos++; term(); } }
+    function term() { factor(); while (tokens[pos] === "and") { pos++; factor(); } }
+    function factor() {
+      var tk = tokens[pos];
+      if (tk === "not") { pos++; factor(); return; }
+      if (tk === "(") { pos++; expr(); if (tokens[pos] !== ")") throw new Error("paren"); pos++; return; }
+      if (tk == null || tk === ")" || tk === "and" || tk === "or") throw new Error("operand");
+      pos++;
+    }
+    try { expr(); if (pos !== tokens.length) return "式の並びが正しくありません"; } catch (e) { return "式の並びが正しくありません（カッコの対応や演算子の位置を確認してください）"; }
+    return null;
+  }
+  // Drop dangling operators/parens after an item is removed from a formula.
+  function normalizeFormula(tokens) {
+    var t = tokens.slice(), changed = true, guard = 0;
+    while (changed && guard++ < 60) {
+      changed = false;
+      for (var i = 0; i < t.length; i++) {
+        var tk = t[i], prev = t[i - 1], next = t[i + 1], drop = false;
+        if ((tk === "and" || tk === "or") && (i === 0 || i === t.length - 1 || prev === "(" || prev === "and" || prev === "or" || prev === "not" || next === ")" || next === "and" || next === "or")) drop = true;
+        if (tk === "not" && (next == null || next === ")" || next === "and" || next === "or" || (prev != null && prev !== "(" && prev !== "and" && prev !== "or" && prev !== "not"))) drop = true;
+        if (tk === "(" && next === ")") { t.splice(i, 2); changed = true; break; }
+        if (tk === ")" && (prev === "(" || prev === "and" || prev === "or")) drop = true;
+        if (drop) { t.splice(i, 1); changed = true; break; }
+      }
+    }
+    var bal = 0, out = [];
+    t.forEach(function (tk) { if (tk === "(") bal++; if (tk === ")") { if (!bal) return; bal--; } out.push(tk); });
+    while (bal > 0) { var ix = out.lastIndexOf("("); if (ix < 0) break; out.splice(ix, 1); bal--; }
+    return out;
+  }
+
   function runBacktest(rows, cfg) {
     var ownInd = indicatorsFor(rows, cfg.maDays == null ? 50 : cfg.maDays);
     var ind = cfg.judgeRows ? indicatorsFor(cfg.judgeRows, cfg.maDays == null ? 50 : cfg.maDays) : ownInd;
@@ -255,7 +333,15 @@
     }
     var buyOrSet = cfg.buyOr ? new Set(cfg.buyOr) : null;
     var sellOrSet = cfg.sellOr ? new Set(cfg.sellOr) : null;
+    var buyFormulaMode = Array.isArray(cfg.buyFormula);
+    var sellFormulaMode = Array.isArray(cfg.sellFormula);
+    var buyAst = buyFormulaMode ? parseFormula(cfg.buyFormula, function (id) { return cfg.buy.indexOf(id) >= 0; }) : null;
+    var sellAst = sellFormulaMode ? parseFormula(cfg.sellFormula, function (id) { return cfg.sell.indexOf(id) >= 0; }) : null;
     function buyOk(i) {
+      if (buyFormulaMode) {
+        if (cfg.screen) for (var si = 0; si < cfg.screen.length; si++) { if (!buyCond(cfg.screen[si], i)) return false; }
+        return buyAst ? evalFormula(buyAst, function (id) { return buyCond(id, i); }) : true;
+      }
       var orAny = false, orFired = false;
       for (var j = 0; j < cfg.buy.length; j++) {
         var bid = cfg.buy[j];
@@ -282,6 +368,15 @@
       return false;
     }
     function sellReason(i, pos) {
+      if (sellFormulaMode) {
+        if (!sellAst) return null;
+        if (!evalFormula(sellAst, function (id) { return sellCond(id, i, pos); })) return null;
+        for (var fi = 0; fi < cfg.sellFormula.length; fi++) {
+          var fid = cfg.sellFormula[fi];
+          if (fid !== "and" && fid !== "or" && fid !== "not" && fid !== "(" && fid !== ")" && sellCond(fid, i, pos)) return fid;
+        }
+        return "formula";
+      }
       var orAny = false, orFired = false, firstTrue = null;
       for (var j = 0; j < cfg.sell.length; j++) {
         var id = cfg.sell[j];
@@ -647,11 +742,108 @@
     // block and the target/period settings are shared across slots. A checkbox
     // on each tab marks the slot for comparison runs. The old named-strategy
     // store is discarded (GRW, 2026-11-23).
+    // Logical-formula frames (GRW 2026-11-23): checked items become chips
+    // in a formula under each block; AND/OR/NOT/parens are inserted with
+    // dedicated buttons. The formula replaces the AND/OR columns.
+    var curFormulas = { buy: [], sell: [] };
+    var formulaSel = { buy: -1, sell: -1 };
+    var formulaValid = { buy: true, sell: true };
+    if (window.__btSavedFormulas) {
+      curFormulas.buy = (window.__btSavedFormulas.buy || []).slice();
+      curFormulas.sell = (window.__btSavedFormulas.sell || []).slice();
+    } else if (window.__btSavedRoles) {
+      curFormulas.buy = buildDefaultFormula(checked("buy"), window.__btSavedRoles.buyOr || []);
+      curFormulas.sell = buildDefaultFormula(checked("sell"), window.__btSavedRoles.sellOr || checked("sell"));
+    } else {
+      curFormulas.buy = buildDefaultFormula(checked("buy"), []);
+      curFormulas.sell = buildDefaultFormula(checked("sell"), checked("sell"));
+    }
+    function chipLabel(group, id) { return condLabel(group, id); }
+    function formulaText(tokens, group, ids) {
+      if (!tokens.length) return ids.map(function (id) { return condLabel(group, id); }).join(group === "buy" ? " かつ " : " または ");
+      return tokens.map(function (tk) {
+        if (tk === "and") return " かつ ";
+        if (tk === "or") return " または ";
+        if (tk === "not") return " NOT ";
+        if (tk === "(") return "（";
+        if (tk === ")") return "）";
+        return condLabel(group, tk);
+      }).join("");
+    }
+    function renderFormula(group) {
+      var frame = panel.querySelector('.bt-formula[data-formula="' + group + '"]');
+      if (!frame) return;
+      var chipsEl = frame.querySelector(".bt-formula-chips");
+      var stateEl = frame.querySelector(".bt-formula-state");
+      var tokens = curFormulas[group];
+      if (!tokens.length) {
+        chipsEl.innerHTML = '<span class="bt-formula-empty">（未設定：' + (group === "buy" ? "チェックした項目はすべてANDで判定します" : "チェックした項目はどれか1つで判定します") + "）</span>";
+      } else {
+        chipsEl.innerHTML = tokens.map(function (tk, i) {
+          var cls = "bt-fchip", lab = tk;
+          if (tk === "and" || tk === "or") { cls += " op"; lab = tk.toUpperCase(); }
+          else if (tk === "(" || tk === ")") { cls += " par"; lab = tk === "(" ? "（" : "）"; }
+          else if (tk === "not") { cls += " op"; lab = "NOT"; }
+          else lab = chipLabel(group, tk);
+          return '<span class="' + cls + (formulaSel[group] === i ? " sel" : "") + '" data-fidx="' + i + '">' + esc(lab) + "</span>";
+        }).join("");
+      }
+      var err = validateFormula(tokens);
+      formulaValid[group] = !err;
+      frame.classList.toggle("invalid", !!err);
+      stateEl.textContent = err || "";
+    }
+    function setFormula(group, tokens) {
+      curFormulas[group] = tokens;
+      if (formulaSel[group] >= tokens.length) formulaSel[group] = tokens.length - 1;
+      renderFormula(group);
+    }
+    window.__btFormulas = {
+      get: function () { return { buy: curFormulas.buy.slice(), sell: curFormulas.sell.slice() }; },
+      set: function (b, s2) { curFormulas.buy = (b || []).slice(); curFormulas.sell = (s2 || []).slice(); renderFormula("buy"); renderFormula("sell"); }
+    };
     panel.addEventListener("change", function (e) {
+      if (panel.dataset.applying) return;
       var tg = e.target;
-      if (!tg || !tg.classList || !tg.classList.contains("bt-ao") || !tg.checked) return;
-      var sib = panel.querySelector('input.bt-ao[data-bt="' + tg.getAttribute("data-bt") + '"][value="' + tg.value + '"][data-ao="' + (tg.getAttribute("data-ao") === "and" ? "or" : "and") + '"]');
-      if (sib && sib.checked) { sib.checked = false; sib.dispatchEvent(new Event("change", { bubbles: true })); }
+      if (!tg || !tg.getAttribute) return;
+      var grp = tg.getAttribute("data-bt");
+      if ((grp !== "buy" && grp !== "sell") || tg.type !== "checkbox") return;
+      var tokens = curFormulas[grp].slice();
+      if (tg.checked) {
+        if (tokens.indexOf(tg.value) < 0) {
+          var last = tokens[tokens.length - 1];
+          if (tokens.length && last !== "(" && last !== "and" && last !== "or" && last !== "not") tokens.push(grp === "buy" ? "and" : "or");
+          tokens.push(tg.value);
+        }
+      } else {
+        tokens = normalizeFormula(tokens.filter(function (tk) { return tk !== tg.value; }));
+      }
+      setFormula(grp, tokens);
+    });
+    panel.addEventListener("click", function (e) {
+      var chip = e.target.closest ? e.target.closest(".bt-fchip") : null;
+      if (chip) {
+        var fr = chip.closest(".bt-formula");
+        var g = fr.getAttribute("data-formula");
+        formulaSel[g] = parseInt(chip.getAttribute("data-fidx"), 10);
+        renderFormula(g);
+        return;
+      }
+      var btn = e.target.closest ? e.target.closest(".bt-formula-tools button") : null;
+      if (!btn) return;
+      var frame = btn.closest(".bt-formula");
+      var group = frame.getAttribute("data-formula");
+      var op = btn.getAttribute("data-fop");
+      var tokens = curFormulas[group].slice();
+      var at = formulaSel[group] + 1;
+      if (op === "clear") { tokens = []; formulaSel[group] = -1; }
+      else if (op === "del") { var di = formulaSel[group] >= 0 ? formulaSel[group] : tokens.length - 1; if (di >= 0) { tokens.splice(di, 1); formulaSel[group] = di - 1; } }
+      else { tokens.splice(at, 0, op); formulaSel[group] = at; }
+      setFormula(group, tokens);
+      var st2 = panel.querySelector("#bt-strat-tabs");
+      var ev = new Event("change", { bubbles: true });
+      var anchor = frame.querySelector(".bt-formula-chips");
+      if (anchor) anchor.dispatchEvent(ev);
     });
     var slotsApi = (function setupSlots() {
       var tabsEl = document.getElementById("bt-strat-tabs");
@@ -674,24 +866,24 @@
           if (sel.value !== v) sel.value = v;
         });
       }
-      function blank() { return { buy: [], sell: [], buyOr: [], sellOr: [], nums: {}, cmp: false, reentry: [], startHeld: false }; }
+      function blank() { return { buy: [], sell: [], buyFormula: [], sellFormula: [], nums: {}, cmp: false, reentry: [], startHeld: false }; }
       function collectDom() {
-        var st = { buy: checked("buy"), sell: checked("sell"), buyOr: orChecked("buy"), sellOr: orChecked("sell"), nums: {}, reentry: readReentryDom(), startHeld: !!((panel.querySelector("#bt-start-held") || {}).checked) };
+        var st = { buy: checked("buy"), sell: checked("sell"), buyFormula: curFormulas.buy.slice(), sellFormula: curFormulas.sell.slice(), nums: {}, reentry: readReentryDom(), startHeld: !!((panel.querySelector("#bt-start-held") || {}).checked) };
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
         return st;
       }
       if (!store || !Array.isArray(store.slots) || (store.slots.length !== 8 && store.slots.length !== 10)) {
         var seed = collectDom();
         store = { active: 0, slots: [] };
-        for (var i = 0; i < 8; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, buyOr: seed.buyOr || [], sellOr: seed.sellOr || (seed.sell || []).slice(), nums: seed.nums, cmp: false, reentry: seed.reentry || [], startHeld: !!seed.startHeld } : blank());
+        for (var i = 0; i < 8; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, buyFormula: seed.buyFormula || [], sellFormula: seed.sellFormula || [], nums: seed.nums, cmp: false, reentry: seed.reentry || [], startHeld: !!seed.startHeld } : blank());
       }
       if (store.slots.length === 10) store.slots = store.slots.slice(0, 8);
       store.slots.forEach(function (sl) {
         if (!sl || !Array.isArray(sl.buy) || !Array.isArray(sl.sell) || !sl.nums) { sl.buy = []; sl.sell = []; sl.nums = {}; }
         sl.cmp = !!sl.cmp;
         if (!Array.isArray(sl.reentry)) sl.reentry = [];
-        if (!Array.isArray(sl.buyOr)) sl.buyOr = [];
-        if (!Array.isArray(sl.sellOr)) sl.sellOr = (sl.sell || []).slice();
+        if (!Array.isArray(sl.buyFormula)) sl.buyFormula = buildDefaultFormula(sl.buy || [], sl.buyOr || []);
+        if (!Array.isArray(sl.sellFormula)) sl.sellFormula = buildDefaultFormula(sl.sell || [], Array.isArray(sl.sellOr) ? sl.sellOr : (sl.sell || []));
         sl.startHeld = !!sl.startHeld;
       });
       var active = store.active >= 0 && store.active < 8 ? store.active : 0;
@@ -699,18 +891,22 @@
       function persist() { store.active = active; try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
       function syncFromDom() {
         var st = collectDom();
-        store.slots[active].buy = st.buy; store.slots[active].sell = st.sell; store.slots[active].buyOr = st.buyOr; store.slots[active].sellOr = st.sellOr; store.slots[active].nums = st.nums; store.slots[active].reentry = st.reentry; store.slots[active].startHeld = st.startHeld;
+        store.slots[active].buy = st.buy; store.slots[active].sell = st.sell; store.slots[active].buyFormula = st.buyFormula; store.slots[active].sellFormula = st.sellFormula; store.slots[active].nums = st.nums; store.slots[active].reentry = st.reentry; store.slots[active].startHeld = st.startHeld;
       }
       function applySlot(idx) {
         var st = store.slots[idx];
         applying = true;
+        panel.dataset.applying = "1";
         panel.querySelectorAll('input[type="checkbox"][data-bt="buy"], input[type="checkbox"][data-bt="sell"]').forEach(function (b) {
           var grp = b.getAttribute("data-bt");
           var list = grp === "buy" ? st.buy : st.sell;
-          var orList = grp === "buy" ? (st.buyOr || []) : (st.sellOr || []);
-          var on = list.indexOf(b.value) >= 0 && ((b.getAttribute("data-ao") === "or") === (orList.indexOf(b.value) >= 0));
+          var on = list.indexOf(b.value) >= 0;
           if (b.checked !== on) { b.checked = on; b.dispatchEvent(new Event("change", { bubbles: true })); }
         });
+        curFormulas.buy = (st.buyFormula || []).slice();
+        curFormulas.sell = (st.sellFormula || []).slice();
+        formulaSel.buy = -1; formulaSel.sell = -1;
+        renderFormula("buy"); renderFormula("sell");
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) {
           var v = st.nums[n.getAttribute("data-bt-num")];
           if (v === undefined) return;
@@ -730,6 +926,7 @@
         var shEl = panel.querySelector("#bt-start-held");
         if (shEl && shEl.checked !== !!st.startHeld) shEl.checked = !!st.startHeld;
         applying = false;
+        delete panel.dataset.applying;
       }
       var buyHead = panel.querySelector(".bt-block.buy .bt-block-head h3");
       var sellHead = panel.querySelector(".bt-block.sell .bt-block-head h3");
@@ -762,21 +959,21 @@
         if (applying) return;
         var tg = e.target;
         if (!tg || !tg.getAttribute) return;
-        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num") || tg.classList.contains("bt-re-for") || tg.id === "bt-start-held") { syncFromDom(); persist(); }
+        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num") || tg.classList.contains("bt-re-for") || tg.classList.contains("bt-formula-chips") || tg.id === "bt-start-held") { syncFromDom(); persist(); }
       });
       applySlot(active);
       persist(); paintTabs();
       return {
         activeName: function () { return "戦略" + (store.active + 1); },
         activeReentry: function () { return (store.slots[store.active].reentry || []).filter(function (r) { return ["vol15", "rsiGe", "bounceClose", "ftd"].indexOf(r.buy) >= 0; }).map(function (r) { return { sell: r.sell, buy: r.buy }; }); },
-        activeBuyOr: function () { return (store.slots[store.active].buyOr || []).slice(); },
-        activeSellOr: function () { var sl = store.slots[store.active]; return Array.isArray(sl.sellOr) ? sl.sellOr.slice() : (sl.sell || []).slice(); },
+        activeBuyFormula: function () { return (store.slots[store.active].buyFormula || []).slice(); },
+        activeSellFormula: function () { return (store.slots[store.active].sellFormula || []).slice(); },
         activeStartHeld: function () { return !!store.slots[store.active].startHeld; },
         selected: function () {
           var screen = checked("screen");
           var out = [];
           store.slots.forEach(function (sl, i) {
-            if (sl.cmp) out.push({ name: "戦略" + (i + 1), state: { screen: screen, buy: sl.buy.slice(), sell: sl.sell.slice(), buyOr: (sl.buyOr || []).slice(), sellOr: Array.isArray(sl.sellOr) ? sl.sellOr.slice() : sl.sell.slice(), nums: Object.assign({}, sl.nums), reentry: (sl.reentry || []).map(function (r) { return { sell: r.sell, buy: r.buy }; }), startHeld: !!sl.startHeld } });
+            if (sl.cmp) out.push({ name: "戦略" + (i + 1), state: { screen: screen, buy: sl.buy.slice(), sell: sl.sell.slice(), buyFormula: (sl.buyFormula || []).slice(), sellFormula: (sl.sellFormula || []).slice(), nums: Object.assign({}, sl.nums), reentry: (sl.reentry || []).map(function (r) { return { sell: r.sell, buy: r.buy }; }), startHeld: !!sl.startHeld } });
           });
           return out;
         }
@@ -785,9 +982,6 @@
 
     function checked(group) {
       return Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt="' + group + '"]:checked')).map(function (b) { return b.value; });
-    }
-    function orChecked(group) {
-      return Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt="' + group + '"][data-ao="or"]:checked')).map(function (b) { return b.value; });
     }
     function numOf(key) {
       var el = panel.querySelector('[data-bt-num="' + key + '"]');
@@ -869,7 +1063,7 @@
             return;
           }
           var res = runBacktest(rows, {
-            fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell, buyOr: cfgBase.buyOr, sellOr: cfgBase.sellOr,
+            fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell, screen: cfgBase.screen, buyFormula: cfgBase.buyFormula, sellFormula: cfgBase.sellFormula,
             ddLimit: cfgBase.ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld()
           });
           out.push({ title: title, out: res });
@@ -1360,6 +1554,7 @@
       if (id === "high25") return "52週高値から" + (highPctVal == null ? "閾値" : highPctVal) + "%以上下落";
       if (id === "ddGe") return "DD（売り抜け日）が" + (ddSellVal == null ? "閾値" : ddSellVal) + "以上（直近25取引日）";
       if (id === "dd") return "DD（売り抜け日）が" + (ddGateVal == null ? "閾値" : ddGateVal) + "以下";
+      if (id === "formula") return "論理式";
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
     function readRsi(buyAll, sellAll) {
@@ -1417,8 +1612,8 @@
         return;
       }
       var ddLimit = buyAll.includes("dd") ? numOf("dd") : null;
-      var buyOrNow = slotsApi.activeBuyOr(), sellOrNow = slotsApi.activeSellOr();
-      if (buyAll.includes("dd") && buyOrNow.includes("dd")) buy.push("dd");
+      var buyFormulaNow = slotsApi.activeBuyFormula(), sellFormulaNow = slotsApi.activeSellFormula();
+      if (buyAll.includes("dd") && buy.indexOf("dd") < 0) buy.push("dd");
       var reRulesNow = slotsApi.activeReentry();
       readRsi(buyAll.concat(reRulesNow.map(function (r) { return r.buy; })), sellAll.concat(reRulesNow.map(function (r) { return r.sell; })));
       var rsMin = parseInt((document.getElementById("bt-tt-rs") || {}).value || "70", 10);
@@ -1549,7 +1744,7 @@
             var toIdx = Math.min(rows.length - 1, fromIdx + horizon - 1);
             if (toIdx <= fromIdx) return;
             var out = runBacktest(rows, {
-              fromIdx: fromIdx, toIdx: toIdx, judgeRows: (ctx.store.__judge || {})[code] || null, buy: buy, sell: sell, buyOr: buyOrNow, sellOr: sellOrNow,
+              fromIdx: fromIdx, toIdx: toIdx, judgeRows: (ctx.store.__judge || {})[code] || null, buy: buy, sell: sell, buyFormula: buyFormulaNow, sellFormula: sellFormulaNow,
               ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld()
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
@@ -1605,8 +1800,8 @@
         html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。' + (fixedCodes ? "対象銘柄は入力した銘柄です（スクリーニング条件は使っていません）。" : "対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。") + '</p>';
         html += '<div id="bt-roll-detail"></div>';
         var applied = (fixedCodes ? [] : screenIds.map(function (id) { return "スクリーニング：" + condLabel("buy", id); }))
-          .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id) + (buyOrNow.includes(id) ? "（OR）" : ""); }))
-          .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id) + (sellOrNow.includes(id) ? "" : "（AND）"); }));
+          .concat(buy.length ? ["買い式：" + formulaText(buyFormulaNow, "buy", buy)] : [])
+          .concat(sell.length ? ["売り式：" + formulaText(sellFormulaNow, "sell", sell)] : []);
         if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
         slotsApi.activeReentry().forEach(function (r) { applied.push("再エントリー：" + condLabel("sell", r.sell) + "で売った後は" + condLabel("buy", r.buy) + "で買い戻す"); });
         if (slotsApi.activeStartHeld()) applied.push("最初から保有した状態で開始");
@@ -1667,10 +1862,10 @@
       screenAll.filter(function (id) { return !BUY_EVALUABLE[id]; }).forEach(function (id) { skipped.push("スクリーニング：" + (BUY_LABELS[id] || id)); });
       buyAll.filter(function (id) { return !BUY_EVALUABLE[id] && id !== "dd"; }).forEach(function (id) { skipped.push("買い：" + (BUY_LABELS[id] || id)); });
       sellAll.filter(function (id) { return !SELL_EVALUABLE[id]; }).forEach(function (id) { skipped.push("売り：" + (SELL_LABELS[id] || id)); });
-      var entry = screen.concat(buy); // screening gates + buy timing
       var ddLimit = buyAll.includes("dd") ? numOf("dd") : null;
-      var buyOrNow = slotsApi.activeBuyOr(), sellOrNow = slotsApi.activeSellOr();
-      if (buyAll.includes("dd") && buyOrNow.includes("dd")) entry.push("dd");
+      var buyFormulaNow = slotsApi.activeBuyFormula(), sellFormulaNow = slotsApi.activeSellFormula();
+      var buyCfg = buy.slice();
+      if (buyAll.includes("dd")) buyCfg.push("dd");
       var reRulesNow = slotsApi.activeReentry();
       readRsi(buyAll.concat(reRulesNow.map(function (r) { return r.buy; })), sellAll.concat(reRulesNow.map(function (r) { return r.sell; })));
       var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
@@ -1712,19 +1907,19 @@
             return;
           }
           var out = runBacktest(rows, {
-            fromIdx: fromIdx, toIdx: toIdx, judgeRows: item.judgeRows || null, buy: entry, sell: sell, buyOr: buyOrNow, sellOr: sellOrNow,
+            fromIdx: fromIdx, toIdx: toIdx, judgeRows: item.judgeRows || null, buy: buyCfg, sell: sell, screen: screen, buyFormula: buyFormulaNow, sellFormula: sellFormulaNow,
             ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, maDays: maDaysVal, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld()
           });
           entries.push({ title: title, out: out });
         });
         var applied = screen.map(function (id) { return "スクリーニング：" + condLabel("buy", id); })
-          .concat(buy.map(function (id) { return "買い：" + condLabel("buy", id) + (buyOrNow.includes(id) ? "（OR）" : ""); }))
-          .concat(sell.map(function (id) { return "売り：" + condLabel("sell", id) + (sellOrNow.includes(id) ? "" : "（AND）"); }));
+          .concat(buy.length ? ["買い式：" + formulaText(buyFormulaNow, "buy", buy)] : [])
+          .concat(sell.length ? ["売り式：" + formulaText(sellFormulaNow, "sell", sell)] : []);
         if (ddLimit != null) applied.push("買い：" + condLabel("buy", "dd"));
         slotsApi.activeReentry().forEach(function (r) { applied.push("再エントリー：" + condLabel("sell", r.sell) + "で売った後は" + condLabel("buy", r.buy) + "で買い戻す"); });
         if (slotsApi.activeStartHeld()) applied.push("最初から保有した状態で開始");
         if (ctx.loaded.some(function (it) { return UNDERLYING[it.code]; })) applied.push(JUDGE_NOTE);
-        var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です（σ下落の買いは当日の終値で買います）。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。" + (entry.length ? "" : "買い条件（判定できるもの）が未選択のため、対象銘柄は期間開始の翌営業日に買います。") + "</p>";
+        var notes = '<p class="bt-res-note">適用した条件：' + esc(applied.join(" / ") || "なし") + "<br>判定は終値、売買は翌営業日の始値です（σ下落の買いは当日の終値で買います）。手数料・税金は含みません。シャープレシオは日次リターンから計算しています（無リスク金利0）。" + (buy.length ? "" : "買い条件（判定できるもの）が未選択のため、対象銘柄は期間開始の翌営業日に買います。") + "</p>";
         if (skipped.length) {
           notes += '<p class="bt-res-note">対象外（過去データがないため判定しませんでした）：' + esc(skipped.join(" / ")) + "</p>";
         }
@@ -1737,7 +1932,7 @@
           var startYear = fromVal ? +fromVal.slice(0, 4) : 1992;
           var indexYears = [];
           for (var iy = startYear - 1; iy <= endYear; iy++) indexYears.push(iy);
-          loadIndexEntries(indexKeys, indexYears, { buy: entry, sell: sell, buyOr: buyOrNow, sellOr: sellOrNow, ddLimit: ddLimit }, fromVal, toVal, periodYears)
+          loadIndexEntries(indexKeys, indexYears, { buy: buyCfg, sell: sell, screen: screen, buyFormula: buyFormulaNow, sellFormula: sellFormulaNow, ddLimit: ddLimit }, fromVal, toVal, periodYears)
             .then(function (ixEntries) { entries.push.apply(entries, ixEntries); finish(); })
             .catch(function () { finish(); });
         } else {
@@ -1753,15 +1948,13 @@
     function stratCfg(st, ctx) {
       var nums = st.nums || {};
       var num = function (k, dflt) { var v = parseFloat(nums[k]); return isFinite(v) ? v : dflt; };
-      var allBuy = (st.screen || []).concat(st.buy || []);
-      var entry = allBuy.filter(function (id) { return BUY_EVALUABLE[id]; });
+      var screen = (st.screen || []).filter(function (id) { return BUY_EVALUABLE[id]; });
+      var buyList = (st.buy || []).filter(function (id) { return BUY_EVALUABLE[id]; });
       var sell = (st.sell || []).filter(function (id) { return SELL_EVALUABLE[id]; });
-      var buyOr = (st.buyOr || []).filter(function (id) { return entry.indexOf(id) >= 0; });
-      var buyList = entry.slice();
-      if ((st.buy || []).includes("dd") && (st.buyOr || []).includes("dd")) { buyList.push("dd"); buyOr.push("dd"); }
-      var sellOr = st.sellOr ? st.sellOr.filter(function (id) { return sell.indexOf(id) >= 0; }) : sell.slice();
+      var buyFormula = Array.isArray(st.buyFormula) ? st.buyFormula.filter(function (tk) { return tk === "and" || tk === "or" || tk === "not" || tk === "(" || tk === ")" || buyList.indexOf(tk) >= 0; }) : buildDefaultFormula(buyList, (st.buyOr || []).filter(function (id) { return buyList.indexOf(id) >= 0; }));
+      var sellFormula = Array.isArray(st.sellFormula) ? st.sellFormula.filter(function (tk) { return tk === "and" || tk === "or" || tk === "not" || tk === "(" || tk === ")" || sell.indexOf(tk) >= 0; }) : buildDefaultFormula(sell, st.sellOr ? st.sellOr.filter(function (id) { return sell.indexOf(id) >= 0; }) : sell.slice());
       return {
-        buy: buyList, sell: sell, buyOr: buyOr, sellOr: sellOr,
+        buy: buyList, sell: sell, screen: screen, buyFormula: buyFormula, sellFormula: sellFormula,
         ddLimit: (st.buy || []).includes("dd") ? num("dd", 5) : null,
         rsiBuy: Math.min(50, Math.max(25, num("rsiBuy", 30))), rsiSell: Math.min(85, Math.max(70, num("rsiSell", 70))),
         dropPct: Math.min(10, Math.max(3, num("dropSell", 5))), ddSell: [5, 6, 7].reduce(function (a, o) { return Math.abs(o - num("ddSell", 5)) < Math.abs(a - num("ddSell", 5)) ? o : a; }, 5), lossPct: num("lossPct", 8), highPct: [5, 10, 15, 20].reduce(function (a, o) { return Math.abs(o - num("highPct", 20)) < Math.abs(a - num("highPct", 20)) ? o : a; }, 20), bounceCloseSigma: Math.min(3, Math.max(1.5, num("bounceCloseSigma", 2))), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50),
@@ -2041,7 +2234,7 @@
         var bl = p.buy.map(function (id) { return patLabel("buy", id, p.nums); });
         var sl = p.sell.map(function (id) { return patLabel("sell", id, p.nums); });
         p.label = "買い：" + (bl.join("、") || "（なし）") + " ／ 売り：" + (sl.join("、") || "（なし）");
-        p.cfg = stratCfg({ screen: screenChecked, buy: p.buy, sell: p.sell, buyOr: slotsApi.activeBuyOr(), sellOr: slotsApi.activeSellOr(), nums: p.nums, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld() }, null);
+        p.cfg = stratCfg({ screen: screenChecked, buy: p.buy, sell: p.sell, buyFormula: slotsApi.activeBuyFormula(), sellFormula: slotsApi.activeSellFormula(), nums: p.nums, reentry: slotsApi.activeReentry(), startHeld: slotsApi.activeStartHeld() }, null);
       });
       var normDate = function (v) { var d = String(v || "").replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : ""; };
       var fromVal = normDate((document.getElementById("bt-from") || {}).value);
