@@ -893,7 +893,24 @@
       formulaValid[group] = !err;
       frame.classList.toggle("invalid", !!err);
       stateEl.textContent = err || "";
+      alignFormulas();
     }
+    // Keep the buy/sell formula frames at the same height: the higher
+    // frame is pushed down to the lower one's top (GRW 2026-11-23).
+    // Only when the two blocks sit side by side (same row).
+    function alignFormulas() {
+      var fb = panel.querySelector('.bt-formula[data-formula="buy"]');
+      var fs = panel.querySelector('.bt-formula[data-formula="sell"]');
+      var bb = panel.querySelector(".bt-block.buy"), bs = panel.querySelector(".bt-block.sell");
+      if (!fb || !fs || !bb || !bs) return;
+      fb.style.marginTop = "10px"; fs.style.marginTop = "10px";
+      if (Math.abs(bb.getBoundingClientRect().top - bs.getBoundingClientRect().top) > 2) return;
+      var tb = fb.getBoundingClientRect().top, ts = fs.getBoundingClientRect().top;
+      if (tb < ts) fb.style.marginTop = (10 + ts - tb) + "px";
+      else if (ts < tb) fs.style.marginTop = (10 + tb - ts) + "px";
+    }
+    window.addEventListener("resize", function () { alignFormulas(); });
+    panel.addEventListener("click", function () { requestAnimationFrame(function () { alignFormulas(); }); });
     function setFormula(group, tokens) {
       curFormulas[group] = tokens;
       if (formulaSel[group] >= tokens.length) formulaSel[group] = tokens.length - 1;
