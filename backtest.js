@@ -1204,6 +1204,11 @@
       });
     }
 
+    var mtEl = document.getElementById("bt-min-trades");
+    if (mtEl) {
+      try { var mtSaved = localStorage.getItem("stock-dashboard-bt-mintrades-" + MARKET); if (mtSaved != null) mtEl.value = mtSaved; } catch (e) {}
+      mtEl.addEventListener("change", function () { try { localStorage.setItem("stock-dashboard-bt-mintrades-" + MARKET, mtEl.value); } catch (e) {} });
+    }
     var runAllBtnEl = document.getElementById("bt-run-all");
     if (runAllBtnEl) runAllBtnEl.addEventListener("click", runAllPatterns);
     runBtn.addEventListener("click", function () {
@@ -1507,6 +1512,7 @@
     var PARAM_KEY = { rsiGe: "rsiBuy", bounce: "bounceSigma", dd: "dd", ma50: "maSellDays", loss8: "lossPct", dropPct: "dropSell", high25: "highPct", ddGe: "ddSell", rsiLe: "rsiSell" };
     function runAllPatterns() {
       var runAllBtn = document.getElementById("bt-run-all");
+      var minTrades = parseInt(((document.getElementById("bt-min-trades") || {}).value || "0"), 10) || 0;
       var symbolsRaw = (document.getElementById("bt-symbols") || {}).value || "";
       var codes = symbolsRaw.split(/[\s,、，]+/).map(function (x) { return x.trim(); }).filter(Boolean)
         .map(function (x) { return MARKET === "us" ? x.toUpperCase() : x.replace(/\.T$/i, ""); });
@@ -1732,7 +1738,7 @@
             var grid = {};
             var maxAbs = 0;
             patterns.forEach(function (p) {
-              if (!p.rollAgg || p.rollAgg.ret == null) return;
+              if (!p.rollAgg || p.rollAgg.ret == null || (minTrades > 0 && (p.rollAgg.closed || 0) < minTrades)) return;
               grid[p.st[0] + "," + (dB ? p.st[1] : 0)] = p;
               if (Math.abs(p.rollAgg.ret) > maxAbs) maxAbs = Math.abs(p.rollAgg.ret);
             });
@@ -1759,7 +1765,9 @@
             return hh;
           }
           var targetNames = rawTargets.map(function (t) { return t.title; });
+          var exclN = minTrades > 0 ? patterns.filter(function (p) { return p.rollAgg && (p.rollAgg.closed || 0) < minTrades; }).length : 0;
           var html = '<p class="bt-res-note">全パターン検証（ローリング） ' + patterns.length.toLocaleString("ja-JP") + '通り × ' + rollDates.length.toLocaleString("ja-JP") + '開始日 / 銘柄：' + targetNames.join("、") + '<br>開始日を1営業日ずつずらし、各回' + horizon + '営業日で全パターンを実行しました。値は開始日ごとの結果（対象銘柄の平均）を開始日間で集計したものです。勝率は平均リターンがプラスだった開始日の割合です（スクリーニングは今の設定で固定、判定できない項目は除きます）。</p>';
+          if (exclN > 0) html += '<p class="bt-res-note">平均取引回数' + minTrades + '回未満の' + exclN + '件を除外しています。</p>';
           html += heatHtml();
           html += '<table class="bt-res-table bt-rollall-table"><thead><tr>'
             + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="worst">最悪</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="sharpe">シャープ</th>'
@@ -1787,9 +1795,10 @@
               if (yv == null) return -1;
               return (xv - yv) * sortDir;
             });
-            var shown = arr.slice(0, CAP);
+            var arrF = arr.filter(function (p) { return minTrades <= 0 || !p.rollAgg || (p.rollAgg.closed || 0) >= minTrades; });
+            var shown = arrF.slice(0, CAP);
             var bhRow = bhAgg && bhAgg.ret != null ? '<tr class="bt-bh-row"><td>—</td><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.ret) + "</td><td>" + pct(bhAgg.median) + "</td><td>" + (bhAgg.winRate == null ? "—" : pct(bhAgg.winRate, 0)) + "</td><td>" + pct(bhAgg.worst) + "</td><td>—</td><td>" + ddTxt(bhAgg.maxDd) + "</td><td>" + sharpeTxt(bhAgg.sharpe) + "</td></tr>" : "";
-            tbody.innerHTML = bhRow + shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arr.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arr.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
+            tbody.innerHTML = bhRow + shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arrF.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arrF.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
             if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
               tr.addEventListener("click", function () { selectRollPattern(shown[i]); });
@@ -1954,7 +1963,7 @@
             var grid = {};
             var maxAbs = 0;
             patterns.forEach(function (p) {
-              if (!p.agg) return;
+              if (!p.agg || (minTrades > 0 && (p.agg.closed || 0) < minTrades)) return;
               grid[p.st[0] + "," + (dB ? p.st[1] : 0)] = p;
               if (Math.abs(p.agg.ret) > maxAbs) maxAbs = Math.abs(p.agg.ret);
             });
@@ -1981,7 +1990,9 @@
             return hh;
           }
           var targetNames = targets.map(function (t) { return t.title; });
+          var exclN = minTrades > 0 ? patterns.filter(function (p) { return p.agg && (p.agg.closed || 0) < minTrades; }).length : 0;
           var html = '<p class="bt-res-note">全パターン検証（' + patterns.length.toLocaleString("ja-JP") + '通り） / 銘柄：' + targetNames.join("、") + '<br>チェックした買い・売り項目の ON/OFF とパラメータの全組合せです（スクリーニングは今の設定で固定、判定できない項目は除きます）。' + (targetNames.length > 1 ? '複数銘柄の値は平均です（勝率・平均損益・平均保有は全取引の合算、取引回数は合計）。' : '') + '</p>';
+          if (exclN > 0) html += '<p class="bt-res-note">取引回数' + minTrades + '回未満の' + exclN + '件を除外しています。</p>';
           html += heatHtml();
           html += '<table class="bt-res-table bt-all-table"><thead><tr>'
             + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">リターン</th><th data-k="winRate">勝率</th><th data-k="closed">取引回数</th><th data-k="avgRet">平均損益</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th>'
@@ -2011,11 +2022,12 @@
               if (yv == null) return -1;
               return (xv - yv) * sortDir;
             });
-            var shown = arr.slice(0, CAP);
+            var arrF = arr.filter(function (p) { return minTrades <= 0 || !p.agg || (p.agg.closed || 0) >= minTrades; });
+            var shown = arrF.slice(0, CAP);
             var bhAgg = null;
             patterns.forEach(function (p) { if (!bhAgg && p.agg) bhAgg = p.agg; });
             var bhRow = bhAgg ? '<tr class="bt-bh-row"><td>—</td><td style="text-align:left">買い持ち</td><td>' + pct(bhAgg.bh) + "</td><td>—</td><td>—</td><td>—</td><td>" + ddTxt(bhAgg.bhMaxDd) + "</td><td>—</td><td>" + sharpeTxt(bhAgg.bhSharpe) + "</td></tr>" : "";
-            tbody.innerHTML = bhRow + shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arr.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arr.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
+            tbody.innerHTML = bhRow + shown.map(function (p, i) { return rowHtml(p, i); }).join("") + (arrF.length > CAP ? '<tr><td colspan="9" style="text-align:left">上位' + CAP + '件を表示しています（全' + arrF.length.toLocaleString("ja-JP") + '通り）。並び替えると上位が入れ替わります。</td></tr>' : "");
             if (flex) flex.restamp();
             tbody.querySelectorAll(".bt-all-row").forEach(function (tr, i) {
               tr.addEventListener("click", function () { selectPattern(shown[i]); });
