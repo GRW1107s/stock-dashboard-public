@@ -80,7 +80,7 @@ def _fix_decimal_glitches(rows):
 
 # Tickers whose full history is kept (no retention trim): QQQ goes back to
 # its 1999 listing and GRW verifies index-linked strategies over ~30 years.
-FULL_HISTORY_TICKERS = {"QQQ"}
+FULL_HISTORY_TICKERS = {"QQQ", "QLD", "TQQQ", "SOXX", "SOXL"}
 
 
 def update_ohlcv(root, market, series_by_ticker, *, today=None):

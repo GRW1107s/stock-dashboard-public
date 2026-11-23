@@ -195,7 +195,7 @@
 .bt-res-table th{background:#eef3f8;text-align:center;position:relative}
 .bt-res-table th.bt-col-selected{background:#bcd3ee;box-shadow:inset 0 0 0 2px #2563eb;color:#1e3a5f}.bt-res-table th.bt-column-dragging{cursor:grabbing;opacity:.68;background:#dceafb}.bt-res-table th.bt-drop-before{box-shadow:inset 4px 0 #2563eb}.bt-res-table th.bt-drop-after{box-shadow:inset -4px 0 #2563eb}.bt-res-table th.bt-reorderable{cursor:grab}.bt-col-resizer:hover{border-left:1px solid #2563eb;background:rgba(37,99,235,.12)}
 .bt-col-resizer{position:absolute;top:0;right:0;width:12px;height:100%;cursor:col-resize;touch-action:none}
-.bt-bh-row{color:#64748b;background:#f8fafc}
+.bt-bh-row{}
 #bt-results,.bt-roll-stocks{overflow-x:auto}
 .bt-roll-row{cursor:pointer}
 .bt-roll-row:hover{background:#eef4fc}
@@ -241,7 +241,7 @@
 <span class="bt-hint" id="bt-normal-hint">ティッカーを入れると、その銘柄だけが対象になります。開始日・終了日を入れると、テスト期間より優先されます。</span>
 <span class="bt-hint" id="bt-roll-hint" style="display:none">ローリング：開始日〜終了日の各営業日を開始日としてテストします。ティッカーを入れるとその銘柄が全開始日の対象になり（スクリーニング条件は使いません）、空欄のときは開始日時点でスクリーニング条件を満たす銘柄が対象です。</span>
 </div>
-<div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="sp500">S&P500</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq100">NASDAQ100</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq">NASDAQ総合</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="dow">ダウ</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="QQQ">NASDAQ100連動（QQQ）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="SPY">S&P500連動（SPY）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
+<div class="bt-index-row"><span class="bt-index-cap">指数</span><label class="bt-index-item"><input type="checkbox" data-bt-index value="sp500">S&P500</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq100">NASDAQ100</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="nasdaq">NASDAQ総合</label><label class="bt-index-item"><input type="checkbox" data-bt-index value="dow">ダウ</label><span class="bt-index-cap">連動ETF</span><label class="bt-index-item"><input type="checkbox" data-bt-etf value="QQQ">NASDAQ100連動（QQQ）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="SPY">S&P500連動（SPY）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="QLD">NASDAQ100 2倍（QLD）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="TQQQ">NASDAQ100 3倍（TQQQ）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="SOXX">半導体（SOXX）</label><label class="bt-index-item"><input type="checkbox" data-bt-etf value="SOXL">半導体 3倍（SOXL）</label><span class="bt-note">指数・ETFは通常モードのみ対象です。指数は終値ベースで判定します。</span></div>
 <div class="bt-block screen">
 <div class="bt-block-head"><h3>スクリーニング</h3><button type="button" class="bt-clear" data-bt-clear="screen">すべて外す</button></div>
 <label class="bt-item"><input type="checkbox" data-bt="screen" value="sector"><span>所属セクターが上位を維持</span></label>
@@ -656,5 +656,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261123re10" defer></script>
+</script><script src="./backtest.js?v=20261123re13" defer></script>
 </body></html>

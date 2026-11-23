@@ -855,7 +855,7 @@ def main():
     # QQQ and SPY are outside the screener universe; keep their daily
     # OHLCV stored too (index ETF accumulation requested by GRW,
     # 2026-11-20).
-    for etf_symbol in ("QQQ", "SPY"):
+    for etf_symbol in ("QQQ", "SPY", "QLD", "TQQQ", "SOXX", "SOXL"):
         if etf_symbol not in (COLLECTED_OHLCV.get("us") or {}):
             try:
                 etf_data = obtain(etf_symbol, "us")
@@ -939,7 +939,7 @@ def main():
             [item["ticker"] for item in current_jp if item.get("ticker")]
             + ["1321.T", "1306.T"],
             [item["ticker"] for item in current_us if item.get("ticker")]
-            + ["QQQ", "SPY"])
+            + ["QQQ", "SPY", "QLD", "TQQQ", "SOXX", "SOXL"])
     except Exception as err:
         print("BACKFILL_OHLCV10Y_ERROR", str(err)[:150], flush=True)
     # Coverage summary for the backtest page's data note (file counts and
