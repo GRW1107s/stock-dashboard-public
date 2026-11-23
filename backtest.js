@@ -778,19 +778,27 @@
     var curExitRules = [];
     var BUY_RULE_IDS = ["vol15", "maCross", "emaCross", "rsiGe", "bounceClose", "ftd"];
     var SELL_RULE_IDS = ["maCrossDn", "emaCrossDn", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe"];
-    var rulesFrame = document.createElement("div");
-    rulesFrame.className = "bt-rules-frame";
-    rulesFrame.innerHTML = '<div class="bt-rules-head">ルール（IF文）</div>'
-      + '<div class="bt-rules-sec"><div class="bt-rules-sec-head">撤退ルール <button type="button" class="bt-rule-add" data-add="exit">＋追加</button></div><div class="bt-rules-rows" data-rules="exit"></div></div>'
-      + '<div class="bt-rules-sec"><div class="bt-rules-sec-head">再エントリールール <button type="button" class="bt-rule-add" data-add="reentry">＋追加</button></div><div class="bt-rules-rows" data-rules="reentry"></div></div>';
-    var gridEl = panel.querySelector(".bt-grid");
-    if (gridEl && gridEl.parentNode) gridEl.parentNode.insertBefore(rulesFrame, gridEl.nextSibling);
+    // IF rows live inside the formula frames (GRW 2026-11-24): re-entry
+    // rules in the buy frame, exit rules in the sell frame.
+    function makeIfSection(kind) {
+      var sec = document.createElement("div");
+      sec.className = "bt-if-sec";
+      sec.innerHTML = '<div class="bt-if-sec-head">' + (kind === "exit" ? "IF文（撤退ルール）" : "IF文（再エントリールール）") + ' <button type="button" class="bt-rule-add" data-add="' + kind + '">＋追加</button></div><div class="bt-rules-rows" data-rules="' + kind + '"></div>';
+      return sec;
+    }
+    var buyFrameEl = panel.querySelector('.bt-formula[data-formula="buy"]');
+    var sellFrameEl = panel.querySelector('.bt-formula[data-formula="sell"]');
+    var reentrySec = makeIfSection("reentry");
+    var exitSec = makeIfSection("exit");
+    if (buyFrameEl) buyFrameEl.appendChild(reentrySec);
+    if (sellFrameEl) sellFrameEl.appendChild(exitSec);
+    var rulesFrame = panel; // delegation root for rule events
     function ruleOptions(ids, labels, cur) {
       return ids.map(function (id) { return '<option value="' + id + '"' + (id === cur ? " selected" : "") + ">" + esc(labels[id] || id) + "</option>"; }).join("");
     }
     function renderRules() {
-      var exitEl = rulesFrame.querySelector('[data-rules="exit"]');
-      var reEl = rulesFrame.querySelector('[data-rules="reentry"]');
+      var exitEl = exitSec.querySelector('[data-rules="exit"]');
+      var reEl = reentrySec.querySelector('[data-rules="reentry"]');
       exitEl.innerHTML = curExitRules.map(function (r, i) {
         return '<div class="bt-rule-row">IF <select class="bt-select bt-rule-sel" data-kind="exit" data-part="buy" data-idx="' + i + '">' + ruleOptions(BUY_RULE_IDS, BUY_LABELS, r.buy) + '</select> で買ったら → <select class="bt-select bt-rule-sel" data-kind="exit" data-part="sell" data-idx="' + i + '">' + ruleOptions(SELL_RULE_IDS, SELL_LABELS, r.sell) + '</select> でのみ売る <button type="button" class="bt-rule-del" data-kind="exit" data-idx="' + i + '">削除</button></div>';
       }).join("") || '<div class="bt-rules-empty">（なし）</div>';
@@ -800,8 +808,9 @@
     }
     function rulesChanged() {
       renderRules();
+      alignFormulas();
       var ev = new Event("change", { bubbles: true });
-      rulesFrame.dispatchEvent(ev);
+      reentrySec.dispatchEvent(ev);
     }
     rulesFrame.addEventListener("change", function (e) {
       var sel = e.target;
@@ -1073,7 +1082,7 @@
         if (applying) return;
         var tg = e.target;
         if (!tg || !tg.getAttribute) return;
-        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num") || tg.classList.contains("bt-formula-chips") || tg.classList.contains("bt-rules-frame") || tg.id === "bt-start-held") { syncFromDom(); persist(); }
+        if (tg.getAttribute("data-bt") === "buy" || tg.getAttribute("data-bt") === "sell" || tg.hasAttribute("data-bt-num") || tg.classList.contains("bt-formula-chips") || tg.classList.contains("bt-if-sec") || tg.id === "bt-start-held") { syncFromDom(); persist(); }
       });
       applySlot(active);
       persist(); paintTabs();
