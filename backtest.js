@@ -752,18 +752,23 @@
         var host = g.closest(".bt-block");
         var hostKind = host && host.classList.contains("screen") ? "screen" : host && host.classList.contains("buy") ? "buy" : "sell";
         label = hostKind + ":" + label;
-        var items = [];
-        var el = g.nextElementSibling;
-        while (el && !el.classList.contains("bt-group") && !el.classList.contains("bt-block-foot")) {
-          if (el.classList.contains("bt-item")) items.push(el);
-          el = el.nextElementSibling;
+        // Membership follows the CURRENT layout: items can be dragged
+        // across group headings, so collect them when applying.
+        function groupItems() {
+          var items = [];
+          var el = g.nextElementSibling;
+          while (el && !el.classList.contains("bt-group") && !el.classList.contains("bt-block-foot") && !el.classList.contains("bt-formula")) {
+            if (el.classList.contains("bt-item")) items.push(el);
+            el = el.nextElementSibling;
+          }
+          return items;
         }
-        if (!items.length) return;
+        if (!groupItems().length) return;
         var btn = makeBtn(!!saved["g:" + label]);
         function apply() {
           var closed = !!saved["g:" + label];
           btn.textContent = closed ? "＋" : "−";
-          items.forEach(function (it) { it.style.display = closed ? "none" : ""; });
+          groupItems().forEach(function (it) { it.style.display = closed ? "none" : ""; });
         }
         btn.addEventListener("click", function () { saved["g:" + label] = !saved["g:" + label]; persist(); apply(); });
         g.insertBefore(btn, g.firstChild);

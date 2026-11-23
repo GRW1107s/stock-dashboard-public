@@ -233,7 +233,7 @@
 .bt-roll-detail-title{margin:14px 0 6px;font-size:15px}
 .bt-run{border:1px solid #b7c8db;background:#e8eefc;color:#5b6b82;border-radius:8px;padding:9px 18px;font-size:14px;cursor:not-allowed}
 .bt-result{margin-top:12px;border:1px dashed #b7c8db;border-radius:10px;padding:16px;color:#64748b;font-size:13.5px;text-align:center;background:#fbfdff}
-.bt-item.bt-dragging{opacity:.5;background:#eef4fc}
+.bt-item.bt-dragging{opacity:.5;background:#eef4fc}.bt-item-text{cursor:grab}html.bt-drag-cur,html.bt-drag-cur *{cursor:grabbing!important}
 </style>
 <section id="backtest-panel" data-bt-market="us" aria-label="バックテスト">
 <h2 class="period-rankings-title" style="margin-top:30px">バックテスト</h2>
@@ -426,62 +426,60 @@
   // remembered per block. Dragging starts from the label text, so the
   // checkbox, selects and number inputs keep their normal behaviour.
   const itemKey=el=>{const input=el.querySelector('input[type="checkbox"]');return input?input.value:'';};
-  function runOf(el){
-    const items=Array.from(el.parentElement.querySelectorAll('.bt-item'));
-    const idx=items.indexOf(el);let a=idx,b=idx;
-    while(a>0&&items[a-1].nextElementSibling===items[a])a--;
-    while(b<items.length-1&&items[b].nextElementSibling===items[b+1])b++;
-    return items.slice(a,b+1);
+  const headKey=el=>(el.textContent||'').replace(/[＋−]/g,'').trim();
+  const tokenOf=el=>el.classList.contains('bt-group')?'h:'+headKey(el):'i:'+itemKey(el);
+  function regionOf(block){
+    const kids=Array.from(block.children);
+    const first=kids.findIndex(c=>c.matches('.bt-item,.bt-group'));
+    if(first<0)return[];
+    let last=first;
+    kids.forEach((c,i)=>{if(c.matches('.bt-item'))last=i;});
+    return kids.slice(first,last+1);
   }
   panel.querySelectorAll('.bt-block').forEach(block=>{
     const kind=block.classList.contains('buy')?'buy':block.classList.contains('sell')?'sell':block.classList.contains('screen')?'screen':'market';
-    const groups=[];let cur=[];
-    for(const child of block.children){
-      if(child.matches('.bt-item'))cur.push(child);
-      else if(cur.length){groups.push(cur);cur=[];}
-    }
-    if(cur.length)groups.push(cur);
-    groups.forEach((group,gi)=>{
-      const key='stock-dashboard-bt-us-order-'+kind+':'+gi;
-      try{
-        const saved=JSON.parse(localStorage.getItem(key)||'null');
-        if(Array.isArray(saved)){
-          const byKey=new Map(group.map(el=>[itemKey(el),el]));
-          const ordered=saved.map(k=>byKey.get(k)).filter(Boolean);
-          const rest=group.filter(el=>!saved.includes(itemKey(el)));
-          let ref=group[0].previousElementSibling;
-          for(const el of [...ordered,...rest]){if(ref)ref.after(el);else block.prepend(el);ref=el;}
+    const key='stock-dashboard-bt-order2-'+kind;
+    const region=regionOf(block);
+    if(!region.length)return;
+    try{
+      const saved=JSON.parse(localStorage.getItem(key)||'null');
+      if(Array.isArray(saved)){
+        const byToken=new Map(region.map(el=>[tokenOf(el),el]));
+        const ordered=saved.map(tok=>byToken.get(tok)).filter(Boolean);
+        const rest=region.filter(el=>!saved.includes(tokenOf(el)));
+        const anchor=region[region.length-1].nextElementSibling;
+        for(const el of [...ordered,...rest]){if(anchor)block.insertBefore(el,anchor);else block.appendChild(el);}
+      }
+    }catch(e){}
+    regionOf(block).forEach(label=>{
+      if(!label.classList.contains('bt-item'))return;
+      label.addEventListener('pointerdown',e=>{
+        if(e.button!==0||e.pointerType==='touch'||e.target.closest('input,select,button,textarea'))return;
+        const startY=e.clientY;let dragging=false;
+        function move(ev){
+          if(!dragging){
+            if(Math.abs(ev.clientY-startY)<6)return;
+            dragging=true;label.classList.add('bt-dragging');document.documentElement.classList.add('bt-drag-cur');
+          }
+          const sibs=regionOf(block).filter(x=>x!==label);
+          let placed=false;
+          for(const other of sibs){
+            const r=other.getBoundingClientRect();
+            if(ev.clientY<r.top+r.height/2){other.before(label);placed=true;break;}
+          }
+          if(!placed&&sibs.length)sibs[sibs.length-1].after(label);
         }
-      }catch(e){}
-      group.forEach(label=>{
-        label.addEventListener('pointerdown',e=>{
-          if(e.button!==0||e.pointerType==='touch'||e.target.closest('input,select,button,textarea'))return;
-          const startY=e.clientY;let dragging=false;
-          function move(ev){
-            if(!dragging){
-              if(Math.abs(ev.clientY-startY)<6)return;
-              dragging=true;label.classList.add('bt-dragging');
-            }
-            const others=runOf(label).filter(x=>x!==label);
-            let placed=false;
-            for(const other of others){
-              const r=other.getBoundingClientRect();
-              if(ev.clientY<r.top+r.height/2){other.before(label);placed=true;break;}
-            }
-            if(!placed&&others.length)others[others.length-1].after(label);
-          }
-          function up(){
-            window.removeEventListener('pointermove',move);
-            window.removeEventListener('pointerup',up);
-            if(!dragging)return;
-            label.classList.remove('bt-dragging');
-            try{localStorage.setItem(key,JSON.stringify(runOf(label).map(itemKey)));}catch(err){}
-            const kill=c=>{c.preventDefault();c.stopPropagation();window.removeEventListener('click',kill,true);};
-            window.addEventListener('click',kill,true);
-          }
-          window.addEventListener('pointermove',move);
-          window.addEventListener('pointerup',up);
-        });
+        function up(){
+          window.removeEventListener('pointermove',move);
+          window.removeEventListener('pointerup',up);
+          if(!dragging)return;
+          label.classList.remove('bt-dragging');document.documentElement.classList.remove('bt-drag-cur');
+          try{localStorage.setItem(key,JSON.stringify(regionOf(block).map(tokenOf)));}catch(err){}
+          const kill=c=>{c.preventDefault();c.stopPropagation();window.removeEventListener('click',kill,true);};
+          window.addEventListener('click',kill,true);
+        }
+        window.addEventListener('pointermove',move);
+        window.addEventListener('pointerup',up);
       });
     });
   });
@@ -680,5 +678,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261123re42" defer></script>
+</script><script src="./backtest.js?v=20261123re43" defer></script>
 </body></html>
