@@ -291,7 +291,11 @@
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross100_150" aria-label="条件を有効化"></span><span class="bt-item-text">100MA＞150MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross150_200" aria-label="条件を有効化"></span><span class="bt-item-text">150MA＞200MA</span></div><div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="emaCross9_21" aria-label="条件を有効化"></span><span class="bt-item-text">9EMA＞21EMA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="macdCross" aria-label="条件を有効化"></span><span class="bt-item-text">MACDがシグナル線より上</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa" aria-label="条件を有効化"></span><span class="bt-item-text">株価が<select class="bt-select" data-bt-num="priceMaDays" aria-label="移動平均の日数"><option value="20">20</option><option value="50" selected>50</option><option value="200">200</option></select>日移動平均より上</span></div><p class="bt-group">RSI Strategy</p>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa20" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞20MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa50" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞50MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa100" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞100MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa150" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞150MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa200" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞200MA</span></div><p class="bt-group">RSI Strategy</p>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="rsiGe" aria-label="条件を有効化"></span><span class="bt-item-text">RSI（14日）が<select class="bt-select" data-bt-num="rsiBuy" aria-label="買いのRSI閾値"><option value="25">25</option><option value="30" selected>30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>以下</span></div>
 <p class="bt-group">Bounce Strategy</p>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="bounceClose" aria-label="条件を有効化"></span><span class="bt-item-text">前日に<select class="bt-select" data-bt-num="bounceCloseSigma" aria-label="引け成行買いのσ閾値"><option value="1.5">1.5</option><option value="1.6">1.6</option><option value="1.7">1.7</option><option value="1.8">1.8</option><option value="1.9">1.9</option><option value="2" selected>2</option><option value="2.1">2.1</option><option value="2.2">2.2</option><option value="2.3">2.3</option><option value="2.4">2.4</option><option value="2.5">2.5</option><option value="2.6">2.6</option><option value="2.7">2.7</option><option value="2.8">2.8</option><option value="2.9">2.9</option><option value="3">3</option></select>σ以上下落したとき、引け成行で買う</span></div>
@@ -659,5 +663,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261126tpx" defer></script>
+</script><script src="./backtest.js?v=20261126pma" defer></script>
 </body></html>
