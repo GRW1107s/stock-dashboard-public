@@ -336,6 +336,7 @@
       if (id === "tDd") return warnAt(ddNOf(def), i);
       if (id === "tDdNot") return !warnAt(ddNOf(def), i);
       if (id === "tFtd") return !!ftdRecent[i];
+      if (id === "tMaNear") { var na = sma(nums.tMaDays || 200); return na[i] != null && na[i] > 0 && Math.abs(closes[i] / na[i] - 1) <= (nums.tNearPct || 3) / 100; }
       if (id === "tRsiUp") return rsi[i] != null && rsi[i] >= (nums.tRsiUp || 50);
       if (id === "tRsiDn") return rsi[i] != null && rsi[i] <= (nums.tRsiDn || 50);
       return false;
@@ -1481,6 +1482,7 @@
     var TREND_ITEMS = [
       { id: "tMaUp", text: "指数が[NUM:tMaDays]日MAより上", nums: { tMaDays: [20, 50, 200] } },
       { id: "tMaDn", text: "指数が[NUM:tMaDays]日MAより下", nums: { tMaDays: [20, 50, 200] } },
+      { id: "tMaNear", text: "指数が[NUM:tMaDays]日MAの±[NUM:tNearPct]%以内", nums: { tMaDays: [20, 50, 200], tNearPct: [1, 2, 3, 5] } },
       { id: "tCross", text: "短期MA（[NUM:tCrossShort]）が長期MA（[NUM:tCrossLong]）より上", nums: { tCrossShort: [5, 10, 20, 25, 50], tCrossLong: [25, 50, 75, 100, 200] } },
       { id: "tCrossDn", text: "短期MA（[NUM:tCrossShort]）が長期MA（[NUM:tCrossLong]）より下", nums: { tCrossShort: [5, 10, 20, 25, 50], tCrossLong: [25, 50, 75, 100, 200] } },
       { id: "tDd", text: "DD警戒中（DD[NUM:tDdN]）", nums: { tDdN: [5, 6, 7] } },
@@ -1489,10 +1491,15 @@
       { id: "tRsiUp", text: "指数RSIが[NUM:tRsiUp]以上", nums: { tRsiUp: [50, 60, 70] } },
       { id: "tRsiDn", text: "指数RSIが[NUM:tRsiDn]以下", nums: { tRsiDn: [30, 40, 50] } }
     ];
-    var TREND_NAMES = { "2": ["強気", "弱気"], "4": ["Stage1", "Stage2", "Stage3", "Stage4"] };
+    var TREND_NAMES = { "2": ["強気", "弱気"], "3": ["強気", "レンジ", "弱気"], "4": ["Stage1", "Stage2", "Stage3", "Stage4"] };
     function trendDefaults(mode) {
       if (mode === "2") return [
         { items: ["tMaUp"], nums: { tMaDays: 200 }, join: "and", strat: 0 },
+        { items: ["tMaDn"], nums: { tMaDays: 200 }, join: "and", strat: -1 }
+      ];
+      if (mode === "3") return [
+        { items: ["tMaUp"], nums: { tMaDays: 200 }, join: "and", strat: 0 },
+        { items: ["tMaNear"], nums: { tMaDays: 200, tNearPct: 3 }, join: "and", strat: -1 },
         { items: ["tMaDn"], nums: { tMaDays: 200 }, join: "and", strat: -1 }
       ];
       return [
@@ -1525,10 +1532,10 @@
     }
     var regimeApi = (function setupRegime() {
       var KEY = "stock-dashboard-bt-regime-" + MARKET;
-      var state = { mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "4": trendDefaults("4") } };
+      var state = { mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
       try {
         var saved = JSON.parse(localStorage.getItem(KEY) || "null");
-        if (saved && saved.defs) { state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
+        if (saved && saved.defs) { state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
       } catch (e) {}
       var btMain = panel.querySelector(".bt-main");
       if (!btMain) return { collect: function () { return null; } };
@@ -1538,15 +1545,17 @@
       var targets = MARKET === "us"
         ? [["sp500", "S&P500"], ["nasdaq100", "NASDAQ100"], ["nasdaq", "NASDAQ総合"], ["dow", "ダウ"]]
         : [["1306", "TOPIX連動ETF（1306）"], ["nikkei", "日経225（終値ベース）"]];
-      sec.innerHTML = '<div class="bt-regime-head"><span class="bt-regime-title">トレンド切替</span>' +
-        '<select id="bt-regime-mode" class="bt-select" aria-label="トレンド切替の分類数"><option value="off">使わない</option><option value="2">2分類</option><option value="4">4分類</option></select>' +
+      sec.innerHTML = '<div class="bt-regime-flex"><div class="bt-regime-left"><div class="bt-regime-head"><span class="bt-regime-title">トレンド切替</span>' +
+        '<select id="bt-regime-mode" class="bt-select" aria-label="トレンド切替の分類数"><option value="off">使わない</option><option value="2">2分類</option><option value="3">3分類</option><option value="4">4分類</option></select>' +
         '<label class="bt-regime-target">判定対象 <select id="bt-regime-target" class="bt-select" aria-label="トレンド判定対象">' + targets.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + "</option>"; }).join("") + "</select></label>" +
         '<span class="bt-res-note">通常モードの実行に適用します。トレンドは判定対象の終値で判定し、上から順に最初に当てはまったものを採用します（どれにも当てはまらなければ買いなし）。保有中のポジションは、開いた戦略の売り条件で判定します。</span></div>' +
-        '<div class="bt-regime-cards" id="bt-regime-cards"></div>';
+        '<div class="bt-regime-cards" id="bt-regime-cards"></div></div>' +
+        '<div class="bt-regime-assign" id="bt-regime-assign"></div></div>';
       btMain.parentNode.insertBefore(sec, btMain);
       var modeEl = sec.querySelector("#bt-regime-mode");
       var targetEl = sec.querySelector("#bt-regime-target");
       var cardsEl = sec.querySelector("#bt-regime-cards");
+      var assignEl = sec.querySelector("#bt-regime-assign");
       modeEl.value = state.mode;
       targetEl.value = state.target;
       function persist() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
@@ -1570,10 +1579,8 @@
         state.defs[state.mode].forEach(function (def, di) {
           var card = document.createElement("div");
           card.className = "bt-regime-card";
-          var stratOpts = '<option value="-1"' + (def.strat < 0 ? " selected" : "") + ">買いなし</option>" + [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<option value="' + i + '"' + (def.strat === i ? " selected" : "") + ">戦略" + (i + 1) + "</option>"; }).join("");
           var joinOpts = '<option value="and"' + (def.join !== "or" ? " selected" : "") + ">すべて満たす（AND）</option>" + '<option value="or"' + (def.join === "or" ? " selected" : "") + ">いずれか満たす（OR）</option>";
           card.innerHTML = '<div class="bt-regime-card-head"><strong>' + esc(names[di]) + '</strong>' +
-            '<label>使う戦略 <select class="bt-select bt-regime-strat" data-card="' + di + '" aria-label="使う戦略">' + stratOpts + "</select></label>" +
             '<label>組み合わせ <select class="bt-select bt-regime-join" data-card="' + di + '" aria-label="条件の組み合わせ">' + joinOpts + "</select></label></div>" +
             '<div class="bt-regime-items">' + TREND_ITEMS.map(function (item) {
               return '<label class="bt-regime-item"><input type="checkbox" class="bt-regime-ck" data-card="' + di + '" value="' + item.id + '"' + (def.items.indexOf(item.id) >= 0 ? " checked" : "") + "> " + itemHtml(def, item) + "</label>";
@@ -1581,16 +1588,60 @@
           cardsEl.appendChild(card);
         });
       }
-      modeEl.addEventListener("change", function () { state.mode = modeEl.value; persist(); renderCards(); });
+      function trendSummary(def) {
+        if (!def.items.length) return "（条件なし）";
+        var parts = def.items.map(function (id) {
+          var item = null;
+          TREND_ITEMS.forEach(function (x) { if (x.id === id) item = x; });
+          if (!item) return id;
+          return item.text.replace(/\[NUM:(\w+)\]/g, function (_, k) { return def.nums[k] == null ? "" : def.nums[k]; });
+        });
+        return parts.join(def.join === "or" ? " または " : " かつ ");
+      }
+      function stratOptsFor(def) {
+        return '<option value="-1"' + (def.strat < 0 ? " selected" : "") + ">買いなし</option>" + [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<option value="' + i + '"' + (def.strat === i ? " selected" : "") + ">戦略" + (i + 1) + "</option>"; }).join("");
+      }
+      function renderAssign() {
+        assignEl.innerHTML = "";
+        if (state.mode === "off") { assignEl.style.display = "none"; return; }
+        assignEl.style.display = "";
+        var names = TREND_NAMES[state.mode];
+        var title = document.createElement("div");
+        title.className = "bt-regime-assign-title";
+        title.textContent = "トレンドと戦略の割当";
+        assignEl.appendChild(title);
+        state.defs[state.mode].forEach(function (def, di) {
+          var row = document.createElement("div");
+          row.className = "bt-regime-assign-row";
+          row.innerHTML = '<span class="bt-regime-assign-name">' + esc(names[di]) + '</span>' +
+            '<span class="bt-regime-assign-sum">' + esc(trendSummary(def)) + '</span>' +
+            '<span class="bt-regime-assign-arrow">→</span>' +
+            '<select class="bt-select bt-regime-astrat" data-card="' + di + '" aria-label="使う戦略">' + stratOptsFor(def) + "</select>";
+          assignEl.appendChild(row);
+        });
+      }
+      function refreshAssignSums() {
+        if (state.mode === "off") return;
+        assignEl.querySelectorAll(".bt-regime-assign-row").forEach(function (row, di) {
+          var sum = row.querySelector(".bt-regime-assign-sum");
+          if (sum && state.defs[state.mode][di]) sum.textContent = trendSummary(state.defs[state.mode][di]);
+        });
+      }
+      modeEl.addEventListener("change", function () { state.mode = modeEl.value; persist(); renderCards(); renderAssign(); });
       targetEl.addEventListener("change", function () { state.target = targetEl.value; persist(); });
       sec.addEventListener("change", function (e) {
         var t = e.target;
         if (!t || !t.getAttribute) return;
+        if (t.classList.contains("bt-regime-astrat")) {
+          var da = parseInt(t.getAttribute("data-card"), 10);
+          if (!isNaN(da) && state.mode !== "off") { state.defs[state.mode][da].strat = parseInt(t.value, 10); persist(); }
+          return;
+        }
         if (t.classList.contains("bt-regime-num")) {
           var cardEl = t.closest(".bt-regime-card");
           var ckEl = cardEl ? cardEl.querySelector(".bt-regime-ck") : null;
           var dnum = ckEl ? parseInt(ckEl.getAttribute("data-card"), 10) : NaN;
-          if (!isNaN(dnum) && state.mode !== "off") { state.defs[state.mode][dnum].nums[t.getAttribute("data-trend-num")] = parseFloat(t.value); persist(); }
+          if (!isNaN(dnum) && state.mode !== "off") { state.defs[state.mode][dnum].nums[t.getAttribute("data-trend-num")] = parseFloat(t.value); persist(); refreshAssignSums(); }
           return;
         }
         var di = parseInt(t.getAttribute("data-card"), 10);
@@ -1600,11 +1651,12 @@
           var id = t.value;
           if (t.checked) { if (def.items.indexOf(id) < 0) def.items.push(id); }
           else def.items = def.items.filter(function (x) { return x !== id; });
-          persist();
-        } else if (t.classList.contains("bt-regime-strat")) { def.strat = parseInt(t.value, 10); persist(); }
-        else if (t.classList.contains("bt-regime-join")) { def.join = t.value; persist(); }
+          persist(); refreshAssignSums();
+        }
+        else if (t.classList.contains("bt-regime-join")) { def.join = t.value; persist(); refreshAssignSums(); }
       });
       renderCards();
+      renderAssign();
       return {
         collect: function () {
           if (state.mode === "off") return null;
