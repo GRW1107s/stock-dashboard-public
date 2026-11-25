@@ -271,12 +271,26 @@ window.leaderScreenerEvalScreen=function(ids,rsMin){
 // snapshot nearest to (and not after) the requested date is used, and
 // its date is returned alongside the codes.
 const rollSnapCache={};let rollIndexDates=null;let rollHistory=null;
+// US snapshots before 2016-11-25 live in the stock-dashboard-data-us
+// repository (its own GitHub Pages site); newer ones stay local.
+const OLD_ARCHIVE_BASE="https://grw1107s.github.io/stock-dashboard-data-us/screener-archive/";
+const OLD_ARCHIVE_CUTOFF="2016-11-25";
+function snapUrl(date){return (market==="us"&&date<OLD_ARCHIVE_CUTOFF)?OLD_ARCHIVE_BASE+date+".json":"./screener-archive/"+date+".json"}
+function fetchIndexDates(url){
+ return fetch(url,{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(idx){return (idx&&Array.isArray(idx.dates))?idx.dates:[]}).catch(function(){return[]});
+}
+function loadArchiveDates(){
+ const local=fetchIndexDates("./screener-archive/index.json");
+ if(market!=="us")return local.then(function(d){return d.slice().sort().reverse()});
+ return Promise.all([local,fetchIndexDates(OLD_ARCHIVE_BASE+"index.json")]).then(function(parts){
+  const seen={};const out=[];
+  parts[0].concat(parts[1]).forEach(function(d){if(!seen[d]){seen[d]=1;out.push(d)}});
+  return out.sort().reverse();
+ });
+}
 function rollLoadIndex(){
  if(rollIndexDates)return Promise.resolve(rollIndexDates);
- return fetch("./screener-archive/index.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(idx){
-  rollIndexDates=(idx&&Array.isArray(idx.dates))?idx.dates.slice().sort().reverse():[];
-  return rollIndexDates;
- }).catch(function(){rollIndexDates=[];return rollIndexDates});
+ return loadArchiveDates().then(function(dates){rollIndexDates=dates;return rollIndexDates});
 }
 window.leaderScreenerArchiveDates=function(){return rollLoadIndex()};
 window.leaderScreenerEvalScreenAt=function(dateStr,ids,rsMin,markets){
@@ -284,7 +298,7 @@ window.leaderScreenerEvalScreenAt=function(dateStr,ids,rsMin,markets){
   const target=dates.find(function(d){return d<=dateStr});
   if(!target)return null;
   const snapPromise=rollSnapCache[target]?Promise.resolve(rollSnapCache[target])
-   :fetch("./screener-archive/"+target+".json").then(function(r){return r.ok?r.json():null}).then(function(s){rollSnapCache[target]=s;return s});
+   :fetch(snapUrl(target)).then(function(r){return r.ok?r.json():null}).then(function(s){rollSnapCache[target]=s;return s});
   const histPromise=history?Promise.resolve(history)
    :(rollHistory?Promise.resolve(rollHistory)
    :fetch(market==="jp"?"./jp-sectors.json":"./sectors.json").then(function(r){return r.ok?r.json():null}).catch(function(){return null}).then(function(h){rollHistory=h;return h}));
@@ -678,14 +692,14 @@ function initScreenerAsof(all){
    applyBands(date);AsofDate.setEffective("screener",target);currentPage=0;render();
   }
   if(snapCache[target]){useSnap(snapCache[target]);return}
-  fetch("./screener-archive/"+target+".json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(snap){
+  fetch(snapUrl(target),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(snap){
    if(snap){snapCache[target]=snap;useSnap(snap)}
    else{base=[];asofNote=target+"のスナップショットを読み込めませんでした";currentPage=0;render()}
   }).catch(function(){base=[];asofNote=target+"のスナップショットを読み込めませんでした";currentPage=0;render()});
  }
  AsofDate.onChange(asofApply);
- fetch("./screener-archive/index.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(idx){
-  if(idx&&Array.isArray(idx.dates)){archiveDates=idx.dates.slice().sort().reverse();AsofDate.addDates(archiveDates)}
+ loadArchiveDates().then(function(dates){
+  if(dates.length){archiveDates=dates;AsofDate.addDates(archiveDates)}
   if(AsofDate.get())asofApply(AsofDate.get());
  }).catch(function(){});
 }
