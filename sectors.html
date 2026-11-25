@@ -146,15 +146,15 @@
 .bt-main{display:flex;gap:14px;align-items:flex-start;margin-top:12px}
 .bt-strat-tabs{display:flex;flex-direction:column;gap:6px;min-width:148px}
 .bt-strat-tab{display:flex;align-items:center;gap:7px;border:1px solid #d7e0ea;border-radius:8px;padding:8px 10px;background:#f8fafc;cursor:pointer;font-size:14px;text-align:left;width:100%;color:#000}
-.bt-strat-tab.active{background:#e8eefc;border-color:#2563eb;font-weight:700}
+.bt-strat-tab.active{background:#e8eefc;border-color:#2563eb;font-weight:700;color:#000}
 .bt-main .bt-grid{flex:1;min-width:0}
 .bt-block.screen{margin-top:12px}
 @media (max-width:760px){.bt-main{flex-direction:column}.bt-strat-tabs{flex-direction:row;flex-wrap:wrap}.bt-strat-tab{width:auto}}
 
 @media (max-width:640px){.bt-grid{grid-template-columns:1fr}}
-.bt-block{border:1px solid #d7e0ea;border-radius:10px;padding:12px 14px;background:#fff}
-.bt-block.buy{border-top:4px solid #16a34a}
-.bt-block.sell{border-top:4px solid #dc2626}
+.bt-block{border:1px solid #dbe3ec;border-radius:10px;padding:10px 12px;background:#fff}
+
+
 .bt-block.screen{border:1px solid #bfdbfe;border-top:4px solid #2563eb;background:#f4f8fd}
 .bt-block.screen h3{color:#1d4ed8}
 .bt-group-row{display:flex;justify-content:space-between;align-items:center}
@@ -301,6 +301,9 @@
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="breakout" aria-label="条件を有効化"></span><span class="bt-item-text">当日高値が直近<select class="bt-select" data-bt-num="breakoutDays" aria-label="ブレイクアウトの日数"><option value="20" selected>20</option><option value="60">60</option><option value="120">120</option><option value="252">252</option></select>日の最高値を上回る</span></div>
 <p class="bt-group">CAN-SLIM（オニール）</p>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="ftd" aria-label="条件を有効化"></span><span class="bt-item-text">FTD（フォロースルーデー）が発生</span></div>
+<p class="bt-group">市場心理</p>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="vixGe" aria-label="条件を有効化"></span><span class="bt-item-text">VIXが<select class="bt-select" data-bt-num="vixBuy" aria-label="VIXの閾値"><option value="20">20</option><option value="25">25</option><option value="30" selected>30</option><option value="35">35</option><option value="40">40</option></select>以上</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="fgLe" aria-label="条件を有効化"></span><span class="bt-item-text">Fear&Greedが<select class="bt-select" data-bt-num="fgBuy" aria-label="Fear&Greedの閾値"><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option></select>以下</span></div>
 <div class="bt-formula" data-formula="buy"><div class="bt-formula-head">論理式（買い）<span class="bt-formula-state"></span></div><div class="bt-formula-chips"></div><div class="bt-formula-tools"><button type="button" data-fop="and">AND</button><button type="button" data-fop="or">OR</button><button type="button" data-fop="(">(</button><button type="button" data-fop=")">)</button><button type="button" data-fop="del">← 消す</button><button type="button" data-fop="clear">クリア</button></div></div>
 </div>
 <div class="bt-block sell">
@@ -327,6 +330,9 @@
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="holdDays" aria-label="条件を有効化"></span><span class="bt-item-text"><select class="bt-select" data-bt-num="holdDays" aria-label="保有日数"><option value="5">5</option><option value="10">10</option><option value="20" selected>20</option><option value="30">30</option><option value="60">60</option><option value="90">90</option><option value="120">120</option><option value="252">252</option></select>日保有したら売る</span></div>
 <p class="bt-group">CAN-SLIM（オニール）</p>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="ddGe" aria-label="条件を有効化"></span><span class="bt-item-text">DD（売り抜け日）が<select class="bt-select" data-bt-num="ddSell" aria-label="売りのDD閾値"><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option></select>以上（直近25取引日）</span></div>
+<p class="bt-group">市場心理</p>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="vixLe" aria-label="条件を有効化"></span><span class="bt-item-text">VIXが<select class="bt-select" data-bt-num="vixSell" aria-label="VIXの閾値"><option value="10">10</option><option value="12">12</option><option value="14" selected>14</option><option value="16">16</option><option value="18">18</option><option value="20">20</option></select>以下</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="fgGe" aria-label="条件を有効化"></span><span class="bt-item-text">Fear&Greedが<select class="bt-select" data-bt-num="fgSell" aria-label="Fear&Greedの閾値"><option value="70">70</option><option value="75" selected>75</option><option value="80">80</option><option value="85">85</option><option value="90">90</option></select>以上</span></div>
 <div class="bt-formula" data-formula="sell"><div class="bt-formula-head">論理式（売り）<span class="bt-formula-state"></span></div><div class="bt-formula-chips"></div><div class="bt-formula-tools"><button type="button" data-fop="and">AND</button><button type="button" data-fop="or">OR</button><button type="button" data-fop="(">(</button><button type="button" data-fop=")">)</button><button type="button" data-fop="del">← 消す</button><button type="button" data-fop="clear">クリア</button></div></div>
 </div>
 </div>
@@ -652,5 +658,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261126fxc" defer></script>
+</script><script src="./backtest.js?v=20261126fg1" defer></script>
 </body></html>

@@ -33,6 +33,37 @@ def fetch(url, timeout=25):
         return response.read(5_000_000).decode(response.headers.get_content_charset() or 'utf-8', 'replace')
 
 
+def fetch_feargreed():
+    """CNN Fear & Greed Index daily closes: {date: score}.
+
+    The graphdata endpoint 418s without a Referer header. Its historical
+    series holds only the trailing ~252 sessions, so callers merge the
+    result over previously published values to accumulate history.
+    Daily points are stamped at 00:00 UTC on the US session date; the
+    intraday point (stamped at the current time) is skipped.
+    """
+    req = urllib.request.Request(
+        'https://production.dataviz.cnn.io/index/fearandgreed/graphdata',
+        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                               'AppleWebKit/537.36 (KHTML, like Gecko) '
+                               'Chrome/120.0 Safari/537.36',
+                 'Referer': 'https://www.cnn.com/markets/fear-and-greed',
+                 'Accept': 'application/json'})
+    with urllib.request.urlopen(req, timeout=25) as resp:
+        payload = json.loads(resp.read().decode('utf-8'))
+    out = {}
+    for point in payload.get('fear_and_greed_historical', {}).get('data', []):
+        try:
+            stamp = dt.datetime.fromtimestamp(point['x'] / 1000, dt.timezone.utc)
+            value = numeric(point['y'])
+        except Exception:
+            continue
+        if value is None or (stamp.hour, stamp.minute, stamp.second) != (0, 0, 0):
+            continue
+        out[stamp.strftime('%Y-%m-%d')] = round(value, 2)
+    return out
+
+
 def numeric(value):
     try:
         number = float(value)
@@ -696,6 +727,27 @@ def main():
         print(f'VIX: {len(vix)} sessions')
     except Exception as exc:
         print('WARNING VIX ingestion failed:', repr(exc))
+    # CNN Fear & Greed Index: level only. The endpoint serves just the
+    # trailing ~252 sessions, so previously published values are kept and
+    # the fresh window is overlaid, accumulating history run over run.
+    fg = {}
+    try:
+        import glob as _glob
+        for _path in _glob.glob(str(ROOT / 'history-*.json')) + [str(ROOT / 'data.json')]:
+            try:
+                _prev = json.loads(pathlib.Path(_path).read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            for _row in _prev.get('rows', []):
+                _cell = _row.get('feargreed')
+                if _cell and _cell.get('close') is not None and _row.get('date'):
+                    fg[_row['date']] = {'close': _cell['close']}
+        _fresh_fg = fetch_feargreed()
+        for _day, _score in _fresh_fg.items():
+            fg[_day] = {'close': _score}
+        print(f'Fear&Greed: {len(fg)} sessions ({len(_fresh_fg)} fresh)')
+    except Exception as exc:
+        print('WARNING Fear&Greed ingestion failed:', repr(exc))
     # US 10-year Treasury yield (^TNX): level (%) + daily change only,
     # same treatment as VIX (no judge / DD tracking).
     tnx = {}
@@ -828,7 +880,7 @@ def main():
                          'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
                          'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
                          'soxx': us['soxx'].get(day),
-                         'vix': vix.get(day), 'tnx': tnx.get(day)})
+                         'vix': vix.get(day), 'tnx': tnx.get(day), 'feargreed': fg.get(day)})
     rows = rows_all[:PUBLISH_SESSIONS]
     if len(rows) < 25:
         raise ValueError('US market history insufficient')
