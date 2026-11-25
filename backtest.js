@@ -1647,9 +1647,9 @@
     // Each trend lists only the conditions that fit its direction:
     // bullish trends get bullish conditions, bearish ones bearish ones.
     var TREND_SETS = {
-      "2": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "3": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "4": [["tMaDn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn"], ["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaUp", "tDd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
+      "2": [["tMaUp", "tCross", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "3": [["tMaUp", "tCross", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "4": [["tMaDn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn"], ["tMaUp", "tCross", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaUp", "tDd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
     };
     function trendDefaults(mode) {
       if (mode === "2") return [
@@ -1759,9 +1759,8 @@
           def.items = def.items.filter(function (id) { return allowed.indexOf(id) >= 0; });
           var card = document.createElement("div");
           card.className = "bt-regime-card";
-          var joinOpts = '<option value="and"' + (def.join !== "or" ? " selected" : "") + ">すべて満たす（AND）</option>" + '<option value="or"' + (def.join === "or" ? " selected" : "") + ">いずれか満たす（OR）</option>";
           card.innerHTML = '<div class="bt-regime-card-head"><strong>' + esc(names[di]) + '</strong>' +
-            '<label>組み合わせ <select class="bt-select bt-regime-join" data-card="' + di + '" aria-label="条件の組み合わせ">' + joinOpts + "</select></label></div>" +
+            '<span>組み合わせ <label><input type="checkbox" class="bt-regime-joinck" data-card="' + di + '" value="and"' + (def.join !== "or" ? " checked" : "") + '> すべて満たす（AND）</label> <label><input type="checkbox" class="bt-regime-joinck" data-card="' + di + '" value="or"' + (def.join === "or" ? " checked" : "") + '> いずれか満たす（OR）</label></span></div>' +
             '<div class="bt-regime-items">' + (function () {
               var rows = "", curFam = null;
               TREND_ITEMS.filter(function (item) { return allowed.indexOf(item.id) >= 0; }).forEach(function (item) {
@@ -1841,7 +1840,7 @@
           else def.items = def.items.filter(function (x) { return x !== id; });
           persist(); refreshAssignSums();
         }
-        else if (t.classList.contains("bt-regime-join")) { def.join = t.value; persist(); refreshAssignSums(); }
+        else if (t.classList.contains("bt-regime-joinck")) { def.join = t.value; var jc = t.closest(".bt-regime-card"); if (jc) jc.querySelectorAll(".bt-regime-joinck").forEach(function (b) { b.checked = b.value === def.join; }); persist(); refreshAssignSums(); }
       });
       renderCards();
       renderAssign();
