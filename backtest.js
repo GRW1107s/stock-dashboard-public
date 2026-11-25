@@ -616,8 +616,8 @@
     var regime = cfg.regime || null;
     function stockCond(def, id, d) {
       var nums = def.nums || {}, c = jCloses[d];
-      if (id === "sMaUp") { var a = smaOf(nums.sMaDays || 200); return a[d] != null && c > a[d]; }
-      if (id === "sMaDn") { var b = smaOf(nums.sMaDays || 200); return b[d] != null && c < b[d]; }
+      var pm = /^sPx(\d+)(Up|Dn)$/.exec(id);
+      if (pm) { var pa = smaOf(+pm[1]); return pa[d] != null && (pm[2] === "Up" ? c > pa[d] : c < pa[d]); }
       if (id === "sMaNear") { var na = smaOf(nums.sMaDays || 200); return na[d] != null && na[d] > 0 && Math.abs(c / na[d] - 1) <= (nums.sNearPct || 3) / 100; }
       if (id === "sCross") { var s1 = smaOf(nums.sCrossShort || 20), s2 = smaOf(nums.sCrossLong || 50); return s1[d] != null && s2[d] != null && s1[d] > s2[d]; }
       if (id === "sCrossDn") { var s3 = smaOf(nums.sCrossShort || 20), s4 = smaOf(nums.sCrossLong || 50); return s3[d] != null && s4[d] != null && s3[d] < s4[d]; }
@@ -1619,8 +1619,16 @@
       { id: "tFtd", text: "Confirmed Uptrend（FTD発生後、DDが[NUM:tCuDd]以内）", nums: { tCuDd: [3, 4, 5, 6, 7] } },
       { id: "tRsiUp", text: "指数RSIが[NUM:tRsiUp]以上", nums: { tRsiUp: [50, 60, 70] } },
       { id: "tRsiDn", text: "指数RSIが[NUM:tRsiDn]以下", nums: { tRsiDn: [30, 40, 50] } },
-      { id: "sMaUp", text: "株価が[NUM:sMaDays]日MAより上", nums: { sMaDays: [20, 50, 100, 200] } },
-      { id: "sMaDn", text: "株価が[NUM:sMaDays]日MAより下", nums: { sMaDays: [20, 50, 100, 200] } },
+      { id: "sPx20Up", text: "株価＞20MA" },
+      { id: "sPx50Up", text: "株価＞50MA" },
+      { id: "sPx100Up", text: "株価＞100MA" },
+      { id: "sPx150Up", text: "株価＞150MA" },
+      { id: "sPx200Up", text: "株価＞200MA" },
+      { id: "sPx20Dn", text: "株価＜20MA" },
+      { id: "sPx50Dn", text: "株価＜50MA" },
+      { id: "sPx100Dn", text: "株価＜100MA" },
+      { id: "sPx150Dn", text: "株価＜150MA" },
+      { id: "sPx200Dn", text: "株価＜200MA" },
       { id: "sMaNear", text: "株価が[NUM:sMaDays]日MAの±[NUM:sNearPct]%以内", nums: { sMaDays: [20, 50, 100, 200], sNearPct: [1, 2, 3, 5] } },
       { id: "sCross", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より上", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
       { id: "sCrossDn", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より下", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
@@ -1639,9 +1647,9 @@
     // Each trend lists only the conditions that fit its direction:
     // bullish trends get bullish conditions, bearish ones bearish ones.
     var TREND_SETS = {
-      "2": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "3": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "4": [["tMaDn", "tDdNot", "sMaDn"], ["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaUp", "tDd", "tRsiUp", "sMaUp", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
+      "2": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "3": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "4": [["tMaDn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn"], ["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaUp", "tDd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
     };
     function trendDefaults(mode) {
       if (mode === "2") return [
@@ -1688,6 +1696,14 @@
         var saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && saved.defs) { state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
       } catch (e) {}
+      ["2", "3", "4"].forEach(function (mk) {
+        (state.defs[mk] || []).forEach(function (def) {
+          if (!def || !Array.isArray(def.items)) return;
+          var dv = +(def.nums || {}).sMaDays;
+          var days = [20, 50, 100, 200].indexOf(dv) >= 0 ? dv : 200;
+          def.items = def.items.map(function (id) { return id === "sMaUp" ? "sPx" + days + "Up" : id === "sMaDn" ? "sPx" + days + "Dn" : id; });
+        });
+      });
       var btMain = panel.querySelector(".bt-main");
       if (!btMain) return { collect: function () { return null; } };
       var sec = document.createElement("section");
@@ -1715,6 +1731,7 @@
         if (/Slope/.test(id)) return id.replace(/\d+/g, "");
         if (/Higher/.test(id)) return "swingUp";
         if (/Lower/.test(id)) return "swingDn";
+        if (/^sPx\d+(Up|Dn)$/.test(id)) return id.replace(/\d+/g, "");
         return id;
       }
       var TREND_NUM_DEFAULTS = { tMaDays: 200, tCrossShort: 20, tCrossLong: 50, tDdN: 5, tCuDd: 5, tNearPct: 3, tRsiUp: 50, tRsiDn: 50, sMaDays: 200, sCrossShort: 20, sCrossLong: 50, sNearPct: 3, sRsiUp: 50, sRsiDn: 50 };
