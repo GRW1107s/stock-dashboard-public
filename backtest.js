@@ -942,11 +942,20 @@
       ["1628.T", "運輸・物流"], ["1629.T", "商社・卸売"], ["1630.T", "小売"],
       ["1631.T", "銀行"], ["1632.T", "金融（除く銀行）"], ["1633.T", "不動産"]
     ];
-    var ROT_HOLDS = [5, 10, 25, 60];
+    var ROT_HOLDS = [1, 5, 10, 20, 25];
+    var ROT_RANKS = [0, 1];
     var rotCache = null;
+    var rotBenchCache = undefined;
+    var rotIndCache = {};
     function rotFile(ticker) {
       return MARKET === "us" ? "ohlcv/us/" + ticker + ".json"
         : "ohlcv/jp/" + ticker.replace(/\.T$/, "") + "-T.json";
+    }
+    function ohlcvSeries(data) {
+      if (!data || !data.rows || !data.rows.length) return null;
+      var dates = [], closes = [], idx = new Map();
+      data.rows.forEach(function (row, i) { dates.push(row[0]); closes.push(row[4]); idx.set(row[0], i); });
+      return { dates: dates, closes: closes, idx: idx };
     }
     function loadRotSeries() {
       if (rotCache) return Promise.resolve(rotCache);
@@ -956,10 +965,10 @@
           if (!res.ok) return null;
           return res.json();
         }).then(function (data) {
-          if (!data || !data.rows || data.rows.length <= 130) return;
-          var dates = [], closes = [], idx = new Map();
-          data.rows.forEach(function (row, i) { dates.push(row[0]); closes.push(row[4]); idx.set(row[0], i); });
-          out.push({ ticker: pair[0], name: pair[1], dates: dates, closes: closes, idx: idx });
+          var sr = ohlcvSeries(data);
+          if (!sr || sr.dates.length <= 130) return;
+          sr.ticker = pair[0]; sr.name = pair[1];
+          out.push(sr);
         }).catch(function () { /* sector file not seeded yet */ });
       })).then(function () {
         out.sort(function (a, b) {
@@ -970,7 +979,51 @@
         return out;
       });
     }
-    function rotationStats(series, n, fromD, toD) {
+    function loadRotBench() {
+      if (rotBenchCache !== undefined) return Promise.resolve(rotBenchCache);
+      var ticker = MARKET === "us" ? "SPY" : "1306.T";
+      return fetch(rotFile(ticker), { cache: "no-cache" }).then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      }).then(function (data) {
+        rotBenchCache = ohlcvSeries(data);
+        return rotBenchCache;
+      }).catch(function () { rotBenchCache = null; return null; });
+    }
+    // Industry history files hold 200 sessions of daily changes; compound
+    // them into index series (start 100) per category, benchmark included.
+    function loadIndFile(file) {
+      if (rotIndCache[file]) return Promise.resolve(rotIndCache[file]);
+      return fetch(file, { cache: "no-cache" }).then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      }).then(function (data) {
+        if (!data || !data.rows || !data.rows.length) { rotIndCache[file] = null; return null; }
+        var rows = data.rows.slice().reverse();
+        var benchField = MARKET === "us" ? "benchmark_change" : "topix_change";
+        var dates = rows.map(function (r) { return r.date; });
+        function compound(getChange) {
+          var closes = [], level = 100;
+          rows.forEach(function (r) {
+            var c = getChange(r);
+            level *= 1 + (typeof c === "number" ? c : 0) / 100;
+            closes.push(level);
+          });
+          var idx = new Map();
+          dates.forEach(function (d, i) { idx.set(d, i); });
+          return { dates: dates, closes: closes, idx: idx };
+        }
+        var series = Object.keys(data.names || {}).map(function (key) {
+          var sr = compound(function (r) { var cell = (r.sectors || {})[key]; return cell ? cell.change : null; });
+          sr.key = key;
+          return sr;
+        });
+        var bench = compound(function (r) { return r[benchField]; });
+        rotIndCache[file] = { series: series, bench: bench };
+        return rotIndCache[file];
+      }).catch(function () { rotIndCache[file] = null; return null; });
+    }
+    function rotationStats(series, bench, n, fromD, toD) {
       var calSet = new Set();
       series.forEach(function (sr) {
         sr.dates.forEach(function (d) {
@@ -978,13 +1031,9 @@
         });
       });
       var cal = Array.from(calSet).sort();
-      var maxRank = series.length;
-      var sums = [], counts = [], allSums = ROT_HOLDS.map(function () { return 0; }),
-        allCounts = ROT_HOLDS.map(function () { return 0; });
-      for (var r = 0; r < maxRank; r++) {
-        sums.push(ROT_HOLDS.map(function () { return 0; }));
-        counts.push(ROT_HOLDS.map(function () { return 0; }));
-      }
+      var rankSums = ROT_RANKS.map(function () { return ROT_HOLDS.map(function () { return 0; }); });
+      var rankCounts = ROT_RANKS.map(function () { return ROT_HOLDS.map(function () { return 0; }); });
+      var bSums = ROT_HOLDS.map(function () { return 0; }), bCounts = ROT_HOLDS.map(function () { return 0; });
       var days = 0;
       cal.forEach(function (d) {
         var ranked = [];
@@ -998,22 +1047,62 @@
         if (ranked.length < 3) return;
         ranked.sort(function (a, b) { return b.trail - a.trail; });
         days++;
-        ranked.forEach(function (rk, rank) {
+        ROT_RANKS.forEach(function (rank, ri) {
+          var rk = ranked[rank];
+          if (!rk) return;
           ROT_HOLDS.forEach(function (h, hi) {
             var k = rk.j + h;
             if (k >= rk.sr.closes.length) return;
-            var fwd = rk.sr.closes[k] / rk.sr.closes[rk.j] - 1;
-            sums[rank][hi] += fwd; counts[rank][hi]++;
-            allSums[hi] += fwd; allCounts[hi]++;
+            rankSums[ri][hi] += rk.sr.closes[k] / rk.sr.closes[rk.j] - 1;
+            rankCounts[ri][hi]++;
           });
         });
+        if (bench) {
+          var bj = bench.idx.get(d);
+          if (bj !== undefined) ROT_HOLDS.forEach(function (h, hi) {
+            var k = bj + h;
+            if (k >= bench.closes.length) return;
+            bSums[hi] += bench.closes[k] / bench.closes[bj] - 1;
+            bCounts[hi]++;
+          });
+        }
       });
-      return { sums: sums, counts: counts, allSums: allSums, allCounts: allCounts, days: days, maxRank: maxRank };
+      var avg = function (sums, counts) {
+        return ROT_HOLDS.map(function (h, hi) { return counts[hi] ? sums[hi] / counts[hi] : null; });
+      };
+      return {
+        days: days,
+        ranks: ROT_RANKS.map(function (rank, ri) { return { rank: rank, avgs: avg(rankSums[ri], rankCounts[ri]) }; }),
+        benchAvgs: avg(bSums, bCounts)
+      };
+    }
+    function rotCellStyle(v) {
+      if (v == null) return "";
+      var a = Math.min(0.10 + Math.abs(v) * 16, 0.55);
+      return ' style="background:' + (v >= 0 ? "rgba(22,163,74," : "rgba(220,38,38,") + a.toFixed(2) + ')"';
+    }
+    function rotTableHtml(heading, st, benchLabel, n) {
+      var html = '<h4 class="bt-rot-head">' + heading + '（直近' + n + '営業日ランキング）</h4>';
+      if (!st) return html + '<p class="bt-note">データが読み込めませんでした。</p>';
+      if (!st.days) return html + '<p class="bt-note">対象期間に集計できる日がありません。</p>';
+      var pct = function (v) { return v == null ? "—" : (v >= 0 ? "+" : "") + (v * 100).toFixed(2) + "%"; };
+      html += '<table class="bt-res-table bt-rot-table"><thead><tr><th>購入条件</th>'
+        + ROT_HOLDS.map(function (h) { return "<th>" + h + "日</th>"; }).join("") + "</tr></thead><tbody>";
+      st.ranks.forEach(function (row) {
+        html += '<tr><td style="text-align:center">' + (row.rank + 1) + '位</td>' + row.avgs.map(function (v) {
+          return "<td" + rotCellStyle(v) + ">" + pct(v) + "</td>";
+        }).join("") + "</tr>";
+      });
+      html += '<tr class="bt-rot-avg"><td style="text-align:center">' + benchLabel + '</td>' + st.benchAvgs.map(function (v) {
+        return "<td>" + pct(v) + "</td>";
+      }).join("") + "</tr></tbody></table>";
+      html += '<p class="bt-note">集計した営業日 ' + st.days.toLocaleString() + '日</p>';
+      return html;
     }
     function runRotation() {
       var host = document.getElementById("bt-rot-results");
       if (!host) return;
-      var n = parseInt((document.getElementById("bt-rot-n") || {}).value || "25", 10);
+      var n = parseInt((document.getElementById("bt-rot-n") || {}).value || "3", 10);
       var norm = function (v) {
         var d = String(v || "").replace(/\D/g, "");
         return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : "";
@@ -1021,30 +1110,19 @@
       var fromD = norm((document.getElementById("bt-rot-from") || {}).value);
       var toD = norm((document.getElementById("bt-rot-to") || {}).value);
       host.innerHTML = '<p class="bt-note">読み込んでいます…</p>';
-      loadRotSeries().then(function (series) {
-        if (!series.length) {
-          host.innerHTML = '<p class="bt-note">セクターETFのデータがまだ準備できていません（自動更新で順次そろいます）。</p>';
-          return;
+      var ind1 = MARKET === "us" ? "us-industries.json" : "jp-industries.json";
+      var ind2 = MARKET === "us" ? "us-industries-fine.json" : "jp-industries-fine.json";
+      var benchLabel = MARKET === "us" ? "S&P500" : "TOPIX";
+      Promise.all([loadRotSeries(), loadRotBench(), loadIndFile(ind1), loadIndFile(ind2)]).then(function (res) {
+        var html = "";
+        if (res[0] && res[0].length) {
+          html += rotTableHtml("セクター", rotationStats(res[0], res[1], n, fromD, toD), benchLabel, n);
+        } else {
+          html += '<h4 class="bt-rot-head">セクター（直近' + n + '営業日ランキング）</h4>'
+            + '<p class="bt-note">セクターETFのデータがまだ準備できていません（自動更新で順次そろいます）。</p>';
         }
-        var st = rotationStats(series, n, fromD, toD);
-        if (!st.days) {
-          host.innerHTML = '<p class="bt-note">対象期間に集計できる日がありません。</p>';
-          return;
-        }
-        var pct = function (v) { return v == null ? "—" : (v >= 0 ? "+" : "") + (v * 100).toFixed(2) + "%"; };
-        var html = '<p class="bt-note">ランキング期間 ' + n + '取引日／集計した営業日 '
-          + st.days.toLocaleString() + '日／対象セクター ' + series.length + '本（セクターETFの終値で計算）</p>';
-        html += '<table class="bt-res-table bt-rot-table"><thead><tr><th>順位</th>'
-          + ROT_HOLDS.map(function (h) { return "<th>" + h + "日後</th>"; }).join("") + "</tr></thead><tbody>";
-        for (var r = 0; r < st.maxRank; r++) {
-          if (!st.counts[r][0]) continue;
-          html += '<tr><td style="text-align:center">' + (r + 1) + '位</td>' + ROT_HOLDS.map(function (h, hi) {
-            return "<td>" + pct(st.counts[r][hi] ? st.sums[r][hi] / st.counts[r][hi] : null) + "</td>";
-          }).join("") + "</tr>";
-        }
-        html += '<tr class="bt-rot-avg"><td style="text-align:center">全セクター平均</td>' + ROT_HOLDS.map(function (h, hi) {
-          return "<td>" + pct(st.allCounts[hi] ? st.allSums[hi] / st.allCounts[hi] : null) + "</td>";
-        }).join("") + "</tr></tbody></table>";
+        html += rotTableHtml("業種①", res[2] ? rotationStats(res[2].series, res[2].bench, n, fromD, toD) : null, benchLabel, n);
+        html += rotTableHtml("業種②", res[3] ? rotationStats(res[3].series, res[3].bench, n, fromD, toD) : null, benchLabel, n);
         host.innerHTML = html;
       });
     }
