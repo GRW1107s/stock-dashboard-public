@@ -1128,8 +1128,11 @@
           html += '<h4 class="bt-rot-head">セクター（直近' + n + '営業日ランキング）</h4>'
             + '<p class="bt-note">セクターETFのデータがまだ準備できていません（自動更新で順次そろいます）。</p>';
         }
-        html += rotTableHtml("業種①", res[2] ? rotationStats(res[2].series, res[2].bench, n, fromD, toD) : null, benchLabel, n);
-        html += rotTableHtml("業種②", res[3] ? rotationStats(res[3].series, res[3].bench, n, fromD, toD) : null, benchLabel, n);
+        html += '<div class="bt-rot-cols"><div class="bt-rot-col">'
+          + rotTableHtml("業種①", res[2] ? rotationStats(res[2].series, res[2].bench, n, fromD, toD) : null, benchLabel, n)
+          + '</div><div class="bt-rot-col">'
+          + rotTableHtml("業種②", res[3] ? rotationStats(res[3].series, res[3].bench, n, fromD, toD) : null, benchLabel, n)
+          + '</div></div>';
         host.innerHTML = html;
       });
     }
