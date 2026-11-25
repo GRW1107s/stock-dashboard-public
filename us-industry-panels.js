@@ -88,6 +88,29 @@
         return '<div class="rank-bridge" data-from="' + oldPeriod + '" data-to="' + newPeriod + '" aria-label="' + oldPeriod + '日から' + newPeriod + '日の順位変化"><div class="rank-link-head">' + newPeriod + "日 ← " + oldPeriod + '日<br>緑：順位上昇／赤：下降</div><svg class="rank-link-svg" role="img" aria-label="業種順位の移動"></svg></div>';
       }
       target.innerHTML = panel(3, rank3, rank10, 10) + bridge(10, 3) + panel(10, rank10, rank25, 25) + bridge(25, 10) + panel(25, rank25, null, null);
+  // Top/bottom-10 collapse: the middle rows are opt-in via the toggle.
+  const showAllRanks = target.dataset.showAll === '1';
+  if (rank25.length > 20) {
+    const bar = document.createElement('div');
+    bar.className = 'rank-toggle-row';
+    bar.innerHTML = '<button type="button" class="rank-toggle">' + (showAllRanks ? '上位・下位のみ表示' : 'すべて表示（全' + rank25.length + '件）') + '</button>';
+    bar.querySelector('button').addEventListener('click', () => { target.dataset.showAll = showAllRanks ? '' : '1'; renderRankings(); });
+    target.prepend(bar);
+  }
+  if (!showAllRanks) {
+    target.querySelectorAll('.rank-panel').forEach(p => {
+      const rows = p.querySelectorAll('.rank-entry');
+      if (rows.length > 20) {
+        const mid = rows.length - 20;
+        const anchor = rows[rows.length - 10];
+        rows.forEach((r, i) => { if (i >= 10 && i < rows.length - 10) r.remove(); });
+        const gap = document.createElement('div');
+        gap.className = 'rank-gap';
+        gap.textContent = '…（中間' + mid + '件）';
+        anchor.before(gap);
+      }
+    });
+  }
       requestAnimationFrame(() => drawArrows());
     }
 

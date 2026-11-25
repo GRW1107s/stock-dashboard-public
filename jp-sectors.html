@@ -17,7 +17,7 @@
 .asof-bar{display:flex;align-items:center;gap:10px;margin:14px 0 2px;font-size:13px;color:#334155}.asof-bar select{margin-left:4px;padding:4px 7px;border:1px solid #b7c8db;border-radius:6px;background:#fff;font-size:13px}.asof-eff{font-size:12px;color:#2563eb}
 .period-rankings-title{font-size:14px;margin:12px 0 6px}.period-rankings{display:grid;grid-template-columns:minmax(0,1fr) 66px minmax(0,1fr) 66px minmax(0,1fr);gap:0;margin:10px 0 12px}
 .rank-panel{background:#fff;border:1px solid #e1e7ef;border-radius:8px;padding:8px;min-width:0}
-.rank-header{height:70px}.rank-panel h2{font-size:12px;margin:0 0 6px}.rank-note{font-size:10px;color:#64748b;margin:0;line-height:1.5}
+.rank-toggle-row{grid-column:1/-1;display:flex;justify-content:flex-end;padding:2px 0 6px}.rank-toggle{font-size:11px;padding:4px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;color:#334155}.rank-gap{display:flex;align-items:center;justify-content:center;height:32px;border-top:1px solid #edf1f5;color:#94a3b8;font-size:10px}.rank-header{height:70px}.rank-panel h2{font-size:12px;margin:0 0 6px}.rank-note{font-size:10px;color:#64748b;margin:0;line-height:1.5}
 .rank-entry{display:grid;grid-template-columns:20px minmax(78px,1fr) 62px 77px;align-items:center;gap:3px;height:32px;border-top:1px solid #edf1f5;padding:0 1px;font-variant-numeric:tabular-nums;font-size:10px}
 .rank-position{color:#64748b;text-align:center}.rank-name{font-weight:600;display:flex;gap:3px;min-width:0;align-items:center}
 .rank-name-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -794,6 +794,29 @@ function renderRankings() {
     panel(10, rank10, rank25, 25) +
     bridge(25, 10) +
     panel(25, rank25, null, null);
+    // Top/bottom-10 collapse: the middle rows are opt-in via the toggle.
+    const showAllRanks = target.dataset.showAll === '1';
+    if (rank25.length > 20) {
+      const bar = document.createElement('div');
+      bar.className = 'rank-toggle-row';
+      bar.innerHTML = '<button type="button" class="rank-toggle">' + (showAllRanks ? '上位・下位のみ表示' : 'すべて表示（全' + rank25.length + '件）') + '</button>';
+      bar.querySelector('button').addEventListener('click', () => { target.dataset.showAll = showAllRanks ? '' : '1'; renderRankings(); });
+      target.prepend(bar);
+    }
+    if (!showAllRanks) {
+      target.querySelectorAll('.rank-panel').forEach(p => {
+        const rows = p.querySelectorAll('.rank-entry');
+        if (rows.length > 20) {
+          const mid = rows.length - 20;
+          const anchor = rows[rows.length - 10];
+          rows.forEach((r, i) => { if (i >= 10 && i < rows.length - 10) r.remove(); });
+          const gap = document.createElement('div');
+          gap.className = 'rank-gap';
+          gap.textContent = '…（中間' + mid + '件）';
+          anchor.before(gap);
+        }
+      });
+    }
   requestAnimationFrame(drawRankingArrows);
 }
 
@@ -1000,6 +1023,29 @@ function renderRankings() {
     panel(10, rank10, rank25, 25) +
     bridge(25, 10) +
     panel(25, rank25, null, null);
+    // Top/bottom-10 collapse: the middle rows are opt-in via the toggle.
+    const showAllRanks = target.dataset.showAll === '1';
+    if (rank25.length > 20) {
+      const bar = document.createElement('div');
+      bar.className = 'rank-toggle-row';
+      bar.innerHTML = '<button type="button" class="rank-toggle">' + (showAllRanks ? '上位・下位のみ表示' : 'すべて表示（全' + rank25.length + '件）') + '</button>';
+      bar.querySelector('button').addEventListener('click', () => { target.dataset.showAll = showAllRanks ? '' : '1'; renderRankings(); });
+      target.prepend(bar);
+    }
+    if (!showAllRanks) {
+      target.querySelectorAll('.rank-panel').forEach(p => {
+        const rows = p.querySelectorAll('.rank-entry');
+        if (rows.length > 20) {
+          const mid = rows.length - 20;
+          const anchor = rows[rows.length - 10];
+          rows.forEach((r, i) => { if (i >= 10 && i < rows.length - 10) r.remove(); });
+          const gap = document.createElement('div');
+          gap.className = 'rank-gap';
+          gap.textContent = '…（中間' + mid + '件）';
+          anchor.before(gap);
+        }
+      });
+    }
   requestAnimationFrame(drawRankingArrows);
 }
 
