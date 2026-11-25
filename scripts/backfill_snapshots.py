@@ -1,12 +1,18 @@
 """Backfill daily screener snapshots back to 2023-11-20 (three years).
 
+US snapshots reach back ten years (US_START, GRW 2026-11-25): dates
+before START carry US rows only (jp is an empty list), so the US
+sector / industry analysis works back to 2016 while the JP archive
+keeps its 2023-11-20 start.
+
 The live pipeline writes one snapshot per day going forward. This
 module reconstructs the missing past days. Recent days come from the
 OHLCV series the current run already fetched (COLLECTED_OHLCV, ~455
 days); older days come from a deep price cache (deep-series-jp.json /
-deep-series-us.json at the repo root) that this module builds once
-from Yahoo's chart API with a ~1500-day window and then reuses. It is
-a no-op once every date exists.
+deep-series-us-*.json at the repo root) that this module builds once
+from Yahoo's chart API (a ~1500-day window for JP, ~4100 days for US,
+sharded into two files so each stays under GitHub's 100 MB file
+limit) and then reuses. It is a no-op once every date exists.
 
 How each field class is handled for a past date D:
 - Static (ticker, name, sector / industry classification, market
@@ -40,14 +46,17 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 START = "2023-11-20"
+US_START = "2016-11-25"
 # The hollow-snapshot rebuild check only covers the window the buggy
 # first backfill wrote; deep files are written by the fixed code path
 # and re-reading ~700 files every run just to recount closes would
 # dominate the run.
 HOLLOW_CHECK_FROM = "2026-09-01"
 MAX_DATES = int(os.environ.get("BACKFILL_MAX_DATES", "80"))
-DEEP_DAYS = 1500
-DEEP_CACHE_FILES = {"jp": "deep-series-jp.json", "us": "deep-series-us.json"}
+DEEP_DAYS = {"jp": 1500, "us": 4100}
+DEEP_CACHE_FILES = {"jp": ["deep-series-jp.json"],
+                    "us": ["deep-series-us-1.json", "deep-series-us-2.json"]}
+US_LEGACY_CACHE = "deep-series-us.json"
 BENCH_SYMBOLS = {"jp": "1306.T", "us": "^GSPC"}
 
 STATIC_FIELDS = [
@@ -256,7 +265,7 @@ def _fetch_deep_series(symbol, market):
     from update_sector_leaders import HEADERS, safe_num
 
     end = int(time.time()) + 86400
-    start = end - DEEP_DAYS * 86400
+    start = end - DEEP_DAYS[market] * 86400
     query = urlencode({"period1": start, "period2": end, "interval": "1d"})
     zone = ZoneInfo("Asia/Tokyo" if market == "jp" else "America/New_York")
     for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
@@ -287,22 +296,44 @@ def _fetch_deep_series(symbol, market):
     return []
 
 
+def _read_cache_file(path):
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {ticker: [tuple(row) for row in rows]
+            for ticker, rows in (data.get("series") or {}).items()}
+
+
 def _load_or_build_cache(root, market, tickers):
     """Deep (date, close, volume) series per ticker, from disk or Yahoo.
 
-    The cache file is built once (one bulk fetch per market) and then
-    reused by every later run; it is committed with the other data
-    JSONs by the workflow. The benchmark symbol is always included:
-    its dates are the market calendar and its returns drive beta.
+    The cache files are built once (one bulk fetch per market) and
+    then reused by every later run; they are committed with the other
+    data JSONs by the workflow. US is sharded into two files so each
+    stays under GitHub's 100 MB file limit at the ten-year window.
+    The benchmark symbol is always included: its dates are the market
+    calendar and its returns drive beta.
     """
-    path = Path(root) / DEEP_CACHE_FILES[market]
-    if path.exists():
+    paths = [Path(root) / name for name in DEEP_CACHE_FILES[market]]
+    if all(p.exists() for p in paths):
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            return {ticker: [tuple(row) for row in rows]
-                    for ticker, rows in (data.get("series") or {}).items()}
+            merged = {}
+            for p in paths:
+                merged.update(_read_cache_file(p))
+            return merged
         except Exception:
             pass
+    if market == "us":
+        # The pre-shard single file only spans ~1500 days; reuse it
+        # only if it somehow reaches the ten-year window.
+        legacy = Path(root) / US_LEGACY_CACHE
+        if legacy.exists():
+            try:
+                cached = _read_cache_file(legacy)
+                earliest = min((rows[0][0] for rows in cached.values() if rows),
+                               default="9999")
+                if earliest <= "2015-12-31":
+                    return cached
+            except Exception:
+                pass
     symbols = sorted(set(tickers) | {BENCH_SYMBOLS[market]})
     series = {}
     with ThreadPoolExecutor(max_workers=6) as pool:
@@ -319,16 +350,23 @@ def _load_or_build_cache(root, market, tickers):
             if done % 500 == 0:
                 print(f"BACKFILL_DEEP_FETCH {market} {done}/{len(symbols)}",
                       flush=True)
-    payload = {"fetched_at": date.today().isoformat(),
-               "series": {ticker: rows for ticker, rows in series.items()
-                          if rows}}
-    path.write_text(json.dumps(payload, ensure_ascii=False,
-                               separators=(",", ":")),
-                    encoding="utf-8")
-    print(f"BACKFILL_DEEP_CACHE_BUILT {market} tickers={len(payload['series'])}",
+    keep = {ticker: rows for ticker, rows in series.items() if rows}
+    shards = [dict() for _ in paths]
+    for i, ticker in enumerate(sorted(keep)):
+        shards[i % len(paths)][ticker] = keep[ticker]
+    for p, shard in zip(paths, shards):
+        payload = {"fetched_at": date.today().isoformat(), "series": shard}
+        p.write_text(json.dumps(payload, ensure_ascii=False,
+                                separators=(",", ":")),
+                     encoding="utf-8")
+    if market == "us":
+        legacy = Path(root) / US_LEGACY_CACHE
+        if legacy.exists():
+            legacy.unlink()
+    print(f"BACKFILL_DEEP_CACHE_BUILT {market} tickers={len(keep)}",
           flush=True)
     return {ticker: [tuple(row) for row in rows]
-            for ticker, rows in payload["series"].items()}
+            for ticker, rows in keep.items()}
 
 
 def _merge_series(cache_rows, collected_rows):
@@ -401,9 +439,15 @@ def run(root, output, collected=None):
     us_bench = bench("us", us_cache)
 
     today_jst = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
-    calendar = [r[0] for r in jp_bench["series"] if START <= r[0] < today_jst]
-    targets = [d for d in calendar if d not in existing][-MAX_DATES:]
-    if not targets:
+    file_dates = {p.stem for p in archive.glob("*.json")
+                  if len(p.stem) == 10 and p.stem[4] == "-" and p.stem[7] == "-"}
+    jp_calendar = [r[0] for r in jp_bench["series"] if START <= r[0] < today_jst]
+    jp_targets = [d for d in jp_calendar
+                  if d not in existing or d not in file_dates][-MAX_DATES:]
+    us_calendar = [r[0] for r in us_bench["series"] if US_START <= r[0] < today_jst]
+    us_targets = [d for d in us_calendar if d not in file_dates][-MAX_DATES:]
+    write_dates = sorted(set(jp_targets) | set(us_targets))
+    if not write_dates:
         print("BACKFILL_SNAPSHOTS none", flush=True)
         return 0
 
@@ -412,10 +456,14 @@ def run(root, output, collected=None):
         return {ticker: _merge_series(cache.get(ticker), coll.get(ticker))
                 for ticker in set(cache) | set(coll)}
 
-    jp = _build_market(jp_rows, merged("jp", jp_cache), jp_bench, "jp", targets)
-    us = _build_market(us_rows, merged("us", us_cache), us_bench, "us", targets)
-    for d in targets:
-        write_snapshot_rows(root, d, jp[d], us[d])
-        print("BACKFILL_SNAPSHOT", d, len(jp[d]), len(us[d]), flush=True)
-    print("BACKFILL_SNAPSHOTS_DONE", len(targets), flush=True)
-    return len(targets)
+    jp = (_build_market(jp_rows, merged("jp", jp_cache), jp_bench, "jp",
+                        jp_targets) if jp_targets else {})
+    us_build_targets = sorted(set(us_targets) | set(jp_targets))
+    us = (_build_market(us_rows, merged("us", us_cache), us_bench, "us",
+                        us_build_targets) if us_build_targets else {})
+    for d in write_dates:
+        write_snapshot_rows(root, d, jp.get(d) or [], us.get(d) or [])
+        print("BACKFILL_SNAPSHOT", d, len(jp.get(d) or []),
+              len(us.get(d) or []), flush=True)
+    print("BACKFILL_SNAPSHOTS_DONE", len(write_dates), flush=True)
+    return len(write_dates)

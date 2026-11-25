@@ -26,7 +26,7 @@ import re
 RETENTION_DAYS = 3660
 # Screener snapshots are kept for three years (GRW, 2026-11-19); the
 # OHLCV store above keeps ten years (GRW, 2026-11-20).
-SNAPSHOT_RETENTION_DAYS = 1150
+SNAPSHOT_RETENTION_DAYS = 3700
 
 # Fields kept in a daily screener snapshot: identity/classification plus
 # every metric the screener displays or filters on. Bookkeeping fields

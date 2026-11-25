@@ -674,7 +674,7 @@ function initScreenerAsof(all){
     if(!live)return;
     CLASS_FIELDS.forEach(function(f){if((r[f]===null||r[f]===undefined||r[f]==="")&&live[f])r[f]=live[f]});
    });
-   asofNote=target+"時点のスナップショットを表示中";
+   asofNote=base.length?target+"時点のスナップショットを表示中":target+"のスナップショットにこの市場のデータはありません";
    applyBands(date);AsofDate.setEffective("screener",target);currentPage=0;render();
   }
   if(snapCache[target]){useSnap(snapCache[target]);return}
