@@ -386,12 +386,6 @@
       if (id === "tMaNear") { var na = sma(nums.tMaDays || 200); return na[i] != null && na[i] > 0 && Math.abs(closes[i] / na[i] - 1) <= (nums.tNearPct || 3) / 100; }
       if (id === "tRsiUp") return rsi[i] != null && rsi[i] >= (nums.tRsiUp || 50);
       if (id === "tRsiDn") return rsi[i] != null && rsi[i] <= (nums.tRsiDn || 50);
-      if (id === "tPx20Up") { var p1 = sma(20); return p1[i] != null && closes[i] > p1[i]; }
-      if (id === "tPx50Up") { var p2 = sma(50); return p2[i] != null && closes[i] > p2[i]; }
-      if (id === "tPx100Up") { var p3 = sma(100); return p3[i] != null && closes[i] > p3[i]; }
-      if (id === "tPx20Dn") { var p4 = sma(20); return p4[i] != null && closes[i] < p4[i]; }
-      if (id === "tPx50Dn") { var p5 = sma(50); return p5[i] != null && closes[i] < p5[i]; }
-      if (id === "tPx100Dn") { var p6 = sma(100); return p6[i] != null && closes[i] < p6[i]; }
       if (id === "tSlope20Up") { var q1 = sma(20); return q1[i] != null && q1[i - 3] != null && q1[i] > q1[i - 3]; }
       if (id === "tSlope50Up") { var q2 = sma(50); return q2[i] != null && q2[i - 5] != null && q2[i] > q2[i - 5]; }
       if (id === "tSlope100Up") { var q3 = sma(100); return q3[i] != null && q3[i - 10] != null && q3[i] > q3[i - 10]; }
@@ -629,12 +623,6 @@
       if (id === "sCrossDn") { var s3 = smaOf(nums.sCrossShort || 20), s4 = smaOf(nums.sCrossLong || 50); return s3[d] != null && s4[d] != null && s3[d] < s4[d]; }
       if (id === "sRsiUp") return rsi[d] != null && rsi[d] >= (nums.sRsiUp || 50);
       if (id === "sRsiDn") return rsi[d] != null && rsi[d] <= (nums.sRsiDn || 50);
-      if (id === "sPx20Up") { var u1 = smaOf(20); return u1[d] != null && c > u1[d]; }
-      if (id === "sPx50Up") { var u2 = smaOf(50); return u2[d] != null && c > u2[d]; }
-      if (id === "sPx100Up") { var u3 = smaOf(100); return u3[d] != null && c > u3[d]; }
-      if (id === "sPx20Dn") { var u4 = smaOf(20); return u4[d] != null && c < u4[d]; }
-      if (id === "sPx50Dn") { var u5 = smaOf(50); return u5[d] != null && c < u5[d]; }
-      if (id === "sPx100Dn") { var u6 = smaOf(100); return u6[d] != null && c < u6[d]; }
       if (id === "sSlope20Up") { var v1 = smaOf(20); return v1[d] != null && v1[d - 3] != null && v1[d] > v1[d - 3]; }
       if (id === "sSlope50Up") { var v2 = smaOf(50); return v2[d] != null && v2[d - 5] != null && v2[d] > v2[d - 5]; }
       if (id === "sSlope100Up") { var v3 = smaOf(100); return v3[d] != null && v3[d - 10] != null && v3[d] > v3[d - 10]; }
@@ -729,6 +717,23 @@
       var sd = Math.sqrt(rets.reduce(function (a, r) { return a + (r - mean) * (r - mean); }, 0) / (rets.length - 1));
       return sd > 0 ? mean / sd * Math.sqrt(252) : null;
     }
+    function sortinoOf(rets) {
+      if (rets.length < 2) return null;
+      var mean = rets.reduce(function (a, b) { return a + b; }, 0) / rets.length;
+      var dd = Math.sqrt(rets.reduce(function (a, r) { return a + (r < 0 ? r * r : 0); }, 0) / rets.length);
+      return dd > 0 ? mean / dd * Math.sqrt(252) : null;
+    }
+    function ulcerOf(series) {
+      if (!series.length) return null;
+      var pk = 0, sum = 0;
+      series.forEach(function (e) {
+        if (e > pk) pk = e;
+        var d = pk > 0 ? (1 - e / pk) * 100 : 0;
+        sum += d * d;
+      });
+      return Math.sqrt(sum / series.length);
+    }
+    function upiOf(total, ulcer) { var sess = to - from + 1; if (ulcer == null || ulcer <= 0 || total <= -1 || sess <= 0) return null; return (Math.pow(1 + total, 252 / sess) - 1) * 100 / ulcer; }
     var eqRets = [];
     for (var ei = 1; ei < equity.length; ei++) if (equity[ei - 1] > 0) eqRets.push(equity[ei] / equity[ei - 1] - 1);
     var bhRets = [], bhPeak = 0, bhMaxDd = 0;
@@ -738,6 +743,8 @@
       if (bi > from && closes[bi - 1] > 0) bhRets.push(closes[bi] / closes[bi - 1] - 1);
     }
     var bhTotal = to > from ? closes[to] / closes[from] - 1 : 0;
+    var bhUlcer = ulcerOf(closes.slice(from, to + 1));
+    var stUlcer = ulcerOf(equity);
     function calmarOf(total, dd) { var sess = to - from + 1; if (dd <= 0 || total <= -1 || sess <= 0) return null; return (Math.pow(1 + total, 252 / sess) - 1) / dd; }
     return {
       trades: trades,
@@ -754,6 +761,12 @@
         bhSharpe: sharpeOf(bhRets),
         calmar: calmarOf(finalEq - 1, maxDd),
         bhCalmar: calmarOf(bhTotal, bhMaxDd),
+        sortino: sortinoOf(eqRets),
+        bhSortino: sortinoOf(bhRets),
+        ulcer: stUlcer,
+        bhUlcer: bhUlcer,
+        upi: upiOf(finalEq - 1, stUlcer),
+        bhUpi: upiOf(bhTotal, bhUlcer),
         bhClosedCount: to > from ? 1 : 0,
         bhAvgHold: to > from ? to - from : null,
         hasOpen: !!pos
@@ -1592,31 +1605,27 @@
     // strategy for new buys, while open positions keep the strategy that
     // opened them. Normal mode only.
     var TREND_ITEMS = [
-      { id: "tMaUp", text: "指数が[NUM:tMaDays]日MAより上", nums: { tMaDays: [20, 50, 200] } },
-      { id: "tMaDn", text: "指数が[NUM:tMaDays]日MAより下", nums: { tMaDays: [20, 50, 200] } },
-      { id: "tMaNear", text: "指数が[NUM:tMaDays]日MAの±[NUM:tNearPct]%以内", nums: { tMaDays: [20, 50, 200], tNearPct: [1, 2, 3, 5] } },
+      { id: "tMaUp", text: "指数が[NUM:tMaDays]日MAより上", nums: { tMaDays: [20, 50, 100, 200] } },
+      { id: "tMaDn", text: "指数が[NUM:tMaDays]日MAより下", nums: { tMaDays: [20, 50, 100, 200] } },
+      { id: "tMaNear", text: "指数が[NUM:tMaDays]日MAの±[NUM:tNearPct]%以内", nums: { tMaDays: [20, 50, 100, 200], tNearPct: [1, 2, 3, 5] } },
       { id: "tCross", text: "短期MA（[NUM:tCrossShort]）が長期MA（[NUM:tCrossLong]）より上", nums: { tCrossShort: [5, 10, 20, 25, 50], tCrossLong: [25, 50, 75, 100, 200] } },
       { id: "tCrossDn", text: "短期MA（[NUM:tCrossShort]）が長期MA（[NUM:tCrossLong]）より下", nums: { tCrossShort: [5, 10, 20, 25, 50], tCrossLong: [25, 50, 75, 100, 200] } },
-      { id: "tDd", text: "DD警戒中（DD[NUM:tDdN]）", nums: { tDdN: [5, 6, 7] } },
-      { id: "tDdNot", text: "DD警戒でない（DD[NUM:tDdN]）", nums: { tDdN: [5, 6, 7] } },
+      { id: "tDd", text: "Market in correction（DD[NUM:tDdN]以上）", nums: { tDdN: [5, 6, 7] } },
+      { id: "tDdNot", text: "Market in correctionでない（DD[NUM:tDdN]）", nums: { tDdN: [5, 6, 7] } },
       { id: "tFtd", text: "Confirmed Uptrend（FTD発生後、DDが[NUM:tCuDd]以内）", nums: { tCuDd: [3, 4, 5, 6, 7] } },
       { id: "tRsiUp", text: "指数RSIが[NUM:tRsiUp]以上", nums: { tRsiUp: [50, 60, 70] } },
       { id: "tRsiDn", text: "指数RSIが[NUM:tRsiDn]以下", nums: { tRsiDn: [30, 40, 50] } },
-      { id: "sMaUp", text: "株価が[NUM:sMaDays]日MAより上", nums: { sMaDays: [20, 50, 200] } },
-      { id: "sMaDn", text: "株価が[NUM:sMaDays]日MAより下", nums: { sMaDays: [20, 50, 200] } },
-      { id: "sMaNear", text: "株価が[NUM:sMaDays]日MAの±[NUM:sNearPct]%以内", nums: { sMaDays: [20, 50, 200], sNearPct: [1, 2, 3, 5] } },
+      { id: "sMaUp", text: "株価が[NUM:sMaDays]日MAより上", nums: { sMaDays: [20, 50, 100, 200] } },
+      { id: "sMaDn", text: "株価が[NUM:sMaDays]日MAより下", nums: { sMaDays: [20, 50, 100, 200] } },
+      { id: "sMaNear", text: "株価が[NUM:sMaDays]日MAの±[NUM:sNearPct]%以内", nums: { sMaDays: [20, 50, 100, 200], sNearPct: [1, 2, 3, 5] } },
       { id: "sCross", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より上", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
       { id: "sCrossDn", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より下", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
       { id: "sRsiUp", text: "株価RSIが[NUM:sRsiUp]以上", nums: { sRsiUp: [50, 60, 70] } },
       { id: "sRsiDn", text: "株価RSIが[NUM:sRsiDn]以下", nums: { sRsiDn: [30, 40, 50] } },
-      { id: "tPx20Up", text: "指数＞20MA" }, { id: "tPx50Up", text: "指数＞50MA" }, { id: "tPx100Up", text: "指数＞100MA" },
-      { id: "tPx20Dn", text: "指数＜20MA" }, { id: "tPx50Dn", text: "指数＜50MA" }, { id: "tPx100Dn", text: "指数＜100MA" },
       { id: "tSlope20Up", text: "指数の20MAが上向き" }, { id: "tSlope50Up", text: "指数の50MAが上向き" }, { id: "tSlope100Up", text: "指数の100MAが上向き" },
       { id: "tSlope20Dn", text: "指数の20MAが下向き" }, { id: "tSlope50Dn", text: "指数の50MAが下向き" }, { id: "tSlope100Dn", text: "指数の100MAが下向き" },
       { id: "tHigherHigh", text: "指数の高値切上げ" }, { id: "tHigherLow", text: "指数の安値切上げ" },
       { id: "tLowerHigh", text: "指数の高値切り下げ" }, { id: "tLowerLow", text: "指数の安値切り下げ・安値割れ" },
-      { id: "sPx20Up", text: "株価＞20MA" }, { id: "sPx50Up", text: "株価＞50MA" }, { id: "sPx100Up", text: "株価＞100MA" },
-      { id: "sPx20Dn", text: "株価＜20MA" }, { id: "sPx50Dn", text: "株価＜50MA" }, { id: "sPx100Dn", text: "株価＜100MA" },
       { id: "sSlope20Up", text: "株価の20MAが上向き" }, { id: "sSlope50Up", text: "株価の50MAが上向き" }, { id: "sSlope100Up", text: "株価の100MAが上向き" },
       { id: "sSlope20Dn", text: "株価の20MAが下向き" }, { id: "sSlope50Dn", text: "株価の50MAが下向き" }, { id: "sSlope100Dn", text: "株価の100MAが下向き" },
       { id: "sHigherHigh", text: "株価の高値切上げ" }, { id: "sHigherLow", text: "株価の安値切上げ" },
@@ -1626,9 +1635,9 @@
     // Each trend lists only the conditions that fit its direction:
     // bullish trends get bullish conditions, bearish ones bearish ones.
     var TREND_SETS = {
-      "2": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tPx20Up", "tPx50Up", "tPx100Up", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sPx20Up", "sPx50Up", "sPx100Up", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tPx20Dn", "tPx50Dn", "tPx100Dn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "3": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tPx20Up", "tPx50Up", "tPx100Up", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sPx20Up", "sPx50Up", "sPx100Up", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tPx20Dn", "tPx50Dn", "tPx100Dn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "4": [["tMaDn", "tDdNot", "sMaDn", "tPx20Dn", "tPx50Dn", "tPx100Dn", "sPx20Dn", "sPx50Dn", "sPx100Dn"], ["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tPx20Up", "tPx50Up", "tPx100Up", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sPx20Up", "sPx50Up", "sPx100Up", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaUp", "tDd", "tRsiUp", "sMaUp", "sRsiUp", "tPx20Up", "tPx50Up", "tPx100Up", "sPx20Up", "sPx50Up", "sPx100Up", "tLowerHigh", "sLowerHigh"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tPx20Dn", "tPx50Dn", "tPx100Dn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
+      "2": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "3": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "4": [["tMaDn", "tDdNot", "sMaDn"], ["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaUp", "tDd", "tRsiUp", "sMaUp", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
     };
     function trendDefaults(mode) {
       if (mode === "2") return [
@@ -1687,16 +1696,23 @@
         '<select id="bt-regime-mode" class="bt-select" aria-label="トレンド切替の分類数"><option value="off">使わない</option><option value="2">2分類</option><option value="3">3分類</option><option value="4">4分類</option></select>' +
         '<label class="bt-regime-target">判定対象 <select id="bt-regime-target" class="bt-select" aria-label="トレンド判定対象">' + targets.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + "</option>"; }).join("") + "</select></label>" +
         '<span class="bt-res-note">通常モードの実行に適用します。トレンドは判定対象の終値で判定し、上から順に最初に当てはまったものを採用します（どれにも当てはまらなければ割当なし）。保有中のポジションは、開いた戦略の売り条件で判定します。</span></div>' +
-        '<div class="bt-regime-flex"><div class="bt-regime-cards" id="bt-regime-cards"></div>' +
-        '<div class="bt-regime-assign" id="bt-regime-assign"></div></div>';
+        '<div class="bt-regime-cards" id="bt-regime-cards"></div>';
       btMain.parentNode.insertBefore(sec, btMain);
       var modeEl = sec.querySelector("#bt-regime-mode");
       var targetEl = sec.querySelector("#bt-regime-target");
       var cardsEl = sec.querySelector("#bt-regime-cards");
-      var assignEl = sec.querySelector("#bt-regime-assign");
+      var assignEl = document.createElement("div");
+      assignEl.className = "bt-regime-assign";
+      assignEl.id = "bt-regime-assign";
       modeEl.value = state.mode;
       targetEl.value = state.target;
       function persist() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+      function trendFam(id) {
+        if (/Slope/.test(id)) return id.replace(/\d+/g, "");
+        if (/Higher/.test(id)) return "swingUp";
+        if (/Lower/.test(id)) return "swingDn";
+        return id;
+      }
       var TREND_NUM_DEFAULTS = { tMaDays: 200, tCrossShort: 20, tCrossLong: 50, tDdN: 5, tCuDd: 5, tNearPct: 3, tRsiUp: 50, tRsiDn: 50, sMaDays: 200, sCrossShort: 20, sCrossLong: 50, sNearPct: 3, sRsiUp: 50, sRsiDn: 50 };
       function itemHtml(def, item) {
         var parts = item.text.split(/\[NUM:(\w+)\]/);
@@ -1715,7 +1731,7 @@
         cardsEl.innerHTML = "";
         if (state.mode === "off") { cardsEl.style.display = "none"; return; }
         cardsEl.style.display = "";
-        cardsEl.style.gridTemplateColumns = "repeat(" + TREND_NAMES[state.mode].length + ", minmax(0, 1fr))";
+        cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
         var names = TREND_NAMES[state.mode];
         state.defs[state.mode].forEach(function (def, di) {
           var allowed = TREND_SETS[state.mode][di] || [];
@@ -1725,11 +1741,19 @@
           var joinOpts = '<option value="and"' + (def.join !== "or" ? " selected" : "") + ">すべて満たす（AND）</option>" + '<option value="or"' + (def.join === "or" ? " selected" : "") + ">いずれか満たす（OR）</option>";
           card.innerHTML = '<div class="bt-regime-card-head"><strong>' + esc(names[di]) + '</strong>' +
             '<label>組み合わせ <select class="bt-select bt-regime-join" data-card="' + di + '" aria-label="条件の組み合わせ">' + joinOpts + "</select></label></div>" +
-            '<div class="bt-regime-items">' + TREND_ITEMS.filter(function (item) { return allowed.indexOf(item.id) >= 0; }).map(function (item) {
-              return '<label class="bt-regime-item"><input type="checkbox" class="bt-regime-ck" data-card="' + di + '" value="' + item.id + '"' + (def.items.indexOf(item.id) >= 0 ? " checked" : "") + "> " + itemHtml(def, item) + "</label>";
-            }).join("") + "</div>";
+            '<div class="bt-regime-items">' + (function () {
+              var rows = "", curFam = null;
+              TREND_ITEMS.filter(function (item) { return allowed.indexOf(item.id) >= 0; }).forEach(function (item) {
+                var fam = trendFam(item.id);
+                if (fam !== curFam) { if (curFam !== null) rows += "</div>"; rows += '<div class="bt-regime-fam">'; curFam = fam; }
+                rows += '<label class="bt-regime-item"><input type="checkbox" class="bt-regime-ck" data-card="' + di + '" value="' + item.id + '"' + (def.items.indexOf(item.id) >= 0 ? " checked" : "") + "> " + itemHtml(def, item) + "</label>";
+              });
+              if (curFam !== null) rows += "</div>";
+              return rows;
+            })() + "</div>";
           cardsEl.appendChild(card);
         });
+        cardsEl.appendChild(assignEl);
       }
       function trendSummary(def) {
         if (!def.items.length) return "（条件なし）";
@@ -1751,7 +1775,7 @@
         var names = TREND_NAMES[state.mode];
         var title = document.createElement("div");
         title.className = "bt-regime-assign-title";
-        title.textContent = "トレンドと戦略の割当";
+        title.textContent = "トレンドに戦略を割当";
         assignEl.appendChild(title);
         state.defs[state.mode].forEach(function (def, di) {
           var row = document.createElement("div");
@@ -1934,9 +1958,9 @@
     // column id.
     var TRADE_COLS = ["buyDate", "buyPrice", "sellDate", "sellPrice", "ret", "hold", "reason"];
     var STRAT_TRADE_COLS = ["strat"].concat(TRADE_COLS);
-    var STOCK_COLS = ["title", "kind", "ret", "count", "win", "avg", "maxdd", "sharpe", "calmar", "hold", "period"];
-    var ROLL_COLS = ["start", "kind", "n", "avg", "median", "count", "win", "hold", "sharpe", "calmar"];
-    var CMP_COLS = ["strat", "ret", "win", "count", "avg", "maxdd", "hold", "sharpe", "calmar"];
+    var STOCK_COLS = ["title", "kind", "ret", "count", "win", "avg", "maxdd", "sharpe", "calmar", "sortino", "ulcer", "upi", "hold", "period"];
+    var ROLL_COLS = ["start", "kind", "n", "avg", "median", "count", "win", "hold", "sharpe", "calmar", "sortino", "ulcer", "upi"];
+    var CMP_COLS = ["strat", "ret", "win", "count", "avg", "maxdd", "hold", "sharpe", "calmar", "sortino", "ulcer", "upi"];
     // Column reorder + width adjustment shared by every backtest table:
     // heading drag reorders, the right-edge grip resizes, Ctrl+click selects
     // several columns for a bulk resize. Order and widths persist by column id.
@@ -1950,8 +1974,8 @@
     // popup (number range + presence, text search, or a choice), active
     // filters combine with AND across columns and show as chips above
     // the results.
-    var BT_FILTER_KINDS = { ret: "number", bh: "number", win: "number", winRate: "number", avg: "number", avgRet: "number", median: "number", best: "number", worst: "number", maxdd: "number", sharpe: "number", calmar: "number", hold: "number", avgHold: "number", count: "number", closed: "number", n: "number", buyPrice: "number", sellPrice: "number", kind: "choice" };
-    var BT_FILTER_LABELS = { no: "番号", label: "パターン", title: "銘柄", strat: "戦略", kind: "区分", ret: "リターン", bh: "買い持ち", win: "勝率", winRate: "勝率", count: "取引回数", closed: "取引回数", avg: "平均", avgRet: "平均損益", median: "中央値", best: "最大", worst: "最小", maxdd: "最大DD", sharpe: "シャープ", calmar: "カルマー", hold: "平均保有", avgHold: "平均保有", start: "開始日", period: "期間", n: "銘柄数", buyDate: "買い日", buyPrice: "買値", sellDate: "売り日", sellPrice: "売値", reason: "売り理由" };
+    var BT_FILTER_KINDS = { ret: "number", bh: "number", win: "number", winRate: "number", avg: "number", avgRet: "number", median: "number", best: "number", worst: "number", maxdd: "number", sharpe: "number", calmar: "number", sortino: "number", ulcer: "number", upi: "number", hold: "number", avgHold: "number", count: "number", closed: "number", n: "number", buyPrice: "number", sellPrice: "number", kind: "choice" };
+    var BT_FILTER_LABELS = { no: "番号", label: "パターン", title: "銘柄", strat: "戦略", kind: "区分", ret: "リターン", bh: "買い持ち", win: "勝率", winRate: "勝率", count: "取引回数", closed: "取引回数", avg: "平均", avgRet: "平均損益", median: "中央値", best: "最大", worst: "最小", maxdd: "最大DD", sharpe: "シャープレシオ", calmar: "カルマーレシオ", sortino: "ソルティノレシオ", ulcer: "アルサーインデックス", upi: "UPI", hold: "平均保有", avgHold: "平均保有", start: "開始日", period: "期間", n: "銘柄数", buyDate: "買い日", buyPrice: "買値", sellDate: "売り日", sellPrice: "売値", reason: "売り理由" };
     var BT_TABLE_TITLES = { stock: "銘柄別結果", cmp: "戦略比較", cmpmx: "戦略比較", roll: "ローリング開始日別", all: "全パターン", allroll: "全パターン（ローリング）", allrolldates: "開始日別結果", trades: "売買履歴", sweep: "ランキング", sweeproll: "ランキング" };
     var btFilters = {};
     var btFilterPopup = null, btFilterCtx = null;
@@ -2340,7 +2364,7 @@
         wireTrades(container);
         return;
       }
-      var html = '<table class="bt-res-table bt-stock-table"><thead><tr><th>銘柄</th><th>区分</th><th>リターン</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>シャープレシオ</th><th>カルマー</th><th>平均保有</th><th>期間</th></tr></thead><tbody>';
+      var html = '<table class="bt-res-table bt-stock-table"><thead><tr><th>銘柄</th><th>区分</th><th>リターン</th><th>取引回数</th><th>勝率</th><th>平均損益</th><th>最大DD</th><th>シャープレシオ</th><th>カルマーレシオ</th><th>ソルティノレシオ</th><th>アルサーインデックス</th><th>UPI</th><th>平均保有</th><th>期間</th></tr></thead><tbody>';
       entries.forEach(function (e, idx) {
         var short = (e.title || "").split(" ")[0];
         if (!e.out) {
@@ -2348,9 +2372,9 @@
           return;
         }
         var p = e.out.perf;
-        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + short + '</td><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>" + p.bhClosedCount + "</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>" + sharpeTxt(p.bhCalmar) + "</td><td>" + (p.bhAvgHold == null ? "—" : p.bhAvgHold + "日") + "</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
+        html += '<tr class="bt-stock-row bt-bh-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + short + '</td><td>買い持ち</td><td>' + pct(p.bhReturn) + "</td><td>" + p.bhClosedCount + "</td><td>—</td><td>—</td><td>" + pct(p.bhMaxDd) + "</td><td>" + sharpeTxt(p.bhSharpe) + "</td><td>" + sharpeTxt(p.bhCalmar) + "</td><td>" + sharpeTxt(p.bhSortino) + "</td><td>" + sharpeTxt(p.bhUlcer) + "</td><td>" + sharpeTxt(p.bhUpi) + "</td><td>" + (p.bhAvgHold == null ? "—" : p.bhAvgHold + "日") + "</td><td>" + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
         html += '<tr class="bt-stock-row" data-bt-stock="' + idx + '"><td style="text-align:left">' + short + "</td><td>戦略</td><td>" + pct(p.totalReturn) + "</td><td>" + p.closedCount + (p.hasOpen ? "（+保有中1）" : "") + "</td><td>" +
-          (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" + sharpeTxt(p.sharpe) + "</td><td>" + sharpeTxt(p.calmar) + "</td><td>" +
+          (p.winRate == null ? "—" : pct(p.winRate, 0)) + "</td><td>" + (p.avgRet == null ? "—" : pct(p.avgRet)) + "</td><td>" + pct(p.maxDd) + "</td><td>" + sharpeTxt(p.sharpe) + "</td><td>" + sharpeTxt(p.calmar) + "</td><td>" + sharpeTxt(p.sortino) + "</td><td>" + sharpeTxt(p.ulcer) + "</td><td>" + sharpeTxt(p.upi) + "</td><td>" +
           (p.avgHold == null ? "—" : p.avgHold.toFixed(0) + "日") + '</td><td>' + esc(e.out.range.from) + " 〜 " + esc(e.out.range.to) + "</td></tr>";
       });
       html += "</tbody></table>";
@@ -2590,7 +2614,7 @@
         if (!ctx) return;
         var summaries = [], details = {};
         ctx.perDate.forEach(function (pd) {
-          var entries = [], n = 0, sumRet = 0, sumBh = 0, rets = [], bhRets = [], closedTrades = 0, winTrades = 0, holdSum = 0, sumSharpe = 0, nSharpe = 0, sumBhSharpe = 0, nBhSharpe = 0, sumCalmar = 0, nCalmar = 0, sumBhCalmar = 0, nBhCalmar = 0, bhClosedSum = 0, bhHoldSum = 0, nBhHold = 0;
+          var entries = [], n = 0, sumRet = 0, sumBh = 0, rets = [], bhRets = [], closedTrades = 0, winTrades = 0, holdSum = 0, sumSharpe = 0, nSharpe = 0, sumBhSharpe = 0, nBhSharpe = 0, sumCalmar = 0, nCalmar = 0, sumBhCalmar = 0, nBhCalmar = 0, sumSortino = 0, nSortino = 0, sumBhSortino = 0, nBhSortino = 0, sumUlcer = 0, nUlcer = 0, sumBhUlcer = 0, nBhUlcer = 0, sumUpi = 0, nUpi = 0, sumBhUpi = 0, nBhUpi = 0, bhClosedSum = 0, bhHoldSum = 0, nBhHold = 0;
           pd.codes.forEach(function (code) {
             var rows = ctx.store[code];
             if (!rows || !rows.length) return;
@@ -2609,6 +2633,12 @@
             if (out.perf.bhSharpe != null) { sumBhSharpe += out.perf.bhSharpe; nBhSharpe++; }
             if (out.perf.calmar != null) { sumCalmar += out.perf.calmar; nCalmar++; }
             if (out.perf.bhCalmar != null) { sumBhCalmar += out.perf.bhCalmar; nBhCalmar++; }
+            if (out.perf.sortino != null) { sumSortino += out.perf.sortino; nSortino++; }
+            if (out.perf.bhSortino != null) { sumBhSortino += out.perf.bhSortino; nBhSortino++; }
+            if (out.perf.ulcer != null) { sumUlcer += out.perf.ulcer; nUlcer++; }
+            if (out.perf.bhUlcer != null) { sumBhUlcer += out.perf.bhUlcer; nBhUlcer++; }
+            if (out.perf.upi != null) { sumUpi += out.perf.upi; nUpi++; }
+            if (out.perf.bhUpi != null) { sumBhUpi += out.perf.bhUpi; nBhUpi++; }
             bhClosedSum += out.perf.bhClosedCount; if (out.perf.bhAvgHold != null) { bhHoldSum += out.perf.bhAvgHold; nBhHold++; }
             out.trades.forEach(function (t) { if (!t.open) { closedTrades++; holdSum += t.hold; if (t.ret > 0) winTrades++; } });
           });
@@ -2619,13 +2649,13 @@
           summaries.push({
             date: pd.date, count: n, avg: n ? sumRet / n : null, median: median,
             bhAvg: n ? sumBh / n : null, bhMedian: bhMedian, trades: closedTrades, bhTrades: bhClosedSum, bhHoldAvg: nBhHold ? bhHoldSum / nBhHold : null,
-            sharpeAvg: nSharpe ? sumSharpe / nSharpe : null, bhSharpeAvg: nBhSharpe ? sumBhSharpe / nBhSharpe : null, calmarAvg: nCalmar ? sumCalmar / nCalmar : null, bhCalmarAvg: nBhCalmar ? sumBhCalmar / nBhCalmar : null,
+            sharpeAvg: nSharpe ? sumSharpe / nSharpe : null, bhSharpeAvg: nBhSharpe ? sumBhSharpe / nBhSharpe : null, calmarAvg: nCalmar ? sumCalmar / nCalmar : null, bhCalmarAvg: nBhCalmar ? sumBhCalmar / nBhCalmar : null, sortinoAvg: nSortino ? sumSortino / nSortino : null, bhSortinoAvg: nBhSortino ? sumBhSortino / nBhSortino : null, ulcerAvg: nUlcer ? sumUlcer / nUlcer : null, bhUlcerAvg: nBhUlcer ? sumBhUlcer / nBhUlcer : null, upiAvg: nUpi ? sumUpi / nUpi : null, bhUpiAvg: nBhUpi ? sumBhUpi / nBhUpi : null,
             avgHold: closedTrades ? holdSum / closedTrades : null, winRate: closedTrades ? winTrades / closedTrades : null, truncated: pd.truncated
           });
           details[pd.date] = entries;
         });
         var valid = summaries.filter(function (s) { return s.count > 0; });
-        var html = '<table class="bt-res-table bt-roll-table"><thead><tr><th>開始日</th><th>区分</th><th>対象銘柄数</th><th>平均リターン</th><th>中央値</th><th>取引回数</th><th>勝率</th><th>平均保有</th><th>シャープレシオ</th><th>カルマー</th></tr></thead><tbody>';
+        var html = '<table class="bt-res-table bt-roll-table"><thead><tr><th>開始日</th><th>区分</th><th>対象銘柄数</th><th>平均リターン</th><th>中央値</th><th>取引回数</th><th>勝率</th><th>平均保有</th><th>シャープレシオ</th><th>カルマーレシオ</th><th>ソルティノレシオ</th><th>アルサーインデックス</th><th>UPI</th></tr></thead><tbody>';
         if (valid.length) {
           var totAvg = valid.reduce(function (s, x) { return s + x.avg; }, 0) / valid.length;
           var totBh = valid.reduce(function (s, x) { return s + x.bhAvg; }, 0) / valid.length;
@@ -2644,12 +2674,14 @@
           var totCalmar = cmVals.length ? cmVals.reduce(function (a, b) { return a + b; }, 0) / cmVals.length : null;
           var bhCmVals = valid.map(function (x) { return x.bhCalmarAvg; }).filter(function (v) { return v != null; });
           var totBhCalmar = bhCmVals.length ? bhCmVals.reduce(function (a, b) { return a + b; }, 0) / bhCmVals.length : null;
-          html += '<tr class="bt-roll-total bt-bh-row"><td>全開始日の平均</td><td>買い持ち</td><td>' + totCount + '</td><td>' + pct(totBh) + '</td><td>—</td><td>' + totBhTrades + '</td><td>—</td><td>' + (totBhHold == null ? "—" : totBhHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(totBhSharpe) + '</td><td>' + sharpeTxt(totBhCalmar) + '</td></tr>';
-          html += '<tr class="bt-roll-total"><td>全開始日の平均</td><td>戦略</td><td>' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + (totHold == null ? "—" : totHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(totSharpe) + '</td><td>' + sharpeTxt(totCalmar) + '</td></tr>';
+          var meanOfX = function (key) { var v = valid.map(function (x) { return x[key]; }).filter(function (w) { return w != null; }); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null; };
+          var totSortino = meanOfX("sortinoAvg"), totBhSortino = meanOfX("bhSortinoAvg"), totUlcer = meanOfX("ulcerAvg"), totBhUlcer = meanOfX("bhUlcerAvg"), totUpi = meanOfX("upiAvg"), totBhUpi = meanOfX("bhUpiAvg");
+          html += '<tr class="bt-roll-total bt-bh-row"><td>全開始日の平均</td><td>買い持ち</td><td>' + totCount + '</td><td>' + pct(totBh) + '</td><td>—</td><td>' + totBhTrades + '</td><td>—</td><td>' + (totBhHold == null ? "—" : totBhHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(totBhSharpe) + '</td><td>' + sharpeTxt(totBhCalmar) + '</td><td>' + sharpeTxt(totBhSortino) + '</td><td>' + sharpeTxt(totBhUlcer) + '</td><td>' + sharpeTxt(totBhUpi) + '</td></tr>';
+          html += '<tr class="bt-roll-total"><td>全開始日の平均</td><td>戦略</td><td>' + totCount + '</td><td>' + pct(totAvg) + '</td><td>—</td><td>' + totTrades + '</td><td>—</td><td>' + (totHold == null ? "—" : totHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(totSharpe) + '</td><td>' + sharpeTxt(totCalmar) + '</td><td>' + sharpeTxt(totSortino) + '</td><td>' + sharpeTxt(totUlcer) + '</td><td>' + sharpeTxt(totUpi) + '</td></tr>';
         }
         summaries.forEach(function (s) {
-          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>買い持ち</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>' + s.bhTrades + '</td><td>—</td><td>' + (s.bhHoldAvg == null ? "—" : s.bhHoldAvg.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td><td>' + sharpeTxt(s.bhCalmarAvg) + '</td></tr>';
-          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>戦略</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + (s.avgHold == null ? "—" : s.avgHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td><td>' + sharpeTxt(s.calmarAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row bt-bh-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>買い持ち</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.bhAvg) + '</td><td>' + pct(s.bhMedian) + '</td><td>' + s.bhTrades + '</td><td>—</td><td>' + (s.bhHoldAvg == null ? "—" : s.bhHoldAvg.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.bhSharpeAvg) + '</td><td>' + sharpeTxt(s.bhCalmarAvg) + '</td><td>' + sharpeTxt(s.bhSortinoAvg) + '</td><td>' + sharpeTxt(s.bhUlcerAvg) + '</td><td>' + sharpeTxt(s.bhUpiAvg) + '</td></tr>';
+          html += '<tr class="bt-roll-row" data-roll-date="' + s.date + '"><td>' + s.date + '</td><td>戦略</td><td>' + s.count + (s.truncated ? "（上限200）" : "") + '</td><td>' + pct(s.avg) + '</td><td>' + pct(s.median) + '</td><td>' + s.trades + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + (s.avgHold == null ? "—" : s.avgHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.sharpeAvg) + '</td><td>' + sharpeTxt(s.calmarAvg) + '</td><td>' + sharpeTxt(s.sortinoAvg) + '</td><td>' + sharpeTxt(s.ulcerAvg) + '</td><td>' + sharpeTxt(s.upiAvg) + '</td></tr>';
         });
         html += '</tbody></table>';
         html += '<p class="bt-res-note">開始日の行を選ぶと、その日の銘柄別結果を表示します。' + (fixedCodes ? "対象銘柄は入力した銘柄です（スクリーニング条件は使っていません）。" : "対象銘柄は開始日時点のスナップショットでスクリーニング条件を判定しています。") + '</p>';
@@ -2870,6 +2902,7 @@
         });
       });
       var mean = function (f) { return outs.reduce(function (sm, o) { return sm + f(o.perf); }, 0) / outs.length; };
+      var meanOfKey = function (key) { var v = outs.map(function (o) { return o.perf[key]; }).filter(function (x) { return x != null; }); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null; };
       var sh = outs.map(function (o) { return o.perf.sharpe; }).filter(function (x) { return x != null; });
       var bsh = outs.map(function (o) { return o.perf.bhSharpe; }).filter(function (x) { return x != null; });
       var cm = outs.map(function (o) { return o.perf.calmar; }).filter(function (x) { return x != null; });
@@ -2885,6 +2918,9 @@
         bhClosed: outs.reduce(function (sm, o) { return sm + o.perf.bhClosedCount; }, 0),
         bhAvgHold: bhh.length ? bhh.reduce(function (a, b) { return a + b; }, 0) / bhh.length : null,
         calmar: cm.length ? cm.reduce(function (a, b) { return a + b; }, 0) / cm.length : null,
+        sortino: meanOfKey("sortino"), bhSortino: meanOfKey("bhSortino"),
+        ulcer: meanOfKey("ulcer"), bhUlcer: meanOfKey("bhUlcer"),
+        upi: meanOfKey("upi"), bhUpi: meanOfKey("bhUpi"),
         closed: closed, open: open, winRate: closed ? wins / closed : null,
         avgRet: closed ? retSum / closed : null, avgHold: closed ? holdSum / closed : null
       };
@@ -2964,8 +3000,8 @@
       }).then(function (perStrat) {
         var ddTxt = function (v) { return v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
         var targetNames = perStrat[0].entries.map(function (e) { return e.title; });
-        var CMPMX_COLS = ["title", "strat", "ret", "win", "count", "avg", "maxdd", "sharpe", "calmar", "hold", "period"];
-        var CMPMX_LABELS = ["銘柄", "戦略", "リターン", "勝率", "取引回数", "平均損益", "最大DD", "シャープ", "カルマー", "平均保有", "期間"];
+        var CMPMX_COLS = ["title", "strat", "ret", "win", "count", "avg", "maxdd", "sharpe", "calmar", "sortino", "ulcer", "upi", "hold", "period"];
+        var CMPMX_LABELS = ["銘柄", "戦略", "リターン", "勝率", "取引回数", "平均損益", "最大DD", "シャープレシオ", "カルマーレシオ", "ソルティノレシオ", "アルサーインデックス", "UPI", "平均保有", "期間"];
         function entryStat(out) {
           var closed = 0, open = 0, wins = 0, retSum = 0, holdSum = 0;
           out.trades.forEach(function (t) { if (t.open) open++; else { closed++; retSum += t.ret; holdSum += t.hold; if (t.ret > 0) wins++; } });
@@ -2975,14 +3011,14 @@
         perStrat[0].entries.forEach(function (e0, ei) {
           if (e0.out) {
             var p0 = e0.out.perf;
-            mxRows.push({ title: e0.title, strat: "買い持ち", bh: true, entryIdx: ei, stratIdx: -1, ret: p0.bhReturn, win: null, count: p0.bhClosedCount, open: 0, avg: null, maxdd: p0.bhMaxDd, sharpe: p0.bhSharpe, calmar: p0.bhCalmar, hold: p0.bhAvgHold, period: e0.out.range.from + " 〜 " + e0.out.range.to });
+            mxRows.push({ title: e0.title, strat: "買い持ち", bh: true, entryIdx: ei, stratIdx: -1, ret: p0.bhReturn, win: null, count: p0.bhClosedCount, open: 0, avg: null, maxdd: p0.bhMaxDd, sharpe: p0.bhSharpe, calmar: p0.bhCalmar, sortino: p0.bhSortino, ulcer: p0.bhUlcer, upi: p0.bhUpi, hold: p0.bhAvgHold, period: e0.out.range.from + " 〜 " + e0.out.range.to });
           }
           perStrat.forEach(function (ps, si) {
             var e = ps.entries[ei];
             if (!e) return;
             if (!e.out) { mxRows.push({ title: e.title, strat: ps.name, bh: false, entryIdx: ei, stratIdx: si, noData: e.noData || "" }); return; }
             var st = entryStat(e.out), p = e.out.perf;
-            mxRows.push({ title: e.title, strat: ps.name, bh: false, entryIdx: ei, stratIdx: si, ret: p.totalReturn, win: st.winRate, count: st.closed, open: st.open, avg: st.avgRet, maxdd: p.maxDd, sharpe: p.sharpe, calmar: p.calmar, hold: st.avgHold, period: e.out.range.from + " 〜 " + e.out.range.to });
+            mxRows.push({ title: e.title, strat: ps.name, bh: false, entryIdx: ei, stratIdx: si, ret: p.totalReturn, win: st.winRate, count: st.closed, open: st.open, avg: st.avgRet, maxdd: p.maxDd, sharpe: p.sharpe, calmar: p.calmar, sortino: p.sortino, ulcer: p.ulcer, upi: p.upi, hold: st.avgHold, period: e.out.range.from + " 〜 " + e.out.range.to });
           });
         });
         var html = '<p class="bt-res-note">戦略比較（銘柄×戦略） / 銘柄：' + targetNames.join("、") + "<br>行を選ぶと、その銘柄×戦略の売買履歴を表示します。</p>";
@@ -3021,8 +3057,8 @@
           rows.forEach(function (r) {
             var short = esc(String(r.title).split(" ")[0]);
             var mi = mxRows.indexOf(r);
-            if (r.noData != null) { tb += '<tr class="bt-cmpmx-row" data-mx="' + mi + '"><td style="text-align:left">' + short + '</td><td style="text-align:left">' + esc(r.strat) + '</td><td colspan="9" style="text-align:left">' + esc(r.noData) + "</td></tr>"; return; }
-            tb += '<tr class="bt-cmpmx-row' + (r.bh ? " bt-bh-row" : "") + '" data-mx="' + mi + '"><td style="text-align:left">' + short + '</td><td style="text-align:left">' + esc(r.strat) + "</td><td>" + pct(r.ret) + "</td><td>" + (r.win == null ? "—" : pct(r.win, 0)) + "</td><td>" + r.count + (r.open ? "（+保有中" + r.open + "）" : "") + "</td><td>" + (r.avg == null ? "—" : pct(r.avg)) + "</td><td>" + pct(r.maxdd) + "</td><td>" + sharpeTxt(r.sharpe) + "</td><td>" + sharpeTxt(r.calmar) + "</td><td>" + (r.hold == null ? "—" : Math.round(r.hold) + "日") + "</td><td>" + esc(r.period) + "</td></tr>";
+            if (r.noData != null) { tb += '<tr class="bt-cmpmx-row" data-mx="' + mi + '"><td style="text-align:left">' + short + '</td><td style="text-align:left">' + esc(r.strat) + '</td><td colspan="12" style="text-align:left">' + esc(r.noData) + "</td></tr>"; return; }
+            tb += '<tr class="bt-cmpmx-row' + (r.bh ? " bt-bh-row" : "") + '" data-mx="' + mi + '"><td style="text-align:left">' + short + '</td><td style="text-align:left">' + esc(r.strat) + "</td><td>" + pct(r.ret) + "</td><td>" + (r.win == null ? "—" : pct(r.win, 0)) + "</td><td>" + r.count + (r.open ? "（+保有中" + r.open + "）" : "") + "</td><td>" + (r.avg == null ? "—" : pct(r.avg)) + "</td><td>" + pct(r.maxdd) + "</td><td>" + sharpeTxt(r.sharpe) + "</td><td>" + sharpeTxt(r.calmar) + "</td><td>" + sharpeTxt(r.sortino) + "</td><td>" + sharpeTxt(r.ulcer) + "</td><td>" + sharpeTxt(r.upi) + "</td><td>" + (r.hold == null ? "—" : Math.round(r.hold) + "日") + "</td><td>" + esc(r.period) + "</td></tr>";
           });
           mxTable.querySelector("tbody").innerHTML = tb;
           if (mxHandle) mxHandle.restamp();
@@ -3227,7 +3263,7 @@
         function statOf(entries) {
           var a = aggregate(entries);
           if (!a) return null;
-          return { n: a.n, ret: a.ret, bh: a.bh, closed: a.closed, open: a.open, winRate: a.winRate, maxDd: a.maxDd, sharpe: a.sharpe, bhMaxDd: a.bhMaxDd, bhSharpe: a.bhSharpe, avgHold: a.avgHold, calmar: a.calmar, bhCalmar: a.bhCalmar, bhClosed: a.bhClosed, bhAvgHold: a.bhAvgHold };
+          return { n: a.n, ret: a.ret, bh: a.bh, closed: a.closed, open: a.open, winRate: a.winRate, maxDd: a.maxDd, sharpe: a.sharpe, bhMaxDd: a.bhMaxDd, bhSharpe: a.bhSharpe, avgHold: a.avgHold, calmar: a.calmar, bhCalmar: a.bhCalmar, bhClosed: a.bhClosed, bhAvgHold: a.bhAvgHold, sortino: a.sortino, bhSortino: a.bhSortino, ulcer: a.ulcer, bhUlcer: a.bhUlcer, upi: a.upi, bhUpi: a.bhUpi };
         }
         function meanOf(vals) { return vals.length ? vals.reduce(function (a, b) { return a + b; }, 0) / vals.length : null; }
         function medianOf(vals) {
@@ -3247,7 +3283,10 @@
             avgHold: meanOf(stats.map(function (s) { return s.avgHold; }).filter(function (v) { return v != null; })),
             bhClosed: meanOf(stats.map(function (s) { return s.bhClosed; })),
             bhAvgHold: meanOf(stats.map(function (s) { return s.bhAvgHold; }).filter(function (v) { return v != null; })),
-            calmar: meanOf(stats.map(function (s) { return s[cmKey]; }).filter(function (v) { return v != null; }))
+            calmar: meanOf(stats.map(function (s) { return s[cmKey]; }).filter(function (v) { return v != null; })),
+            sortino: meanOf(stats.map(function (s) { return s.sortino; }).filter(function (v) { return v != null; })),
+            ulcer: meanOf(stats.map(function (s) { return s.ulcer; }).filter(function (v) { return v != null; })),
+            upi: meanOf(stats.map(function (s) { return s.upi; }).filter(function (v) { return v != null; }))
           };
         }
         var totalPairs = patterns.length * rollDates.length;
@@ -3369,13 +3408,13 @@
           if (exclN > 0) html += '<p class="bt-res-note">' + (zeroOnly ? '平均取引回数0回の' : '平均取引回数' + minTrades + '回未満の') + exclN + '件を除外しています。</p>';
           html += heatHtml();
           html += '<table class="bt-res-table bt-rollall-table"><thead><tr>'
-            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="best">最大</th><th data-k="worst">最小</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th><th data-k="calmar">カルマー</th>'
+            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">平均</th><th data-k="median">中央値</th><th data-k="winRate">勝率</th><th data-k="best">最大</th><th data-k="worst">最小</th><th data-k="closed">取引回数</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープレシオ</th><th data-k="calmar">カルマーレシオ</th><th data-k="sortino">ソルティノレシオ</th><th data-k="ulcer">アルサーインデックス</th><th data-k="upi">UPI</th>'
             + '</tr></thead><tbody></tbody></table>';
           html += '<p class="bt-res-note">判定は終値、売買は翌営業日の始値です（σ下落の買いは当日の終値で買います）。手数料・税金は含みません。取引回数は開始日ごとの平均です。行を選ぶと、そのパターンの開始日別結果を表示します。</p>';
           html += '<div id="bt-all-detail"></div>';
           results.innerHTML = html;
           var tbody = results.querySelector(".bt-rollall-table tbody");
-          var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["no", "label", "ret", "median", "winRate", "best", "worst", "closed", "maxDd", "avgHold", "sharpe", "calmar"], "allroll");
+          var flex = setupFlexTable(results.querySelector(".bt-rollall-table"), ["no", "label", "ret", "median", "winRate", "best", "worst", "closed", "maxDd", "avgHold", "sharpe", "calmar", "sortino", "ulcer", "upi"], "allroll");
           var sortKey = "sharpe", sortDir = -1;
           var CAP = 300;
           function isAllOff(p) { return p.st.every(function (v) { return v === 0; }); }
@@ -3384,7 +3423,7 @@
             if (!a || a.ret == null) return '<tr class="bt-all-row"><td>' + (i + 1) + '</td><td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + '</td><td colspan="7" style="text-align:left">データがありませんでした</td></tr>';
             var bh = isAllOff(p);
             return '<tr class="bt-all-row' + (bh ? " bt-bh-row" : "") + '"><td>' + (i + 1) + '</td>' + (bh ? '<td style="text-align:left">買い持ち</td>' : '<td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td>") + "<td>" + pct(a.ret) + "</td><td>" + pct(a.median) + "</td><td>"
-              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.best) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td></tr>";
+              + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + pct(a.best) + "</td><td>" + pct(a.worst) + "</td><td>" + (a.closed == null ? "—" : a.closed.toFixed(1)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>" + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td><td>" + sharpeTxt(a.sortino) + "</td><td>" + sharpeTxt(a.ulcer) + "</td><td>" + sharpeTxt(a.upi) + "</td></tr>";
           }
           function renderRows() {
             var arr = patterns.slice();
@@ -3405,7 +3444,7 @@
               tr.addEventListener("click", function () { selectRollPattern(shown[i]); });
             });
             results.querySelectorAll(".bt-rollall-table th").forEach(function (th) {
-              var labels = { no: "番号", label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", best: "最大", worst: "最小", closed: "取引回数", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ", calmar: "カルマー" };
+              var labels = { no: "番号", label: "パターン", ret: "平均", median: "中央値", winRate: "勝率", best: "最大", worst: "最小", closed: "取引回数", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープレシオ", calmar: "カルマーレシオ", sortino: "ソルティノレシオ", ulcer: "アルサーインデックス", upi: "UPI" };
               var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
               setThLabel(th, th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base);
             });
@@ -3425,17 +3464,17 @@
             tbody.querySelectorAll(".bt-all-row").forEach(function (r) { r.classList.remove("sel"); });
             var detail = document.getElementById("bt-all-detail");
             var html = '<h3 class="bt-roll-detail-title">' + esc(p.label) + ' の開始日別結果</h3>';
-            html += '<table class="bt-res-table bt-rollall-dates"><thead><tr><th>開始日</th><th>対象銘柄数</th><th>リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>最大DD</th><th>平均保有</th><th>シャープ</th><th>カルマー</th></tr></thead><tbody>';
+            html += '<table class="bt-res-table bt-rollall-dates"><thead><tr><th>開始日</th><th>対象銘柄数</th><th>リターン</th><th>買い持ち</th><th>取引回数</th><th>勝率</th><th>最大DD</th><th>平均保有</th><th>シャープレシオ</th><th>カルマーレシオ</th><th>ソルティノレシオ</th><th>アルサーインデックス</th><th>UPI</th></tr></thead><tbody>';
             rollDates.forEach(function (rd, di) {
               var s = p.rollStats && p.rollStats[di];
               if (!s) { html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td colspan="9" style="text-align:left">データがありませんでした</td></tr>'; return; }
-              html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td>' + s.n + '</td><td>' + pct(s.ret) + '</td><td>' + pct(s.bh) + '</td><td>' + s.closed + (s.open ? "（+保有中" + s.open + "）" : "") + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + ddTxt(s.maxDd) + '</td><td>' + (s.avgHold == null ? "—" : s.avgHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.sharpe) + '</td><td>' + sharpeTxt(s.calmar) + '</td></tr>';
+              html += '<tr class="bt-rollall-date-row" data-roll-di="' + di + '"><td>' + rd.date + '</td><td>' + s.n + '</td><td>' + pct(s.ret) + '</td><td>' + pct(s.bh) + '</td><td>' + s.closed + (s.open ? "（+保有中" + s.open + "）" : "") + '</td><td>' + (s.winRate == null ? "—" : pct(s.winRate, 0)) + '</td><td>' + ddTxt(s.maxDd) + '</td><td>' + (s.avgHold == null ? "—" : s.avgHold.toFixed(0) + "日") + '</td><td>' + sharpeTxt(s.sharpe) + '</td><td>' + sharpeTxt(s.calmar) + '</td><td>' + sharpeTxt(s.sortino) + '</td><td>' + sharpeTxt(s.ulcer) + '</td><td>' + sharpeTxt(s.upi) + '</td></tr>';
             });
             html += '</tbody></table>';
             html += '<p class="bt-res-note">開始日の行を選ぶと、その開始日の銘柄別結果を表示します。</p>';
             html += '<div class="bt-rollall-stocks"></div>';
             detail.innerHTML = html;
-            setupFlexTable(detail.querySelector(".bt-rollall-dates"), ["start", "n", "ret", "bh", "count", "win", "maxdd", "avgHold", "sharpe", "calmar"], "allrolldates");
+            setupFlexTable(detail.querySelector(".bt-rollall-dates"), ["start", "n", "ret", "bh", "count", "win", "maxdd", "avgHold", "sharpe", "calmar", "sortino", "ulcer", "upi"], "allrolldates");
             var stocks = detail.querySelector(".bt-rollall-stocks");
             detail.querySelectorAll(".bt-rollall-date-row").forEach(function (tr) {
               tr.addEventListener("click", function () {
@@ -3633,13 +3672,13 @@
           if (exclN > 0) html += '<p class="bt-res-note">' + (zeroOnly ? '取引回数0回の' : '取引回数' + minTrades + '回未満の') + exclN + '件を除外しています。</p>';
           html += heatHtml();
           html += '<table class="bt-res-table bt-all-table"><thead><tr>'
-            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">リターン</th><th data-k="winRate">勝率</th><th data-k="closed">取引回数</th><th data-k="avgRet">平均損益</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープ</th><th data-k="calmar">カルマー</th>'
+            + '<th data-k="no">番号</th><th data-k="label">パターン</th><th data-k="ret">リターン</th><th data-k="winRate">勝率</th><th data-k="closed">取引回数</th><th data-k="avgRet">平均損益</th><th data-k="maxDd">最大DD</th><th data-k="avgHold">平均保有</th><th data-k="sharpe">シャープレシオ</th><th data-k="calmar">カルマーレシオ</th><th data-k="sortino">ソルティノレシオ</th><th data-k="ulcer">アルサーインデックス</th><th data-k="upi">UPI</th>'
             + '</tr></thead><tbody></tbody></table>';
           html += '<p class="bt-res-note">判定は終値、売買は翌営業日の始値です（σ下落の買いは当日の終値で買います）。手数料・税金は含みません。行を選ぶと、そのパターンの銘柄別結果を表示します。</p>';
           html += '<div id="bt-all-detail"></div>';
           results.innerHTML = html;
           var tbody = results.querySelector(".bt-all-table tbody");
-          var flex = setupFlexTable(results.querySelector(".bt-all-table"), ["no", "label", "ret", "winRate", "closed", "avgRet", "maxDd", "avgHold", "sharpe", "calmar"], "all");
+          var flex = setupFlexTable(results.querySelector(".bt-all-table"), ["no", "label", "ret", "winRate", "closed", "avgRet", "maxDd", "avgHold", "sharpe", "calmar", "sortino", "ulcer", "upi"], "all");
           var sortKey = "sharpe", sortDir = -1;
           var CAP = 300;
           function isAllOff(p) { return p.st.every(function (v) { return v === 0; }); }
@@ -3650,7 +3689,7 @@
             return '<tr class="bt-all-row' + (bh ? " bt-bh-row" : "") + '"><td>' + (i + 1) + '</td>' + (bh ? '<td style="text-align:left">買い持ち</td>' : '<td class="bt-pat-label" title="' + esc(p.label) + '" style="text-align:left">' + esc(p.label) + "</td>") + "<td>" + pct(a.ret) + "</td><td>"
               + (a.winRate == null ? "—" : pct(a.winRate, 0)) + "</td><td>" + a.closed + (a.open ? "（+保有中" + a.open + "）" : "") + "</td><td>"
               + (a.avgRet == null ? "—" : pct(a.avgRet)) + "</td><td>" + ddTxt(a.maxDd) + "</td><td>"
-              + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td></tr>";
+              + (a.avgHold == null ? "—" : a.avgHold.toFixed(0) + "日") + "</td><td>" + sharpeTxt(a.sharpe) + "</td><td>" + sharpeTxt(a.calmar) + "</td><td>" + sharpeTxt(a.sortino) + "</td><td>" + sharpeTxt(a.ulcer) + "</td><td>" + sharpeTxt(a.upi) + "</td></tr>";
           }
           function renderRows() {
             var arr = patterns.slice();
@@ -3671,7 +3710,7 @@
               tr.addEventListener("click", function () { selectPattern(shown[i]); });
             });
             results.querySelectorAll(".bt-all-table th").forEach(function (th) {
-              var labels = { no: "番号", label: "パターン", ret: "リターン", winRate: "勝率", closed: "取引回数", avgRet: "平均損益", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープ", calmar: "カルマー" };
+              var labels = { no: "番号", label: "パターン", ret: "リターン", winRate: "勝率", closed: "取引回数", avgRet: "平均損益", maxDd: "最大DD", avgHold: "平均保有", sharpe: "シャープレシオ", calmar: "カルマーレシオ", sortino: "ソルティノレシオ", ulcer: "アルサーインデックス", upi: "UPI" };
               var base = labels[th.getAttribute("data-k")] || th.textContent.replace(/[▲▼]/g, "");
               setThLabel(th, th.getAttribute("data-k") === sortKey ? base + (sortDir < 0 ? "▼" : "▲") : base);
             });
