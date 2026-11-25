@@ -809,10 +809,21 @@ def main():
     japan_days = sorted(r['date'] for r in tse_full if r['date'])
     us_days = sorted(set(us['sp500']) & set(us['nasdaq']) & set(us['nasdaq100']) & set(us['dow']), reverse=True)
     rows_all = []
+    seen_japan = set()
     for day in us_days:
         loc = bisect.bisect_right(japan_days, day)
         # Japan next session relative to a US trading date, no same-day alignment.
         japan = japan_days[loc] if loc < len(japan_days) else None
+        # A Japan session is shown only once (GRW, 2026-11-25): around
+        # Japan holidays several US sessions share the same next Japan
+        # session, which repeated that session's row in the table. Keep
+        # it on the last US session before it (us_days is descending, so
+        # the first occurrence wins) and blank it on the earlier rows.
+        if japan is not None:
+            if japan in seen_japan:
+                japan = None
+            else:
+                seen_japan.add(japan)
         rows_all.append({'date': day, 'japan_date': japan,
                          'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
                          'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
