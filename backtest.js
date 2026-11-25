@@ -343,14 +343,15 @@
     }
     var map = new Map();
     for (var i = 0; i < benchRows.length; i++) {
-      var found = -1;
+      var list = [];
       for (var di = 0; di < defs.length; di++) {
         var def = defs[di];
-        if (!def.items || !def.items.length) continue;
-        var okk = def.join === "or" ? def.items.some(function (id) { return item(def, id, i); }) : def.items.every(function (id) { return item(def, id, i); });
-        if (okk) { found = di; break; }
+        var bench = (def.items || []).filter(function (id) { return id.charAt(0) === "t"; });
+        if (!bench.length) { list.push(di); continue; }
+        var okk = def.join === "or" ? bench.some(function (id) { return item(def, id, i); }) : bench.every(function (id) { return item(def, id, i); });
+        if (okk) list.push(di);
       }
-      map.set(ind.dates[i], found);
+      map.set(ind.dates[i], list);
     }
     return map;
   }
@@ -545,7 +546,28 @@
 
     var from = Math.max(0, cfg.fromIdx), to = Math.min(n - 1, cfg.toIdx);
     var regime = cfg.regime || null;
-    function trendIdxAt(d) { if (!regime) return -2; var v = regime.byDate.get(dates[d]); return v == null ? -1 : v; }
+    function stockCond(def, id, d) {
+      var nums = def.nums || {}, c = jCloses[d];
+      if (id === "sMaUp") { var a = smaOf(nums.sMaDays || 200); return a[d] != null && c > a[d]; }
+      if (id === "sMaDn") { var b = smaOf(nums.sMaDays || 200); return b[d] != null && c < b[d]; }
+      if (id === "sMaNear") { var na = smaOf(nums.sMaDays || 200); return na[d] != null && na[d] > 0 && Math.abs(c / na[d] - 1) <= (nums.sNearPct || 3) / 100; }
+      if (id === "sCross") { var s1 = smaOf(nums.sCrossShort || 20), s2 = smaOf(nums.sCrossLong || 50); return s1[d] != null && s2[d] != null && s1[d] > s2[d]; }
+      if (id === "sCrossDn") { var s3 = smaOf(nums.sCrossShort || 20), s4 = smaOf(nums.sCrossLong || 50); return s3[d] != null && s4[d] != null && s3[d] < s4[d]; }
+      if (id === "sRsiUp") return rsi[d] != null && rsi[d] >= (nums.sRsiUp || 50);
+      if (id === "sRsiDn") return rsi[d] != null && rsi[d] <= (nums.sRsiDn || 50);
+      return false;
+    }
+    function stockItemsPass(def, d) {
+      var sItems = (def.items || []).filter(function (id) { return id.charAt(0) === "s"; });
+      if (!sItems.length) return true;
+      return def.join === "or" ? sItems.some(function (id) { return stockCond(def, id, d); }) : sItems.every(function (id) { return stockCond(def, id, d); });
+    }
+    function trendIdxAt(d) {
+      if (!regime) return -2;
+      var list = regime.byDate.get(dates[d]) || [];
+      for (var k = 0; k < list.length; k++) { if (stockItemsPass(regime.defs[list[k]], d)) return list[k]; }
+      return -1;
+    }
     function activeSc(d) { if (!regime) return cfg; var ti = trendIdxAt(d); return ti >= 0 ? (regime.strategies[ti] || null) : null; }
     var trades = [], pos = null, pendingBuy = false, pendingReason = null, pendingSell = null, waitRule = null;
     var pendingSc = null, pendingTrend = null;
@@ -1489,9 +1511,23 @@
       { id: "tDdNot", text: "DD警戒でない（DD[NUM:tDdN]）", nums: { tDdN: [5, 6, 7] } },
       { id: "tFtd", text: "FTD発生から25日以内", nums: {} },
       { id: "tRsiUp", text: "指数RSIが[NUM:tRsiUp]以上", nums: { tRsiUp: [50, 60, 70] } },
-      { id: "tRsiDn", text: "指数RSIが[NUM:tRsiDn]以下", nums: { tRsiDn: [30, 40, 50] } }
+      { id: "tRsiDn", text: "指数RSIが[NUM:tRsiDn]以下", nums: { tRsiDn: [30, 40, 50] } },
+      { id: "sMaUp", text: "株価が[NUM:sMaDays]日MAより上", nums: { sMaDays: [20, 50, 200] } },
+      { id: "sMaDn", text: "株価が[NUM:sMaDays]日MAより下", nums: { sMaDays: [20, 50, 200] } },
+      { id: "sMaNear", text: "株価が[NUM:sMaDays]日MAの±[NUM:sNearPct]%以内", nums: { sMaDays: [20, 50, 200], sNearPct: [1, 2, 3, 5] } },
+      { id: "sCross", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より上", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
+      { id: "sCrossDn", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より下", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
+      { id: "sRsiUp", text: "株価RSIが[NUM:sRsiUp]以上", nums: { sRsiUp: [50, 60, 70] } },
+      { id: "sRsiDn", text: "株価RSIが[NUM:sRsiDn]以下", nums: { sRsiDn: [30, 40, 50] } }
     ];
     var TREND_NAMES = { "2": ["強気", "弱気"], "3": ["強気", "レンジ", "弱気"], "4": ["Stage1", "Stage2", "Stage3", "Stage4"] };
+    // Each trend lists only the conditions that fit its direction:
+    // bullish trends get bullish conditions, bearish ones bearish ones.
+    var TREND_SETS = {
+      "2": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn"]],
+      "3": [["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp"], ["tMaNear", "tDdNot", "sMaNear"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn"]],
+      "4": [["tMaDn", "tDdNot", "sMaDn"], ["tMaUp", "tCross", "tDdNot", "tFtd", "tRsiUp", "sMaUp", "sCross", "sRsiUp"], ["tMaUp", "tDd", "tRsiUp", "sMaUp", "sRsiUp"], ["tMaDn", "tCrossDn", "tDd", "tRsiDn", "sMaDn", "sCrossDn", "sRsiDn"]]
+    };
     function trendDefaults(mode) {
       if (mode === "2") return [
         { items: ["tMaUp"], nums: { tMaDays: 200 }, join: "and", strat: 0 },
@@ -1577,12 +1613,14 @@
         cardsEl.style.display = "";
         var names = TREND_NAMES[state.mode];
         state.defs[state.mode].forEach(function (def, di) {
+          var allowed = TREND_SETS[state.mode][di] || [];
+          def.items = def.items.filter(function (id) { return allowed.indexOf(id) >= 0; });
           var card = document.createElement("div");
           card.className = "bt-regime-card";
           var joinOpts = '<option value="and"' + (def.join !== "or" ? " selected" : "") + ">すべて満たす（AND）</option>" + '<option value="or"' + (def.join === "or" ? " selected" : "") + ">いずれか満たす（OR）</option>";
           card.innerHTML = '<div class="bt-regime-card-head"><strong>' + esc(names[di]) + '</strong>' +
             '<label>組み合わせ <select class="bt-select bt-regime-join" data-card="' + di + '" aria-label="条件の組み合わせ">' + joinOpts + "</select></label></div>" +
-            '<div class="bt-regime-items">' + TREND_ITEMS.map(function (item) {
+            '<div class="bt-regime-items">' + TREND_ITEMS.filter(function (item) { return allowed.indexOf(item.id) >= 0; }).map(function (item) {
               return '<label class="bt-regime-item"><input type="checkbox" class="bt-regime-ck" data-card="' + di + '" value="' + item.id + '"' + (def.items.indexOf(item.id) >= 0 ? " checked" : "") + "> " + itemHtml(def, item) + "</label>";
             }).join("") + "</div>";
           cardsEl.appendChild(card);
@@ -2610,7 +2648,7 @@
             sc.__name = "戦略" + (def.strat + 1);
             return sc;
           });
-          ctx.regimeObj = { byDate: byDate, strategies: strategies, names: regimeReq.names };
+          ctx.regimeObj = { byDate: byDate, strategies: strategies, names: regimeReq.names, defs: regimeReq.defs };
           return ctx;
         }).catch(function () { ctx.regimeObj = null; return ctx; });
       }).then(function (ctx) {
