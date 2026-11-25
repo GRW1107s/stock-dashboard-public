@@ -117,7 +117,7 @@
 </section>
 <section id="leader-screener-panel" class="leader-screen"></section>
 <style>
-.bt-subtabs{display:flex;gap:8px;margin:10px 0 4px}.bt-subtab{padding:6px 16px;border:1px solid #b7c8db;background:#fff;color:#334155;border-radius:999px;font-size:13.5px;cursor:pointer}.bt-subtab.is-active{background:#2563eb;border-color:#2563eb;color:#fff}.bt-rot-avg td{background:#f1f5f9;font-weight:600}.bt-rot-head{font-size:14px;margin:16px 0 6px}.bt-settings{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:10px 0 14px}
+.bt-subtabs{display:flex;gap:8px;margin:10px 0 4px}.bt-subtab{padding:6px 16px;border:1px solid #b7c8db;background:#fff;color:#334155;border-radius:999px;font-size:13.5px;cursor:pointer}.bt-subtab.is-active{background:#2563eb;border-color:#2563eb;color:#fff}.bt-rot-avg td{background:#f1f5f9;font-weight:600}.bt-rot-head{font-size:14px;margin:16px 0 6px}.bt-rot-gap td{text-align:center;color:#64748b;background:#f8fafc}.bt-settings{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:10px 0 14px}
 .bt-settings2{margin-top:-8px}
 .bt-settings label{font-size:13px;color:#334155}
 .bt-settings select{margin-left:6px;padding:5px 8px;border:1px solid #b7c8db;border-radius:6px;background:#fff;font-size:13px}
@@ -314,7 +314,7 @@
 <div class="bt-filter-chips" id="bt-filter-chips"></div><div class="bt-results" id="bt-results"></div>
 </div>
 <div id="bt-rotation-view" hidden>
-<p class="bt-note">各営業日について「直近n取引日の上昇率」で順位付けし、1位・2位を買った場合のその後の平均リターンを保有日数ごとに集計した表です。セクターはセクターETFの終値、業種①②は日次変化率から復元した指数（直近200営業日）で計算します。</p>
+<p class="bt-note">各営業日について「直近n取引日の上昇率」で順位付けし、上位10・下位10の順位ごとに、その後の平均リターンを保有日数ごとに集計した表です。セクターはセクターETFの終値、業種①②は日次変化率から復元した指数（直近200営業日）で計算します。</p>
 <div class="bt-settings">
 <label>ランキング期間<select id="bt-rot-n"><option value="3" selected>3取引日</option><option value="5">5取引日</option><option value="10">10取引日</option><option value="25">25取引日</option><option value="60">60取引日</option><option value="126">126取引日</option></select></label>
 <label>開始日<input id="bt-rot-from" type="text" inputmode="numeric" placeholder="yyyymmdd" size="9"></label>
@@ -692,5 +692,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261125rot2" defer></script>
+</script><script src="./backtest.js?v=20261125rot3" defer></script>
 </body></html>

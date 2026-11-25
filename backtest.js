@@ -943,7 +943,7 @@
       ["1631.T", "銀行"], ["1632.T", "金融（除く銀行）"], ["1633.T", "不動産"]
     ];
     var ROT_HOLDS = [1, 5, 10, 20, 25];
-    var ROT_RANKS = [0, 1];
+    var ROT_SHOW = 10; // top and bottom ranks shown per table
     var rotCache = null;
     var rotBenchCache = undefined;
     var rotIndCache = {};
@@ -1031,8 +1031,8 @@
         });
       });
       var cal = Array.from(calSet).sort();
-      var rankSums = ROT_RANKS.map(function () { return ROT_HOLDS.map(function () { return 0; }); });
-      var rankCounts = ROT_RANKS.map(function () { return ROT_HOLDS.map(function () { return 0; }); });
+      var rankSums = series.map(function () { return ROT_HOLDS.map(function () { return 0; }); });
+      var rankCounts = series.map(function () { return ROT_HOLDS.map(function () { return 0; }); });
       var bSums = ROT_HOLDS.map(function () { return 0; }), bCounts = ROT_HOLDS.map(function () { return 0; });
       var days = 0;
       cal.forEach(function (d) {
@@ -1047,14 +1047,12 @@
         if (ranked.length < 3) return;
         ranked.sort(function (a, b) { return b.trail - a.trail; });
         days++;
-        ROT_RANKS.forEach(function (rank, ri) {
-          var rk = ranked[rank];
-          if (!rk) return;
+        ranked.forEach(function (rk, rank) {
           ROT_HOLDS.forEach(function (h, hi) {
             var k = rk.j + h;
             if (k >= rk.sr.closes.length) return;
-            rankSums[ri][hi] += rk.sr.closes[k] / rk.sr.closes[rk.j] - 1;
-            rankCounts[ri][hi]++;
+            rankSums[rank][hi] += rk.sr.closes[k] / rk.sr.closes[rk.j] - 1;
+            rankCounts[rank][hi]++;
           });
         });
         if (bench) {
@@ -1072,7 +1070,9 @@
       };
       return {
         days: days,
-        ranks: ROT_RANKS.map(function (rank, ri) { return { rank: rank, avgs: avg(rankSums[ri], rankCounts[ri]) }; }),
+        ranks: rankSums.map(function (sums, rank) {
+          return { rank: rank, avgs: avg(sums, rankCounts[rank]), has: rankCounts[rank].some(function (c) { return c > 0; }) };
+        }).filter(function (row) { return row.has; }),
         benchAvgs: avg(bSums, bCounts)
       };
     }
@@ -1088,7 +1088,14 @@
       var pct = function (v) { return v == null ? "—" : (v >= 0 ? "+" : "") + (v * 100).toFixed(2) + "%"; };
       html += '<table class="bt-res-table bt-rot-table"><thead><tr><th>購入条件</th>'
         + ROT_HOLDS.map(function (h) { return "<th>" + h + "日</th>"; }).join("") + "</tr></thead><tbody>";
-      st.ranks.forEach(function (row) {
+      var total = st.ranks.length;
+      var topEnd = Math.min(ROT_SHOW, total);
+      var botStart = Math.max(topEnd, total - ROT_SHOW);
+      st.ranks.forEach(function (row, i) {
+        if (i === botStart && botStart > topEnd) {
+          html += '<tr class="bt-rot-gap"><td colspan="' + (ROT_HOLDS.length + 1) + '">…（中間' + (botStart - topEnd) + '件）</td></tr>';
+        }
+        if (i >= topEnd && i < botStart) return;
         html += '<tr><td style="text-align:center">' + (row.rank + 1) + '位</td>' + row.avgs.map(function (v) {
           return "<td" + rotCellStyle(v) + ">" + pct(v) + "</td>";
         }).join("") + "</tr>";
