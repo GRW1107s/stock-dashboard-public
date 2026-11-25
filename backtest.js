@@ -379,8 +379,10 @@
       var nums = def.nums || {};
       var tpxM = /^tPx(\d+)(Up|Dn)$/.exec(id);
       if (tpxM) { var ta = sma(+tpxM[1]); return ta[i] != null && (tpxM[2] === "Up" ? closes[i] > ta[i] : closes[i] < ta[i]); }
-      if (id === "tCross") { var s1 = sma(nums.tCrossShort || 20), s2 = sma(nums.tCrossLong || 50); return s1[i] != null && s2[i] != null && s1[i] > s2[i]; }
-      if (id === "tCrossDn") { var s3 = sma(nums.tCrossShort || 20), s4 = sma(nums.tCrossLong || 50); return s3[i] != null && s4[i] != null && s3[i] < s4[i]; }
+      var tcxM = /^tCross(\d+)_(\d+)$/.exec(id);
+      if (tcxM) { var ts1 = sma(+tcxM[1]), ts2 = sma(+tcxM[2]); return ts1[i] != null && ts2[i] != null && ts1[i] > ts2[i]; }
+      var tcxD = /^tCrossDn(\d+)_(\d+)$/.exec(id);
+      if (tcxD) { var ts3 = sma(+tcxD[1]), ts4 = sma(+tcxD[2]); return ts3[i] != null && ts4[i] != null && ts3[i] < ts4[i]; }
       if (id === "tDd") return warnAt(ddNOf(def), i);
       if (id === "tDdNot") return !warnAt(ddNOf(def), i);
       if (id === "tFtd") return cuAt(cuNOf(def), i);
@@ -629,8 +631,10 @@
       var pm = /^sPx(\d+)(Up|Dn)$/.exec(id);
       if (pm) { var pa = smaOf(+pm[1]); return pa[d] != null && (pm[2] === "Up" ? c > pa[d] : c < pa[d]); }
       if (id === "sMaNear") { var na = smaOf(nums.sMaDays || 200); return na[d] != null && na[d] > 0 && Math.abs(c / na[d] - 1) <= (nums.sNearPct || 3) / 100; }
-      if (id === "sCross") { var s1 = smaOf(nums.sCrossShort || 20), s2 = smaOf(nums.sCrossLong || 50); return s1[d] != null && s2[d] != null && s1[d] > s2[d]; }
-      if (id === "sCrossDn") { var s3 = smaOf(nums.sCrossShort || 20), s4 = smaOf(nums.sCrossLong || 50); return s3[d] != null && s4[d] != null && s3[d] < s4[d]; }
+      var scxM = /^sCross(\d+)_(\d+)$/.exec(id);
+      if (scxM) { var ss1 = smaOf(+scxM[1]), ss2 = smaOf(+scxM[2]); return ss1[d] != null && ss2[d] != null && ss1[d] > ss2[d]; }
+      var scxD = /^sCrossDn(\d+)_(\d+)$/.exec(id);
+      if (scxD) { var ss3 = smaOf(+scxD[1]), ss4 = smaOf(+scxD[2]); return ss3[d] != null && ss4[d] != null && ss3[d] < ss4[d]; }
       if (id === "sRsiUp") return rsi[d] != null && rsi[d] >= (nums.sRsiUp || 50);
       if (id === "sRsiDn") return rsi[d] != null && rsi[d] <= (nums.sRsiDn || 50);
       if (id === "sSlope20Up") { var v1 = smaOf(20); return v1[d] != null && v1[d - 3] != null && v1[d] > v1[d - 3]; }
@@ -1676,8 +1680,16 @@
       { id: "tPx150Dn", text: "指数＜150MA" },
       { id: "tPx200Dn", text: "指数＜200MA" },
       { id: "tMaNear", text: "指数が[NUM:tMaDays]日MAの±[NUM:tNearPct]%以内", nums: { tMaDays: [20, 50, 100, 200], tNearPct: [1, 2, 3, 5] } },
-      { id: "tCross", text: "短期MA（[NUM:tCrossShort]）が長期MA（[NUM:tCrossLong]）より上", nums: { tCrossShort: [5, 10, 20, 25, 50], tCrossLong: [25, 50, 75, 100, 200] } },
-      { id: "tCrossDn", text: "短期MA（[NUM:tCrossShort]）が長期MA（[NUM:tCrossLong]）より下", nums: { tCrossShort: [5, 10, 20, 25, 50], tCrossLong: [25, 50, 75, 100, 200] } },
+      { id: "tCross5_20", text: "5MA＞20MA" },
+      { id: "tCross20_50", text: "20MA＞50MA" },
+      { id: "tCross50_100", text: "50MA＞100MA" },
+      { id: "tCross100_150", text: "100MA＞150MA" },
+      { id: "tCross150_200", text: "150MA＞200MA" },
+      { id: "tCrossDn5_20", text: "5MA＜20MA" },
+      { id: "tCrossDn20_50", text: "20MA＜50MA" },
+      { id: "tCrossDn50_100", text: "50MA＜100MA" },
+      { id: "tCrossDn100_150", text: "100MA＜150MA" },
+      { id: "tCrossDn150_200", text: "150MA＜200MA" },
       { id: "tDd", text: "Market in correction（DD[NUM:tDdN]以上）", nums: { tDdN: [5, 6, 7] } },
       { id: "tDdNot", text: "Market in correctionでない（DD[NUM:tDdN]）", nums: { tDdN: [5, 6, 7] } },
       { id: "tFtd", text: "Confirmed Uptrend（FTD発生後、DDが[NUM:tCuDd]以内）", nums: { tCuDd: [3, 4, 5, 6, 7] } },
@@ -1694,8 +1706,16 @@
       { id: "sPx150Dn", text: "株価＜150MA" },
       { id: "sPx200Dn", text: "株価＜200MA" },
       { id: "sMaNear", text: "株価が[NUM:sMaDays]日MAの±[NUM:sNearPct]%以内", nums: { sMaDays: [20, 50, 100, 200], sNearPct: [1, 2, 3, 5] } },
-      { id: "sCross", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より上", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
-      { id: "sCrossDn", text: "株価の短期MA（[NUM:sCrossShort]）が長期MA（[NUM:sCrossLong]）より下", nums: { sCrossShort: [5, 10, 20, 25, 50], sCrossLong: [25, 50, 75, 100, 200] } },
+      { id: "sCross5_20", text: "株価の5MA＞20MA" },
+      { id: "sCross20_50", text: "株価の20MA＞50MA" },
+      { id: "sCross50_100", text: "株価の50MA＞100MA" },
+      { id: "sCross100_150", text: "株価の100MA＞150MA" },
+      { id: "sCross150_200", text: "株価の150MA＞200MA" },
+      { id: "sCrossDn5_20", text: "株価の5MA＜20MA" },
+      { id: "sCrossDn20_50", text: "株価の20MA＜50MA" },
+      { id: "sCrossDn50_100", text: "株価の50MA＜100MA" },
+      { id: "sCrossDn100_150", text: "株価の100MA＜150MA" },
+      { id: "sCrossDn150_200", text: "株価の150MA＜200MA" },
       { id: "sRsiUp", text: "株価RSIが[NUM:sRsiUp]以上", nums: { sRsiUp: [50, 60, 70] } },
       { id: "sRsiDn", text: "株価RSIが[NUM:sRsiDn]以下", nums: { sRsiDn: [30, 40, 50] } },
       { id: "tSlope20Up", text: "指数の20MAが上向き" }, { id: "tSlope50Up", text: "指数の50MAが上向き" }, { id: "tSlope100Up", text: "指数の100MAが上向き" },
@@ -1711,9 +1731,9 @@
     // Each trend lists only the conditions that fit its direction:
     // bullish trends get bullish conditions, bearish ones bearish ones.
     var TREND_SETS = {
-      "2": [["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tCross", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "3": [["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tCross", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
-      "4": [["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn"], ["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tCross", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tDd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tCrossDn", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
+      "2": [["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tCross5_20", "tCross20_50", "tCross50_100", "tCross100_150", "tCross150_200", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross5_20", "sCross20_50", "sCross50_100", "sCross100_150", "sCross150_200", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tCrossDn5_20", "tCrossDn20_50", "tCrossDn50_100", "tCrossDn100_150", "tCrossDn150_200", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn5_20", "sCrossDn20_50", "sCrossDn50_100", "sCrossDn100_150", "sCrossDn150_200", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "3": [["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tCross5_20", "tCross20_50", "tCross50_100", "tCross100_150", "tCross150_200", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross5_20", "sCross20_50", "sCross50_100", "sCross100_150", "sCross150_200", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tCrossDn5_20", "tCrossDn20_50", "tCrossDn50_100", "tCrossDn100_150", "tCrossDn150_200", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn5_20", "sCrossDn20_50", "sCrossDn50_100", "sCrossDn100_150", "sCrossDn150_200", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]],
+      "4": [["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn"], ["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tCross5_20", "tCross20_50", "tCross50_100", "tCross100_150", "tCross150_200", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sCross5_20", "sCross20_50", "sCross50_100", "sCross100_150", "sCross150_200", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope100Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope100Up", "sHigherHigh", "sHigherLow"], ["tPx20Up", "tPx50Up", "tPx100Up", "tPx150Up", "tPx200Up", "tDd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx100Up", "sPx150Up", "sPx200Up", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tPx20Dn", "tPx50Dn", "tPx100Dn", "tPx150Dn", "tPx200Dn", "tCrossDn5_20", "tCrossDn20_50", "tCrossDn50_100", "tCrossDn100_150", "tCrossDn150_200", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx100Dn", "sPx150Dn", "sPx200Dn", "sCrossDn5_20", "sCrossDn20_50", "sCrossDn50_100", "sCrossDn100_150", "sCrossDn150_200", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope100Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope100Dn", "sLowerHigh", "sLowerLow"]]
     };
     function trendDefaults(mode) {
       if (mode === "2") return [
@@ -1768,6 +1788,13 @@
           var tv = +(def.nums || {}).tMaDays;
           var tdays = [20, 50, 100, 200].indexOf(tv) >= 0 ? tv : 200;
           def.items = def.items.map(function (id) { return id === "sMaUp" ? "sPx" + days + "Up" : id === "sMaDn" ? "sPx" + days + "Dn" : id === "tMaUp" ? "tPx" + tdays + "Up" : id === "tMaDn" ? "tPx" + tdays + "Dn" : id; });
+          def.items = def.items.map(function (id) {
+            var cm = /^(tCross|tCrossDn|sCross|sCrossDn)$/.exec(id);
+            if (!cm) return id;
+            var pre = cm[1], tp = pre.charAt(0) === "t";
+            var kk = ((def.nums || {})[tp ? "tCrossShort" : "sCrossShort"] || 20) + "_" + ((def.nums || {})[tp ? "tCrossLong" : "sCrossLong"] || 50);
+            return ["5_20", "20_50", "50_100", "100_150", "150_200"].indexOf(kk) >= 0 ? pre + kk : null;
+          }).filter(function (x) { return x != null; });
         });
       });
       var btMain = panel.querySelector(".bt-main");
@@ -1799,6 +1826,7 @@
         if (/Lower/.test(id)) return "swingDn";
         if (/^sPx\d+(Up|Dn)$/.test(id)) return id.replace(/\d+/g, "");
         if (/^tPx\d+(Up|Dn)$/.test(id)) return id.replace(/\d+/g, "");
+        if (/^(t|s)Cross(Dn)?\d+_\d+$/.test(id)) return id.replace(/\d+/g, "");
         return id;
       }
       var TREND_NUM_DEFAULTS = { tMaDays: 200, tCrossShort: 20, tCrossLong: 50, tDdN: 5, tCuDd: 5, tNearPct: 3, tRsiUp: 50, tRsiDn: 50, sMaDays: 200, sCrossShort: 20, sCrossLong: 50, sNearPct: 3, sRsiUp: 50, sRsiDn: 50 };
