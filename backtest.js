@@ -1482,12 +1482,16 @@
         panel.querySelectorAll("[data-bt-num]").forEach(function (n) { st.nums[n.getAttribute("data-bt-num")] = n.value; });
         return st;
       }
-      if (!store || !Array.isArray(store.slots) || (store.slots.length !== 8 && store.slots.length !== 10)) {
+      if (store && Array.isArray(store.slots) && store.slots.length) {
+        // A saved store from any earlier slot count is kept: pad or trim
+        // to 8 slots instead of discarding every saved strategy.
+        while (store.slots.length < 8) store.slots.push(blank());
+        if (store.slots.length > 8) store.slots = store.slots.slice(0, 8);
+      } else {
         var seed = collectDom();
         store = { active: 0, slots: [] };
         for (var i = 0; i < 8; i++) store.slots.push(i === 0 ? { buy: seed.buy, sell: seed.sell, buyFormula: seed.buyFormula || [], sellFormula: seed.sellFormula || [], nums: seed.nums, cmp: false, reentry: seed.reentry || [], exitRules: seed.exitRules || [], startHeld: !!seed.startHeld } : blank());
       }
-      if (store.slots.length === 10) store.slots = store.slots.slice(0, 8);
       store.slots.forEach(function (sl) {
         if (!sl || !Array.isArray(sl.buy) || !Array.isArray(sl.sell) || !sl.nums) { sl.buy = []; sl.sell = []; sl.nums = {}; }
         sl.cmp = !!sl.cmp;
@@ -1761,7 +1765,7 @@
           var item = null;
           TREND_ITEMS.forEach(function (x) { if (x.id === id) item = x; });
           if (!item) return id;
-          return item.text.replace(/\[NUM:(\w+)\]/g, function (_, k) { return def.nums[k] == null ? "" : def.nums[k]; });
+          return item.text.replace(/\[NUM:(\w+)\]/g, function (_, k) { return def.nums[k] == null ? (TREND_NUM_DEFAULTS[k] == null ? "" : TREND_NUM_DEFAULTS[k]) : def.nums[k]; });
         });
         return parts.join(def.join === "or" ? " または " : " かつ ");
       }
