@@ -701,12 +701,18 @@ def main():
         print("JP_RISK_BENCHMARK_ERROR", err, flush=True)
     jp_ok, jp_fail = fetch_charts(selected, "jp", jp_benchmark_returns, "1306.T")
     # Index ETFs are outside the screener universe, but the backtest panel
-    # offers them as targets; keep their daily OHLCV stored too.
-    for etf in ("1321.T", "1306.T"):
+    # offers them as targets; keep their daily OHLCV stored too. Sector
+    # ETFs (TOPIX-17) feed the sector rotation tab; a missing file is
+    # seeded with the full listed history once.
+    from history_store import SECTOR_ETFS_JP, fetch_full_history, ohlcv_file
+    for etf in ("1321.T", "1306.T") + tuple(SECTOR_ETFS_JP):
         if etf not in (COLLECTED_OHLCV.get("jp") or {}):
             try:
-                etf_data = obtain(etf, "jp")
-                etf_series = etf_data.pop("_ohlcv", None) if etf_data else None
+                if etf in SECTOR_ETFS_JP and not ohlcv_file(ROOT, "jp", etf).exists():
+                    etf_series = fetch_full_history(etf, "jp", HEADERS)
+                else:
+                    etf_data = obtain(etf, "jp")
+                    etf_series = etf_data.pop("_ohlcv", None) if etf_data else None
                 if etf_series:
                     COLLECTED_OHLCV["jp"][etf] = etf_series
             except Exception as err:
@@ -855,11 +861,15 @@ def main():
     # QQQ and SPY are outside the screener universe; keep their daily
     # OHLCV stored too (index ETF accumulation requested by GRW,
     # 2026-11-20).
-    for etf_symbol in ("QQQ", "SPY", "QLD", "TQQQ", "SOXX", "SOXL"):
+    from history_store import SECTOR_ETFS_US, fetch_full_history, ohlcv_file
+    for etf_symbol in ("QQQ", "SPY", "QLD", "TQQQ", "SOXX", "SOXL") + tuple(SECTOR_ETFS_US):
         if etf_symbol not in (COLLECTED_OHLCV.get("us") or {}):
             try:
-                etf_data = obtain(etf_symbol, "us")
-                etf_series = etf_data.pop("_ohlcv", None) if etf_data else None
+                if etf_symbol in SECTOR_ETFS_US and not ohlcv_file(ROOT, "us", etf_symbol).exists():
+                    etf_series = fetch_full_history(etf_symbol, "us", HEADERS)
+                else:
+                    etf_data = obtain(etf_symbol, "us")
+                    etf_series = etf_data.pop("_ohlcv", None) if etf_data else None
                 if etf_series:
                     COLLECTED_OHLCV["us"][etf_symbol] = etf_series
             except Exception as err:
@@ -937,9 +947,9 @@ def main():
         backfill_ohlcv10y_run(
             ROOT,
             [item["ticker"] for item in current_jp if item.get("ticker")]
-            + ["1321.T", "1306.T"],
+            + ["1321.T", "1306.T"] + SECTOR_ETFS_JP,
             [item["ticker"] for item in current_us if item.get("ticker")]
-            + ["QQQ", "SPY", "QLD", "TQQQ", "SOXX", "SOXL"])
+            + ["QQQ", "SPY", "QLD", "TQQQ", "SOXX", "SOXL"] + SECTOR_ETFS_US)
     except Exception as err:
         print("BACKFILL_OHLCV10Y_ERROR", str(err)[:150], flush=True)
     # Coverage summary for the backtest page's data note (file counts and

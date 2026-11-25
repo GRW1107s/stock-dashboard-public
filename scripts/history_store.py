@@ -18,10 +18,15 @@ never block the price pipeline.
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import json
+import math
 from pathlib import Path
 import re
+import time
+from urllib.parse import quote, urlencode
+from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 RETENTION_DAYS = 3660
 # Screener snapshots are kept for three years (GRW, 2026-11-19); the
@@ -80,7 +85,83 @@ def _fix_decimal_glitches(rows):
 
 # Tickers whose full history is kept (no retention trim): QQQ goes back to
 # its 1999 listing and GRW verifies index-linked strategies over ~30 years.
-FULL_HISTORY_TICKERS = {"QQQ", "QLD", "TQQQ", "SOXX", "SOXL"}
+# The sector ETFs (GRW, 2026-11-25) feed the backtest panel's sector
+# rotation tab, which ranks sectors over their whole listed history.
+SECTOR_ETFS_JP = [f"{code}.T" for code in range(1617, 1634)]
+SECTOR_ETFS_US = ["XLC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB",
+                  "XLRE", "XLK", "XLU"]
+FULL_HISTORY_TICKERS = ({"QQQ", "QLD", "TQQQ", "SOXX", "SOXL"}
+                        | set(SECTOR_ETFS_JP) | set(SECTOR_ETFS_US))
+
+
+def ohlcv_file(root, market, ticker):
+    return Path(root) / "ohlcv" / market / (_safe_name(ticker) + ".json")
+
+
+def _num(value):
+    try:
+        number = float(value)
+        return number if math.isfinite(number) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_full_history(symbol, market, headers=None):
+    """Whole listed history as OHLCV rows [date, o, h, l, c, v].
+
+    Mirrors update_sector_leaders.obtain()'s parsing, but with a
+    period1=0 window (obtain's ~455 days would leave a new sector
+    ETF file too shallow for the rotation statistics). Used once per
+    ticker, when its OHLCV file does not exist yet.
+    """
+    headers = headers or {"User-Agent": "Mozilla/5.0 (sector-etf-seed)",
+                          "Accept": "application/json"}
+    query = urlencode({"period1": 0, "period2": int(time.time()) + 86400,
+                       "interval": "1d"})
+    zone = ZoneInfo("Asia/Tokyo" if market == "jp" else "America/New_York")
+    last_error = None
+    for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+        for _attempt in range(2):
+            try:
+                url = (f"https://{host}/v8/finance/chart/"
+                       f"{quote(symbol, safe='')}?{query}")
+                request = Request(url, headers=headers)
+                with urlopen(request, timeout=30) as response:
+                    payload = json.loads(response.read(16_000_000))
+                record = payload["chart"]["result"][0]
+                quote_data = record["indicators"]["quote"][0]
+                opens = quote_data.get("open") or []
+                highs = quote_data.get("high") or []
+                lows = quote_data.get("low") or []
+
+                def _r4(v):
+                    return round(v, 4) if isinstance(v, float) else v
+
+                by_date = {}
+                for idx, (timestamp, close, volume) in enumerate(zip(
+                        record["timestamp"], quote_data["close"],
+                        quote_data["volume"])):
+                    close = _num(close)
+                    if close is None or close <= 0:
+                        continue
+                    day = datetime.fromtimestamp(
+                        timestamp, zone).date().isoformat()
+                    vol = _num(volume)
+                    if isinstance(vol, float) and vol.is_integer():
+                        vol = int(vol)
+                    by_date[day] = [
+                        day,
+                        _r4(_num(opens[idx])) if idx < len(opens) else None,
+                        _r4(_num(highs[idx])) if idx < len(highs) else None,
+                        _r4(_num(lows[idx])) if idx < len(lows) else None,
+                        _r4(close), vol,
+                    ]
+                rows = [by_date[day] for day in sorted(by_date)]
+                if rows:
+                    return rows
+            except Exception as err:  # noqa: BLE001 - retry on next host
+                last_error = err
+    raise RuntimeError(f"full history fetch failed for {symbol}: {last_error}")
 
 
 def update_ohlcv(root, market, series_by_ticker, *, today=None):

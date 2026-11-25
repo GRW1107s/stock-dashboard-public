@@ -926,6 +926,142 @@
     }
     window.addEventListener("resize", function () { alignFormulas(); });
     panel.addEventListener("click", function () { requestAnimationFrame(function () { alignFormulas(); }); });
+    // ---- Sector rotation tab (GRW, 2026-11-25): for every session,
+    // rank the sector ETFs by their trailing n-session return, then
+    // average the forward returns per rank. ----
+    var ROT_SECTORS = MARKET === "us" ? [
+      ["XLK", "情報技術"], ["XLF", "金融"], ["XLV", "ヘルスケア"],
+      ["XLE", "エネルギー"], ["XLI", "資本財"], ["XLY", "一般消費財"],
+      ["XLP", "生活必需品"], ["XLB", "素材"], ["XLC", "通信サービス"],
+      ["XLU", "公益事業"], ["XLRE", "不動産"]
+    ] : [
+      ["1617.T", "食品"], ["1618.T", "エネルギー資源"], ["1619.T", "建設・資材"],
+      ["1620.T", "素材・化学"], ["1621.T", "医薬品"], ["1622.T", "自動車・輸送機"],
+      ["1623.T", "鉄鋼・非鉄"], ["1624.T", "機械"], ["1625.T", "電機・精密"],
+      ["1626.T", "情報通信・サービスその他"], ["1627.T", "電力・ガス"],
+      ["1628.T", "運輸・物流"], ["1629.T", "商社・卸売"], ["1630.T", "小売"],
+      ["1631.T", "銀行"], ["1632.T", "金融（除く銀行）"], ["1633.T", "不動産"]
+    ];
+    var ROT_HOLDS = [5, 10, 25, 60];
+    var rotCache = null;
+    function rotFile(ticker) {
+      return MARKET === "us" ? "ohlcv/us/" + ticker + ".json"
+        : "ohlcv/jp/" + ticker.replace(/\.T$/, "") + "-T.json";
+    }
+    function loadRotSeries() {
+      if (rotCache) return Promise.resolve(rotCache);
+      var out = [];
+      return Promise.all(ROT_SECTORS.map(function (pair) {
+        return fetch(rotFile(pair[0]), { cache: "no-cache" }).then(function (res) {
+          if (!res.ok) return null;
+          return res.json();
+        }).then(function (data) {
+          if (!data || !data.rows || data.rows.length <= 130) return;
+          var dates = [], closes = [], idx = new Map();
+          data.rows.forEach(function (row, i) { dates.push(row[0]); closes.push(row[4]); idx.set(row[0], i); });
+          out.push({ ticker: pair[0], name: pair[1], dates: dates, closes: closes, idx: idx });
+        }).catch(function () { /* sector file not seeded yet */ });
+      })).then(function () {
+        out.sort(function (a, b) {
+          return ROT_SECTORS.findIndex(function (p) { return p[0] === a.ticker; })
+            - ROT_SECTORS.findIndex(function (p) { return p[0] === b.ticker; });
+        });
+        rotCache = out;
+        return out;
+      });
+    }
+    function rotationStats(series, n, fromD, toD) {
+      var calSet = new Set();
+      series.forEach(function (sr) {
+        sr.dates.forEach(function (d) {
+          if ((!fromD || d >= fromD) && (!toD || d <= toD)) calSet.add(d);
+        });
+      });
+      var cal = Array.from(calSet).sort();
+      var maxRank = series.length;
+      var sums = [], counts = [], allSums = ROT_HOLDS.map(function () { return 0; }),
+        allCounts = ROT_HOLDS.map(function () { return 0; });
+      for (var r = 0; r < maxRank; r++) {
+        sums.push(ROT_HOLDS.map(function () { return 0; }));
+        counts.push(ROT_HOLDS.map(function () { return 0; }));
+      }
+      var days = 0;
+      cal.forEach(function (d) {
+        var ranked = [];
+        series.forEach(function (sr) {
+          var j = sr.idx.get(d);
+          if (j === undefined || j < n) return;
+          var base = sr.closes[j - n];
+          if (!(base > 0) || !(sr.closes[j] > 0)) return;
+          ranked.push({ sr: sr, j: j, trail: sr.closes[j] / base - 1 });
+        });
+        if (ranked.length < 3) return;
+        ranked.sort(function (a, b) { return b.trail - a.trail; });
+        days++;
+        ranked.forEach(function (rk, rank) {
+          ROT_HOLDS.forEach(function (h, hi) {
+            var k = rk.j + h;
+            if (k >= rk.sr.closes.length) return;
+            var fwd = rk.sr.closes[k] / rk.sr.closes[rk.j] - 1;
+            sums[rank][hi] += fwd; counts[rank][hi]++;
+            allSums[hi] += fwd; allCounts[hi]++;
+          });
+        });
+      });
+      return { sums: sums, counts: counts, allSums: allSums, allCounts: allCounts, days: days, maxRank: maxRank };
+    }
+    function runRotation() {
+      var host = document.getElementById("bt-rot-results");
+      if (!host) return;
+      var n = parseInt((document.getElementById("bt-rot-n") || {}).value || "25", 10);
+      var norm = function (v) {
+        var d = String(v || "").replace(/\D/g, "");
+        return d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : "";
+      };
+      var fromD = norm((document.getElementById("bt-rot-from") || {}).value);
+      var toD = norm((document.getElementById("bt-rot-to") || {}).value);
+      host.innerHTML = '<p class="bt-note">読み込んでいます…</p>';
+      loadRotSeries().then(function (series) {
+        if (!series.length) {
+          host.innerHTML = '<p class="bt-note">セクターETFのデータがまだ準備できていません（自動更新で順次そろいます）。</p>';
+          return;
+        }
+        var st = rotationStats(series, n, fromD, toD);
+        if (!st.days) {
+          host.innerHTML = '<p class="bt-note">対象期間に集計できる日がありません。</p>';
+          return;
+        }
+        var pct = function (v) { return v == null ? "—" : (v >= 0 ? "+" : "") + (v * 100).toFixed(2) + "%"; };
+        var html = '<p class="bt-note">ランキング期間 ' + n + '取引日／集計した営業日 '
+          + st.days.toLocaleString() + '日／対象セクター ' + series.length + '本（セクターETFの終値で計算）</p>';
+        html += '<table class="bt-res-table bt-rot-table"><thead><tr><th>順位</th>'
+          + ROT_HOLDS.map(function (h) { return "<th>" + h + "日後</th>"; }).join("") + "</tr></thead><tbody>";
+        for (var r = 0; r < st.maxRank; r++) {
+          if (!st.counts[r][0]) continue;
+          html += '<tr><td style="text-align:center">' + (r + 1) + '位</td>' + ROT_HOLDS.map(function (h, hi) {
+            return "<td>" + pct(st.counts[r][hi] ? st.sums[r][hi] / st.counts[r][hi] : null) + "</td>";
+          }).join("") + "</tr>";
+        }
+        html += '<tr class="bt-rot-avg"><td style="text-align:center">全セクター平均</td>' + ROT_HOLDS.map(function (h, hi) {
+          return "<td>" + pct(st.allCounts[hi] ? st.allSums[hi] / st.allCounts[hi] : null) + "</td>";
+        }).join("") + "</tr></tbody></table>";
+        host.innerHTML = html;
+      });
+    }
+    panel.querySelectorAll(".bt-subtab").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        panel.querySelectorAll(".bt-subtab").forEach(function (b) { b.classList.toggle("is-active", b === btn); });
+        var rot = btn.getAttribute("data-bt-view") === "rotation";
+        var stockView = document.getElementById("bt-stock-view");
+        var rotView = document.getElementById("bt-rotation-view");
+        if (stockView) stockView.hidden = rot;
+        if (rotView) rotView.hidden = !rot;
+        if (!rot) requestAnimationFrame(function () { alignFormulas(); });
+      });
+    });
+    var rotRunBtn = document.getElementById("bt-rot-run");
+    if (rotRunBtn) rotRunBtn.addEventListener("click", runRotation);
+
     function setFormula(group, tokens) {
       curFormulas[group] = tokens;
       if (formulaSel[group] >= tokens.length) formulaSel[group] = tokens.length - 1;
