@@ -79,7 +79,7 @@
     var h="<div class='opt-chain-controls'><label>建玉比較 <select data-oi-period>";
     [1,3,10,25].forEach(function(p){h+="<option value='"+p+"'"+(p===period?" selected":"")+">"+p+"取引日</option>";});
     h+="</select></label><span class='opt-note' style='margin:0'>"+(prior?"比較日："+prior.date:"比較履歴不足")+"｜価格・IV・金額は取得済みのもののみ表示</span></div>";
-    h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='6' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='6' class='opt-call-head'>CALL コール</th></tr><tr><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高</th><th>OI増減</th><th>建玉</th><th>建玉</th><th>OI増減</th><th>出来高</th><th>増減額(億)</th><th>清算値</th><th>IV</th></tr></thead><tbody>";
+    h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='6' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='6' class='opt-call-head'>CALL コール</th></tr><tr><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高</th><th>残高増減</th><th>残高</th><th>残高</th><th>残高増減</th><th>出来高</th><th>増減額(億)</th><th>清算値</th><th>IV</th></tr></thead><tbody>";
     var marker=false;
     rows.forEach(function(r){
       if(!marker&&block.spot!=null&&r[0]>block.spot){h+="<tr class='opt-spotline'><td colspan='13'>日経平均 "+fmtPx(block.spot)+"</td></tr>";marker=true;}
@@ -89,7 +89,7 @@
       h+="<tr"+(r[0]===atm?" class='opt-atm'":"")+">"+cell(p.iv,"iv",pc)+cell(p.settlement,"price",pc)+cell(pd!=null&&p.settlement!=null?pd*p.settlement/100000:null,"money",pc)+cell(r[4],"int",pc)+cell(pd,"chg",pc)+cell(r[2],"int",pc)+"<td class='opt-k'>"+fmtStrike(r[0])+"</td>"+cell(r[1],"int",cc)+cell(cd,"chg",cc)+cell(r[3],"int",cc)+cell(cd!=null&&c.settlement!=null?cd*c.settlement/100000:null,"money",cc)+cell(c.settlement,"price",cc)+cell(c.iv,"iv",cc)+"</tr>";
     });
     if(!marker&&block.spot!=null)h+="<tr class='opt-spotline'><td colspan='13'>日経平均 "+fmtPx(block.spot)+"</td></tr>";
-    return h+"</tbody></table></div><p class='opt-note'>OI増減＝同一限月・同一行使価格の建玉差。増減額＝OI増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
+    return h+"</tbody></table></div><p class='opt-note'>残高増減＝同一限月・同一行使価格の建玉差。増減額＝残高増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
   }
 
   function render(root, block) {
