@@ -158,9 +158,23 @@
     var cols=headers.map(function(){var c=document.createElement("col");group.appendChild(c);return c;});
     table.insertBefore(group,table.firstChild);
     table.classList.add("opt-resizable");
+    var visibilityKey="nikkei-options-column-visibility-v1";
+    var labels=second.slice(0,11).map(function(th){return th.textContent;});
+    var visible=labels.map(function(){return true;});
+    try{var stored=JSON.parse(localStorage.getItem(visibilityKey));if(Array.isArray(stored)&&stored.length===11&&stored.every(function(v){return typeof v==="boolean";}))visible=stored;}catch(err){}
+    function shown(i){return i===11||visible[i<11?i:22-i];}
+    function saveVisibility(){try{localStorage.setItem(visibilityKey,JSON.stringify(visible));}catch(err){}}
     function apply(){
-      cols.forEach(function(c,i){c.style.width=widths[i]+"px";});
-      table.style.width=widths.reduce(function(a,b){return a+b;},0)+"px";
+      var count=visible.filter(Boolean).length;
+      cols.forEach(function(c,i){c.style.width=shown(i)?widths[i]+"px":"0px";c.style.display=shown(i)?"":"none";headers[i].style.display=shown(i)?"":"none";});
+      Array.from(table.tBodies[0].rows).forEach(function(row){
+        if(row.cells.length===23)Array.from(row.cells).forEach(function(c,i){c.style.display=shown(i)?"":"none";});
+        else if(row.cells.length===1)row.cells[0].colSpan=1+2*count;
+      });
+      var top=head.rows[0].cells;
+      [top[0],top[2]].forEach(function(c){c.colSpan=Math.max(1,count);c.style.display=count?"":"none";});
+      var width=widths.reduce(function(a,b,i){return a+(shown(i)?b:0);},0);
+      table.style.width=width+"px";table.style.minWidth=width+"px";
     }
     function save(){try{localStorage.setItem(key,JSON.stringify(widths));}catch(err){}}
     function adjust(i,v){widths[i]=Math.max(36,Math.min(500,Math.round(v)));apply();}
@@ -188,6 +202,16 @@
       var reset=document.createElement("button");reset.type="button";reset.textContent="列幅リセット";
       reset.addEventListener("click",function(){widths=defaults.slice();apply();save();});
       controls.appendChild(reset);
+      var details=document.createElement("details");details.style.cssText="position:relative;display:inline-block";
+      var summary=document.createElement("summary");summary.textContent="表示列";summary.style.cssText="cursor:pointer;padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px";details.appendChild(summary);
+      var menu=document.createElement("div");menu.style.cssText="position:absolute;top:100%;left:0;z-index:20;background:white;color:#182437;border:1px solid #cbd5e1;border-radius:6px;padding:10px;min-width:200px;box-shadow:0 4px 12px #0002;display:grid;gap:5px";details.appendChild(menu);
+      var buttons=document.createElement("div");buttons.style.cssText="display:flex;gap:6px";menu.appendChild(buttons);
+      var checks=[];
+      function sync(){checks.forEach(function(c,i){c.checked=visible[i];});summary.textContent="表示列 ("+visible.filter(Boolean).length+"/11)";apply();saveVisibility();}
+      [["全表示",function(){return true;}],["基本項目",function(i){return [6,9,10].includes(i);}]].forEach(function(p){var b=document.createElement("button");b.type="button";b.textContent=p[0];b.onclick=function(){visible=labels.map(function(_,i){return p[1](i);});sync();};buttons.appendChild(b);});
+      labels.slice().reverse().forEach(function(label,j){var i=10-j;var l=document.createElement("label");l.style.cssText="display:flex;gap:6px;align-items:center;white-space:nowrap";var c=document.createElement("input");c.type="checkbox";c.checked=visible[i];checks[i]=c;c.onchange=function(){visible[i]=c.checked;sync();};l.appendChild(c);l.appendChild(document.createTextNode(label));menu.appendChild(l);});
+      summary.textContent="表示列 ("+visible.filter(Boolean).length+"/11)";
+      var note=document.createElement("small");note.textContent="PUT/CALL共通・行使価格は常時表示";menu.appendChild(note);controls.appendChild(details);
       var tip=document.createElement("span");tip.className="opt-note";tip.style.margin="0";tip.textContent="列見出しの右端をドラッグして幅を調整";controls.appendChild(tip);
     }
     apply();
