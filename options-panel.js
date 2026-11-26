@@ -94,11 +94,14 @@
     }
     // Common absolute scale across both sides of the selected expiry.
     var oiMax=rows.reduce(function(m,r){return Math.max(m,Number(r[1])||0,Number(r[2])||0);},0);
+    function shares(r){return [ratio(r[1],e.call_oi),ratio(r[2],e.put_oi),ratio(r[3],e.call_vol),ratio(r[4],e.put_vol)];}
+    var shareMax=[0,0];rows.forEach(function(r){var p=shares(r);shareMax[0]=Math.max(shareMax[0],p[0]||0,p[1]||0);shareMax[1]=Math.max(shareMax[1],p[2]||0,p[3]||0);});
     var totalRows=rows.length;
     rows=rows.filter(function(r){
       if(filter.atm&&r[0]===atm)return true;
-      var oi=filter.oi===0||[r[1],r[2]].some(function(v){return Number.isFinite(v)&&v>=filter.oi;});
-      var vol=filter.vol===0||[r[3],r[4]].some(function(v){return Number.isFinite(v)&&v>=filter.vol;});
+      var vals=filter.mode==='share'?shares(r):r.slice(1,5);
+      var oi=filter.oi===0||vals.slice(0,2).some(function(v){return Number.isFinite(v)&&v>=filter.oi;});
+      var vol=filter.vol===0||vals.slice(2,4).some(function(v){return Number.isFinite(v)&&v>=filter.vol;});
       if(filter.oi===0)return filter.vol===0||vol;
       if(filter.vol===0)return oi;
       return filter.op==="AND"?oi&&vol:oi||vol;
@@ -108,10 +111,11 @@
       if(missing)c+=" opt-missing";
       else if(kind==="chg"||kind==="pct"||kind==="z")c+=v>0?" opt-up":v<0?" opt-down":"";
       if(!missing&&kind==="z"&&Math.abs(v)>=2)c+=" opt-alert";
-      var t=missing?"—":(kind==="iv"||kind==="pct"||kind==="ratio")?((kind==="pct"&&v>0)?"+":"")+v.toFixed(1)+"%":kind==="z"?(v>0?"+":"")+v.toFixed(2):kind==="money"?v.toFixed(2):kind==="chg"?(v>0?"+":"")+fmtInt(v):fmtPx(v);
+      var t=missing?"—":(kind==="oiShare"||kind==="volShare")?v.toFixed(2)+"%":(kind==="iv"||kind==="pct"||kind==="ratio")?((kind==="pct"&&v>0)?"+":"")+v.toFixed(1)+"%":kind==="z"?(v>0?"+":"")+v.toFixed(2):kind==="money"?v.toFixed(2):kind==="chg"?(v>0?"+":"")+fmtInt(v):fmtPx(v);
       var heat="";
-      if(!missing&&kind==="oi"&&v>0&&oiMax>0){
-        var intensity=Math.sqrt(v/oiMax);
+      var heatMax=kind==="oi"?oiMax:kind==="oiShare"?shareMax[0]:kind==="volShare"?shareMax[1]:0;
+      if(!missing&&v>0&&heatMax>0){
+        var intensity=Math.sqrt(v/heatMax);
         var alpha=0.06+0.64*intensity;
         heat=" style='background-color:rgba(37,99,235,"+alpha.toFixed(3)+");color:"+(alpha>=0.58?"#102451":"#182437")+";font-weight:"+(intensity>=0.55?"700":"400")+"'";
       }
@@ -120,13 +124,14 @@
     var h="<div class='opt-chain-controls'><label>建玉比較 <select data-oi-period>";
     [1,3,10,25].forEach(function(p){h+="<option value='"+p+"'"+(p===period?" selected":"")+">"+p+"取引日</option>";});
     h+="</select></label><span class='opt-note' style='margin:0'>"+(prior?"比較日："+prior.date:"比較履歴不足")+"｜価格・IV・金額は取得済みのもののみ表示</span></div>";
-    h+="<div class='opt-chain-controls'><label>最小建玉 <input data-opt-oi type='number' min='0' step='1' style='width:85px' value='"+filter.oi+"'> 枚</label><label>最小出来高 <input data-opt-vol type='number' min='0' step='1' style='width:85px' value='"+filter.vol+"'> 枚</label><select data-opt-op><option value='OR'"+(filter.op==="OR"?" selected":"")+">OR（いずれか）</option><option value='AND'"+(filter.op==="AND"?" selected":"")+">AND（両方）</option></select><label><input type='checkbox' data-opt-atm"+(filter.atm?" checked":"")+">ATM常時表示</label>";
-    [[0,0,"全表示"],[500,100,"通常"],[1000,200,"重要"],[3000,500,"大口集中"]].forEach(function(p){h+="<button type='button' data-opt-preset='"+p[0]+","+p[1]+"' aria-pressed='"+(filter.oi===p[0]&&filter.vol===p[1])+"'>"+p[2]+"</button>";});
+    var shareMode=filter.mode==="share", unit=shareMode?"%":"枚", step=shareMode?"0.01":"1", suffix=shareMode?"占有率":"";
+    h+="<div class='opt-chain-controls'><label>基準 <select data-opt-mode><option value='count'"+(!shareMode?" selected":"")+">枚数</option><option value='share'"+(shareMode?" selected":"")+">占有率</option></select></label><label>最小建玉"+suffix+" <input data-opt-oi type='number' min='0' step='"+step+"' style='width:85px' value='"+filter.oi+"'> "+unit+"</label><label>最小出来高"+suffix+" <input data-opt-vol type='number' min='0' step='"+step+"' style='width:85px' value='"+filter.vol+"'> "+unit+"</label><select data-opt-op><option value='OR'"+(filter.op==="OR"?" selected":"")+">OR（いずれか）</option><option value='AND'"+(filter.op==="AND"?" selected":"")+">AND（両方）</option></select><label><input type='checkbox' data-opt-atm"+(filter.atm?" checked":"")+">ATM常時表示</label>";
+    (shareMode?[[0,0,"全表示"],[0.5,0.5,"通常"],[1,1,"重要"],[3,3,"大口集中"]]:[[0,0,"全表示"],[500,100,"通常"],[1000,200,"重要"],[3000,500,"大口集中"]]).forEach(function(p){h+="<button type='button' data-opt-preset='"+p[0]+","+p[1]+"' aria-pressed='"+(filter.oi===p[0]&&filter.vol===p[1])+"'>"+p[2]+"</button>";});
     h+="<span class='opt-note' style='margin:0'>表示 "+rows.length+" / "+totalRows+" 行使価格</span></div>";
-    h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='11' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='11' class='opt-call-head'>CALL コール</th></tr><tr><th>IV前日比</th><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高σ</th><th>出来高/建玉</th><th>出来高</th><th>建玉増減σ</th><th>建玉増減率</th><th>建玉増減</th><th>建玉</th><th>建玉</th><th>建玉増減</th><th>建玉増減率</th><th>建玉増減σ</th><th>出来高</th><th>出来高/建玉</th><th>出来高σ</th><th>増減額(億)</th><th>清算値</th><th>IV</th><th>IV前日比</th></tr></thead><tbody>";
+    h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='13' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='13' class='opt-call-head'>CALL コール</th></tr><tr><th>IV前日比</th><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高σ</th><th>出来高/建玉</th><th>出来高占有率</th><th>出来高</th><th>建玉増減σ</th><th>建玉増減率</th><th>建玉増減</th><th>建玉占有率</th><th>建玉</th><th>建玉</th><th>建玉占有率</th><th>建玉増減</th><th>建玉増減率</th><th>建玉増減σ</th><th>出来高</th><th>出来高占有率</th><th>出来高/建玉</th><th>出来高σ</th><th>増減額(億)</th><th>清算値</th><th>IV</th><th>IV前日比</th></tr></thead><tbody>";
     var marker=false;
     rows.forEach(function(r){
-      if(!marker&&block.spot!=null&&r[0]<block.spot){h+="<tr class='opt-spotline'><td colspan='23'>日経平均 "+fmtPx(block.spot)+"</td></tr>";marker=true;}
+      if(!marker&&block.spot!=null&&r[0]<block.spot){h+="<tr class='opt-spotline'><td colspan='27'>日経平均 "+fmtPx(block.spot)+"</td></tr>";marker=true;}
       var old=map.get(r[0]), cd=old?r[1]-old[1]:null,pd=old?r[2]-old[2]:null;
       var q=(e.quotes||{})[String(r[0])]||{}, c=q.call||{}, p=q.put||{};
       var cc=r[0]<block.spot?"opt-itm":"",pc=r[0]>block.spot?"opt-itm":"";
@@ -134,10 +139,10 @@
       var prevExp=history[0]&&(history[0].expiries||[]).find(function(x){return x.expiry===e.expiry;});
       var pq=(prevExp&&prevExp.quotes||{})[String(r[0])]||{};
       function ivdiff(cur,old){return Number.isFinite(cur.iv)&&old&&Number.isFinite(old.iv)?cur.iv-old.iv:null;}
-      h+="<tr"+(r[0]===atm?" class='opt-atm'":"")+">"+cell(ivdiff(p,pq.put),"pct",pc)+cell(p.iv,"iv",pc)+cell(p.settlement,"price",pc)+cell(pd!=null&&p.settlement!=null?pd*p.settlement/100000:null,"money",pc)+cell(ps.vz,"z",pc)+cell(ps.turn,"ratio",pc)+cell(r[4],"int",pc)+cell(ps.oz,"z",pc)+cell(ps.pct,"pct",pc)+cell(pd,"chg",pc)+cell(r[2],"oi",pc)+"<td class='opt-k'>"+fmtStrike(r[0])+"</td>"+cell(r[1],"oi",cc)+cell(cd,"chg",cc)+cell(cs.pct,"pct",cc)+cell(cs.oz,"z",cc)+cell(r[3],"int",cc)+cell(cs.turn,"ratio",cc)+cell(cs.vz,"z",cc)+cell(cd!=null&&c.settlement!=null?cd*c.settlement/100000:null,"money",cc)+cell(c.settlement,"price",cc)+cell(c.iv,"iv",cc)+cell(ivdiff(c,pq.call),"pct",cc)+"</tr>";
+      h+="<tr"+(r[0]===atm?" class='opt-atm'":"")+">"+cell(ivdiff(p,pq.put),"pct",pc)+cell(p.iv,"iv",pc)+cell(p.settlement,"price",pc)+cell(pd!=null&&p.settlement!=null?pd*p.settlement/100000:null,"money",pc)+cell(ps.vz,"z",pc)+cell(ps.turn,"ratio",pc)+cell(ratio(r[4],e.put_vol),"volShare",pc)+cell(r[4],"int",pc)+cell(ps.oz,"z",pc)+cell(ps.pct,"pct",pc)+cell(pd,"chg",pc)+cell(ratio(r[2],e.put_oi),"oiShare",pc)+cell(r[2],"oi",pc)+"<td class='opt-k'>"+fmtStrike(r[0])+"</td>"+cell(r[1],"oi",cc)+cell(ratio(r[1],e.call_oi),"oiShare",cc)+cell(cd,"chg",cc)+cell(cs.pct,"pct",cc)+cell(cs.oz,"z",cc)+cell(r[3],"int",cc)+cell(ratio(r[3],e.call_vol),"volShare",cc)+cell(cs.turn,"ratio",cc)+cell(cs.vz,"z",cc)+cell(cd!=null&&c.settlement!=null?cd*c.settlement/100000:null,"money",cc)+cell(c.settlement,"price",cc)+cell(c.iv,"iv",cc)+cell(ivdiff(c,pq.call),"pct",cc)+"</tr>";
     });
-    if(!marker&&block.spot!=null)h+="<tr class='opt-spotline'><td colspan='23'>日経平均 "+fmtPx(block.spot)+"</td></tr>";
-    return h+"</tbody></table></div><p class='opt-note'>建玉増減＝同一限月・同一行使価格の建玉差。増減額＝建玉増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。建玉増減率＝比較期間の増減÷比較日の建玉。出来高/建玉＝当日出来高÷前日建玉。σは当日の値を過去最大25観測（最低20観測）の平均・標本標準偏差で標準化。建玉増減σは日次差、黄色は絶対値2以上。IV前日比はポイント差。建玉セルは同一限月のプット・コール共通の最大建玉を基準に青色の濃淡で表示（平方根スケール）。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
+    if(!marker&&block.spot!=null)h+="<tr class='opt-spotline'><td colspan='27'>日経平均 "+fmtPx(block.spot)+"</td></tr>";
+    return h+"</tbody></table></div><p class='opt-note'>占有率＝同一限月・同一種類（PUT/CALL別）の全建玉または全出来高に対する割合。分母ゼロ・欠損は — 。建玉増減＝同一限月・同一行使価格の建玉差。増減額＝建玉増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。建玉増減率＝比較期間の増減÷比較日の建玉。出来高/建玉＝当日出来高÷前日建玉。σは当日の値を過去最大25観測（最低20観測）の平均・標本標準偏差で標準化。建玉増減σは日次差、黄色は絶対値2以上。IV前日比はポイント差。建玉セルは同一限月のプット・コール共通の最大建玉を基準に青色の濃淡で表示（平方根スケール）。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
   }
 
 
@@ -145,30 +150,32 @@
     var table=root.querySelector(".opt-chain");
     if(!table)return;
     var head=table.tHead, second=Array.from(head.rows[1].cells);
-    var headers=second.slice(0,11).concat([head.rows[0].cells[1]],second.slice(11));
-    var defaults=[72,52,65,80,72,88,65,85,92,76,70,84,70,76,92,85,65,88,72,80,65,52,72];
-    var key="nikkei-options-column-widths-v1";
+    var n=second.length/2;var headers=second.slice(0,n).concat([head.rows[0].cells[1]],second.slice(n));
+    var leftDefaults=[72,52,65,80,72,88,92,65,85,92,76,92,70];var defaults=leftDefaults.concat([84],leftDefaults.slice().reverse());
+    var oldIndexes=[0,1,2,3,4,5,7,8,9,10,12,13,14,16,17,18,19,21,22,23,24,25,26];
+    var key="nikkei-options-column-widths-v2";
     var widths=defaults.slice();
     try {
       var saved=JSON.parse(localStorage.getItem(key));
       if(Array.isArray(saved)&&saved.length===headers.length)
         widths=saved.map(function(v,i){return Number.isFinite(v)?Math.max(36,Math.min(500,v)):defaults[i];});
+      else {var legacy=JSON.parse(localStorage.getItem("nikkei-options-column-widths-v1"));if(Array.isArray(legacy)&&legacy.length===23)oldIndexes.forEach(function(k,i){if(Number.isFinite(legacy[i]))widths[k]=Math.max(36,Math.min(500,legacy[i]));});}
     } catch(err){}
     var group=document.createElement("colgroup");
     var cols=headers.map(function(){var c=document.createElement("col");group.appendChild(c);return c;});
     table.insertBefore(group,table.firstChild);
     table.classList.add("opt-resizable");
-    var visibilityKey="nikkei-options-column-visibility-v1";
-    var labels=second.slice(0,11).map(function(th){return th.textContent;});
+    var visibilityKey="nikkei-options-column-visibility-v2";
+    var labels=second.slice(0,n).map(function(th){return th.textContent;});
     var visible=labels.map(function(){return true;});
-    try{var stored=JSON.parse(localStorage.getItem(visibilityKey));if(Array.isArray(stored)&&stored.length===11&&stored.every(function(v){return typeof v==="boolean";}))visible=stored;}catch(err){}
-    function shown(i){return i===11||visible[i<11?i:22-i];}
+    try{var stored=JSON.parse(localStorage.getItem(visibilityKey));if(Array.isArray(stored)&&stored.length===n&&stored.every(function(v){return typeof v==="boolean";}))visible=stored;else{var legacy=JSON.parse(localStorage.getItem("nikkei-options-column-visibility-v1"));if(Array.isArray(legacy)&&legacy.length===11)[0,1,2,3,4,5,7,8,9,10,12].forEach(function(k,i){if(typeof legacy[i]==="boolean")visible[k]=legacy[i];});}}catch(err){}
+    function shown(i){return i===n||visible[i<n?i:2*n-i];}
     function saveVisibility(){try{localStorage.setItem(visibilityKey,JSON.stringify(visible));}catch(err){}}
     function apply(){
       var count=visible.filter(Boolean).length;
       cols.forEach(function(c,i){c.style.width=shown(i)?widths[i]+"px":"0px";c.style.display=shown(i)?"":"none";headers[i].style.display=shown(i)?"":"none";});
       Array.from(table.tBodies[0].rows).forEach(function(row){
-        if(row.cells.length===23)Array.from(row.cells).forEach(function(c,i){c.style.display=shown(i)?"":"none";});
+        if(row.cells.length===2*n+1)Array.from(row.cells).forEach(function(c,i){c.style.display=shown(i)?"":"none";});
         else if(row.cells.length===1)row.cells[0].colSpan=1+2*count;
       });
       var top=head.rows[0].cells;
@@ -207,10 +214,10 @@
       var menu=document.createElement("div");menu.style.cssText="position:absolute;top:100%;left:0;z-index:20;background:white;color:#182437;border:1px solid #cbd5e1;border-radius:6px;padding:10px;min-width:200px;box-shadow:0 4px 12px #0002;display:grid;gap:5px";details.appendChild(menu);
       var buttons=document.createElement("div");buttons.style.cssText="display:flex;gap:6px";menu.appendChild(buttons);
       var checks=[];
-      function sync(){checks.forEach(function(c,i){c.checked=visible[i];});summary.textContent="表示列 ("+visible.filter(Boolean).length+"/11)";apply();saveVisibility();}
-      [["全表示",function(){return true;}],["基本項目",function(i){return [6,9,10].includes(i);}]].forEach(function(p){var b=document.createElement("button");b.type="button";b.textContent=p[0];b.onclick=function(){visible=labels.map(function(_,i){return p[1](i);});sync();};buttons.appendChild(b);});
-      labels.slice().reverse().forEach(function(label,j){var i=10-j;var l=document.createElement("label");l.style.cssText="display:flex;gap:6px;align-items:center;white-space:nowrap";var c=document.createElement("input");c.type="checkbox";c.checked=visible[i];checks[i]=c;c.onchange=function(){visible[i]=c.checked;sync();};l.appendChild(c);l.appendChild(document.createTextNode(label));menu.appendChild(l);});
-      summary.textContent="表示列 ("+visible.filter(Boolean).length+"/11)";
+      function sync(){checks.forEach(function(c,i){c.checked=visible[i];});summary.textContent="表示列 ("+visible.filter(Boolean).length+"/"+n+")";apply();saveVisibility();}
+      [["全表示",function(){return true;}],["基本項目",function(i){return [6,7,10,11,12].includes(i);}]].forEach(function(p){var b=document.createElement("button");b.type="button";b.textContent=p[0];b.onclick=function(){visible=labels.map(function(_,i){return p[1](i);});sync();};buttons.appendChild(b);});
+      labels.slice().reverse().forEach(function(label,j){var i=n-1-j;var l=document.createElement("label");l.style.cssText="display:flex;gap:6px;align-items:center;white-space:nowrap";var c=document.createElement("input");c.type="checkbox";c.checked=visible[i];checks[i]=c;c.onchange=function(){visible[i]=c.checked;sync();};l.appendChild(c);l.appendChild(document.createTextNode(label));menu.appendChild(l);});
+      summary.textContent="表示列 ("+visible.filter(Boolean).length+"/"+n+")";
       var note=document.createElement("small");note.textContent="PUT/CALL共通・行使価格は常時表示";menu.appendChild(note);controls.appendChild(details);
       var tip=document.createElement("span");tip.className="opt-note";tip.style.margin="0";tip.textContent="列見出しの右端をドラッグして幅を調整";controls.appendChild(tip);
     }
@@ -269,9 +276,9 @@
       return;
     }
     var sel = 0, oiPeriod = 1;
-    var filter={oi:500,vol:100,op:"OR",atm:true};
-    try{var saved=JSON.parse(localStorage.getItem("nikkei-option-filter-v1")||"null");if(saved&&Number.isSafeInteger(saved.oi)&&saved.oi>=0&&Number.isSafeInteger(saved.vol)&&saved.vol>=0&&["OR","AND"].includes(saved.op)&&typeof saved.atm==="boolean")filter=saved;}catch(err){}
-    function saveFilter(){try{localStorage.setItem("nikkei-option-filter-v1",JSON.stringify(filter));}catch(err){}draw();}
+    var filter={mode:"share",oi:1,vol:1,op:"OR",atm:true,count:{oi:500,vol:100},share:{oi:1,vol:1}};
+    try{var saved=JSON.parse(localStorage.getItem("nikkei-option-filter-v2")||"null");function validPair(p,mode){return p&&[p.oi,p.vol].every(function(v){return Number.isFinite(v)&&v>=0&&(mode==="share"?v<=100:Number.isSafeInteger(v));});}if(saved&&["count","share"].includes(saved.mode)&&validPair(saved,saved.mode)&&validPair(saved.count,"count")&&validPair(saved.share,"share")&&["OR","AND"].includes(saved.op)&&typeof saved.atm==="boolean")filter=saved;else{var legacy=JSON.parse(localStorage.getItem("nikkei-option-filter-v1")||"null");if(validPair(legacy,"count"))filter.count={oi:legacy.oi,vol:legacy.vol};}}catch(err){}
+    function saveFilter(){filter[filter.mode]={oi:filter.oi,vol:filter.vol};try{localStorage.setItem("nikkei-option-filter-v2",JSON.stringify(filter));}catch(err){}draw();}
     function draw() {
       var e = block.expiries[sel];
       var maxOi = 1;
@@ -330,9 +337,10 @@
       if(market === "jp"){enableChainResize(root);participantPanel(root,block,e);}
       if(market==="jp"){
         [["oi","[data-opt-oi]"],["vol","[data-opt-vol]"]].forEach(function(pair){
-          var input=root.querySelector(pair[1]);input.addEventListener("change",function(){var n=input.valueAsNumber;if(!Number.isSafeInteger(n)||n<0){input.value=filter[pair[0]];return;}filter[pair[0]]=n;saveFilter();});
+          var input=root.querySelector(pair[1]);input.addEventListener("change",function(){var n=input.valueAsNumber;if(!Number.isFinite(n)||n<0||(filter.mode==="share"?n>100:!Number.isSafeInteger(n))){input.value=filter[pair[0]];return;}filter[pair[0]]=n;saveFilter();});
           input.addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();input.blur();}});
         });
+        root.querySelector("[data-opt-mode]").onchange=function(ev){filter.mode=ev.target.value;filter.oi=filter[filter.mode].oi;filter.vol=filter[filter.mode].vol;saveFilter();};
         root.querySelector("[data-opt-op]").onchange=function(ev){filter.op=ev.target.value;saveFilter();};
         root.querySelector("[data-opt-atm]").onchange=function(ev){filter.atm=ev.target.checked;saveFilter();};
         root.querySelectorAll("[data-opt-preset]").forEach(function(b){b.onclick=function(){var p=b.getAttribute("data-opt-preset").split(",").map(Number);filter.oi=p[0];filter.vol=p[1];saveFilter();};});
