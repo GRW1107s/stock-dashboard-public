@@ -65,7 +65,7 @@
   };
 
 
-  function chainHTML(block,e,period) {
+  function chainHTML(block,e,period,filter) {
     var history=(block.history||[]).filter(function(h){return h.date<block.date;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
     var prior=history[period-1], prev=prior&&prior.expiries.find(function(x){return x.expiry===e.expiry;});
     var map=new Map((prev&&prev.strikes||[]).map(function(r){return [r[0],r];}));
@@ -94,6 +94,15 @@
     }
     // Common absolute scale across both sides of the selected expiry.
     var oiMax=rows.reduce(function(m,r){return Math.max(m,Number(r[1])||0,Number(r[2])||0);},0);
+    var totalRows=rows.length;
+    rows=rows.filter(function(r){
+      if(filter.atm&&r[0]===atm)return true;
+      var oi=filter.oi===0||[r[1],r[2]].some(function(v){return Number.isFinite(v)&&v>=filter.oi;});
+      var vol=filter.vol===0||[r[3],r[4]].some(function(v){return Number.isFinite(v)&&v>=filter.vol;});
+      if(filter.oi===0)return filter.vol===0||vol;
+      if(filter.vol===0)return oi;
+      return filter.op==="AND"?oi&&vol:oi||vol;
+    });
     function cell(v,kind,cls) {
       var missing=v==null||!Number.isFinite(v), c=cls||"";
       if(missing)c+=" opt-missing";
@@ -111,6 +120,9 @@
     var h="<div class='opt-chain-controls'><label>建玉比較 <select data-oi-period>";
     [1,3,10,25].forEach(function(p){h+="<option value='"+p+"'"+(p===period?" selected":"")+">"+p+"取引日</option>";});
     h+="</select></label><span class='opt-note' style='margin:0'>"+(prior?"比較日："+prior.date:"比較履歴不足")+"｜価格・IV・金額は取得済みのもののみ表示</span></div>";
+    h+="<div class='opt-chain-controls'><label>最小建玉 <input data-opt-oi type='number' min='0' step='1' style='width:85px' value='"+filter.oi+"'> 枚</label><label>最小出来高 <input data-opt-vol type='number' min='0' step='1' style='width:85px' value='"+filter.vol+"'> 枚</label><select data-opt-op><option value='OR'"+(filter.op==="OR"?" selected":"")+">OR（いずれか）</option><option value='AND'"+(filter.op==="AND"?" selected":"")+">AND（両方）</option></select><label><input type='checkbox' data-opt-atm"+(filter.atm?" checked":"")+">ATM常時表示</label>";
+    [[0,0,"全表示"],[500,100,"通常"],[1000,200,"重要"],[3000,500,"大口集中"]].forEach(function(p){h+="<button type='button' data-opt-preset='"+p[0]+","+p[1]+"' aria-pressed='"+(filter.oi===p[0]&&filter.vol===p[1])+"'>"+p[2]+"</button>";});
+    h+="<span class='opt-note' style='margin:0'>表示 "+rows.length+" / "+totalRows+" 行使価格</span></div>";
     h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='11' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='11' class='opt-call-head'>CALL コール</th></tr><tr><th>IV前日比</th><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高σ</th><th>出来高/建玉</th><th>出来高</th><th>建玉増減σ</th><th>建玉増減率</th><th>建玉増減</th><th>建玉</th><th>建玉</th><th>建玉増減</th><th>建玉増減率</th><th>建玉増減σ</th><th>出来高</th><th>出来高/建玉</th><th>出来高σ</th><th>増減額(億)</th><th>清算値</th><th>IV</th><th>IV前日比</th></tr></thead><tbody>";
     var marker=false;
     rows.forEach(function(r){
@@ -233,6 +245,9 @@
       return;
     }
     var sel = 0, oiPeriod = 1;
+    var filter={oi:500,vol:100,op:"OR",atm:true};
+    try{var saved=JSON.parse(localStorage.getItem("nikkei-option-filter-v1")||"null");if(saved&&Number.isSafeInteger(saved.oi)&&saved.oi>=0&&Number.isSafeInteger(saved.vol)&&saved.vol>=0&&["OR","AND"].includes(saved.op)&&typeof saved.atm==="boolean")filter=saved;}catch(err){}
+    function saveFilter(){try{localStorage.setItem("nikkei-option-filter-v1",JSON.stringify(filter));}catch(err){}draw();}
     function draw() {
       var e = block.expiries[sel];
       var maxOi = 1;
@@ -264,7 +279,7 @@
           "</div><div class='v'>" + t[1] + "</div></div>";
       });
       html += "</div>";
-      if (market === "jp") { html += chainHTML(block,e,oiPeriod); } else {
+      if (market === "jp") { html += chainHTML(block,e,oiPeriod,filter); } else {
       html += "<div class='opt-colhead'><div class='opt-bar put'><span>プット建玉</span></div>" +
         "<div class='opt-strike'>行使価格</div><div class='opt-bar call'><span>コール建玉</span></div></div>";
       var rows = e.strikes.slice().sort(function (a, b) { return b[0] - a[0]; });
@@ -289,6 +304,15 @@
       html += "<p class='opt-note'>" + meta.note + "</p>";
       root.innerHTML = html;
       if(market === "jp"){enableChainResize(root);participantPanel(root,block,e);}
+      if(market==="jp"){
+        [["oi","[data-opt-oi]"],["vol","[data-opt-vol]"]].forEach(function(pair){
+          var input=root.querySelector(pair[1]);input.addEventListener("change",function(){var n=input.valueAsNumber;if(!Number.isSafeInteger(n)||n<0){input.value=filter[pair[0]];return;}filter[pair[0]]=n;saveFilter();});
+          input.addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();input.blur();}});
+        });
+        root.querySelector("[data-opt-op]").onchange=function(ev){filter.op=ev.target.value;saveFilter();};
+        root.querySelector("[data-opt-atm]").onchange=function(ev){filter.atm=ev.target.checked;saveFilter();};
+        root.querySelectorAll("[data-opt-preset]").forEach(function(b){b.onclick=function(){var p=b.getAttribute("data-opt-preset").split(",").map(Number);filter.oi=p[0];filter.vol=p[1];saveFilter();};});
+      }
       var periodSelect=root.querySelector("[data-oi-period]");
       if(periodSelect)periodSelect.addEventListener("change",function(){oiPeriod=Number(periodSelect.value);draw();});
       root.querySelectorAll("[data-exp]").forEach(function (b) {
