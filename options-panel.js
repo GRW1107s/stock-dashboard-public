@@ -35,6 +35,7 @@
   ].join("");
   css += ".opt-chain-scroll{overflow:auto;max-height:680px;border:1px solid #dbe3ed;border-radius:6px;background:white}.opt-chain{width:100%;min-width:840px;border-collapse:separate;border-spacing:0;table-layout:auto;font-size:11px;font-variant-numeric:tabular-nums}.opt-chain th,.opt-chain td{padding:4px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid #e5eaf1;height:25px}.opt-chain thead th{position:sticky;top:0;background:#eaf0f6;z-index:2;text-align:center;height:26px}.opt-chain thead tr:nth-child(2) th{top:26px}.opt-chain .opt-k{text-align:center;background:#f1f5f9;font-weight:700;border-left:1px solid #dbe3ed;border-right:1px solid #dbe3ed}.opt-chain .opt-itm{background:#edf5ef}.opt-chain .opt-atm td{background:#eef2ff}.opt-chain .opt-up{color:#15803d;font-weight:600}.opt-chain .opt-down{color:#dc2626;font-weight:600}.opt-chain .opt-missing{color:#94a3b8}.opt-chain .opt-call-head{background:#e1ecfd;color:#1d4ed8}.opt-chain .opt-put-head{background:#fff0e5;color:#9a3412}.opt-chain .opt-spotline td{text-align:center;background:#e2e8f0;font-weight:700}.opt-chain-controls{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}.opt-chain-controls select{font:inherit;padding:4px 6px;border:1px solid #cbd5e1;border-radius:4px;background:white}.opt-chain .opt-k{min-width:80px}";
   css += ".opt-chain .opt-alert{background:#fef3c7;font-weight:700}.opt-chain{min-width:1450px}";
+  css += ".opt-chain.opt-resizable{table-layout:fixed;min-width:0;max-width:none}.opt-chain.opt-resizable td{overflow:hidden;text-overflow:ellipsis}.opt-chain.opt-resizable th{overflow:visible;padding-right:9px}.opt-chain.opt-resizable .opt-k{min-width:0}.opt-resize-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.opt-resize-grip{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:col-resize;touch-action:none;border-right:1px solid #cbd5e1;z-index:4}.opt-resize-grip:hover,.opt-resize-grip:focus{background:#93c5fd;outline:none}.opt-resizing,.opt-resizing *{cursor:col-resize!important;user-select:none!important}";
   var style = document.createElement("style");
   style.textContent = css;
   document.head.appendChild(style);
@@ -119,6 +120,59 @@
     return h+"</tbody></table></div><p class='opt-note'>建玉増減＝同一限月・同一行使価格の建玉差。増減額＝建玉増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。建玉増減率＝比較期間の増減÷比較日の建玉。出来高/建玉＝当日出来高÷前日建玉。σは当日の値を過去最大25観測（最低20観測）の平均・標本標準偏差で標準化。建玉増減σは日次差、黄色は絶対値2以上。IV前日比はポイント差。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
   }
 
+
+  function enableChainResize(root) {
+    var table=root.querySelector(".opt-chain");
+    if(!table)return;
+    var head=table.tHead, second=Array.from(head.rows[1].cells);
+    var headers=second.slice(0,11).concat([head.rows[0].cells[1]],second.slice(11));
+    var defaults=[72,52,65,80,72,88,65,85,92,76,70,84,70,76,92,85,65,88,72,80,65,52,72];
+    var key="nikkei-options-column-widths-v1";
+    var widths=defaults.slice();
+    try {
+      var saved=JSON.parse(localStorage.getItem(key));
+      if(Array.isArray(saved)&&saved.length===headers.length)
+        widths=saved.map(function(v,i){return Number.isFinite(v)?Math.max(36,Math.min(500,v)):defaults[i];});
+    } catch(err){}
+    var group=document.createElement("colgroup");
+    var cols=headers.map(function(){var c=document.createElement("col");group.appendChild(c);return c;});
+    table.insertBefore(group,table.firstChild);
+    table.classList.add("opt-resizable");
+    function apply(){
+      cols.forEach(function(c,i){c.style.width=widths[i]+"px";});
+      table.style.width=widths.reduce(function(a,b){return a+b;},0)+"px";
+    }
+    function save(){try{localStorage.setItem(key,JSON.stringify(widths));}catch(err){}}
+    function adjust(i,v){widths[i]=Math.max(36,Math.min(500,Math.round(v)));apply();}
+    headers.forEach(function(th,i){
+      var label=th.textContent, span=document.createElement("span");
+      span.className="opt-resize-label";span.textContent=label;th.textContent="";th.appendChild(span);th.title=label;
+      var grip=document.createElement("span");grip.className="opt-resize-grip";grip.tabIndex=0;
+      grip.setAttribute("role","separator");grip.setAttribute("aria-orientation","vertical");
+      grip.setAttribute("aria-label",label+"の列幅（左右キーで調整）");
+      grip.title="ドラッグで列幅調整・ダブルクリックで初期幅";
+      th.appendChild(grip);
+      grip.addEventListener("pointerdown",function(ev){
+        if(ev.button!==0)return;
+        ev.preventDefault();var start=ev.clientX,w=widths[i],pid=ev.pointerId;
+        grip.setPointerCapture(pid);document.body.classList.add("opt-resizing");
+        function move(e){if(e.pointerId===pid)adjust(i,w+e.clientX-start);}
+        function end(e){if(e.pointerId!==pid)return;grip.removeEventListener("pointermove",move);grip.removeEventListener("pointerup",end);grip.removeEventListener("pointercancel",end);grip.removeEventListener("lostpointercapture",end);document.body.classList.remove("opt-resizing");save();}
+        grip.addEventListener("pointermove",move);grip.addEventListener("pointerup",end);grip.addEventListener("pointercancel",end);grip.addEventListener("lostpointercapture",end);
+      });
+      grip.addEventListener("dblclick",function(){adjust(i,defaults[i]);save();});
+      grip.addEventListener("keydown",function(ev){if(ev.key==="ArrowLeft"||ev.key==="ArrowRight"){ev.preventDefault();adjust(i,widths[i]+(ev.key==="ArrowRight"?8:-8));save();}});
+    });
+    var controls=root.querySelector(".opt-chain-controls");
+    if(controls){
+      var reset=document.createElement("button");reset.type="button";reset.textContent="列幅リセット";
+      reset.addEventListener("click",function(){widths=defaults.slice();apply();save();});
+      controls.appendChild(reset);
+      var tip=document.createElement("span");tip.className="opt-note";tip.style.margin="0";tip.textContent="列見出しの右端をドラッグして幅を調整";controls.appendChild(tip);
+    }
+    apply();
+  }
+
   function render(root, block) {
     var market = root.getAttribute("data-opt-market");
     var meta = META[market] || { title: market, note: "" };
@@ -182,6 +236,7 @@
       }
       html += "<p class='opt-note'>" + meta.note + "</p>";
       root.innerHTML = html;
+      if(market === "jp")enableChainResize(root);
       var periodSelect=root.querySelector("[data-oi-period]");
       if(periodSelect)periodSelect.addEventListener("change",function(){oiPeriod=Number(periodSelect.value);draw();});
       root.querySelectorAll("[data-exp]").forEach(function (b) {
