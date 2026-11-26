@@ -181,6 +181,50 @@
     apply();
   }
 
+
+  function participantPanel(root,block,e){
+    var panel=document.createElement("section");
+    panel.style.cssText="margin:14px 0;padding:10px;border:1px solid #dbe3ed;border-radius:6px;background:white";
+    root.appendChild(panel);
+    var key="nikkei-participants-weekly-v1", data=[];
+    try{data=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(data))data=[];}catch(err){}
+    var firms=["GS","JPM","UBS","BNP","MS","SG","ABN","野村"], selected=new Set(firms), mode="change";
+    panel.innerHTML="<strong>大口ポジション分析（週次・行使価格別）</strong><p class='opt-note'>JPX公表対象は期近限月のATM付近5行使価格・上位15参加者。公表対象外は —。証券会社経由の顧客取引を含みます。<br><a href='https://www.jpx.co.jp/markets/derivatives/open-interest/index.html' target='_blank' rel='noopener'>JPX 取引参加者別建玉残高一覧</a>｜CSV読込試験版（自動取得未対応）</p><label>CSV読込 <input type='file' accept='.csv,text/csv'></label> <button type='button' data-template>CSV形式</button><p data-message class='opt-note'></p><div data-controls></div><div data-result></div>";
+    var msg=panel.querySelector("[data-message]"), controls=panel.querySelector("[data-controls]"), result=panel.querySelector("[data-result]");
+    function draw(){
+      var allDates=Array.from(new Set(data.map(function(r){return r.date;}))).sort().reverse(), now=allDates[0], prior=allDates[1];
+      var rows=data.filter(function(r){return r.expiry===e.expiry&&(r.date===now||r.date===prior);});
+      var strikes=Array.from(new Set(rows.map(function(r){return r.strike;}))).sort(function(a,b){return b-a;});
+      var active=firms.filter(function(n){return selected.has(n);});
+      if(!active.length){result.textContent="証券会社を選択してください。";return;}
+      var values=new Map(rows.map(function(r){return [[r.date,r.strike,r.side,r.firm].join("|"),r.net];}));
+      var table=document.createElement("table");table.className="opt-chain";table.style.minWidth="0";table.style.tableLayout="auto";
+      var head=table.createTHead(), hr=head.insertRow();
+      function th(row,t,span){var c=document.createElement("th");c.textContent=t;c.colSpan=span||1;row.appendChild(c);return c;}
+      th(hr,"PUT",active.length).className="opt-put-head";th(hr,"行使価格");th(hr,"CALL",active.length).className="opt-call-head";
+      var names=head.insertRow();active.slice().reverse().forEach(function(n){th(names,n);});th(names,"円");active.forEach(function(n){th(names,n);});
+      var body=table.createTBody();
+      function val(k,side,firm){var a=values.get([now,k,side,firm].join("|")), b=values.get([prior,k,side,firm].join("|"));return mode==="balance"?a:(a==null||b==null?null:a-b);}
+      var max=1;strikes.forEach(function(k){active.forEach(function(n){["P","C"].forEach(function(side){max=Math.max(max,Math.abs(val(k,side,n)||0));});});});
+      function add(tr,v){var c=tr.insertCell();c.textContent=v==null?"—":(v>0?"+":"")+fmtInt(v);if(v){c.style.color=v>0?"#15803d":"#dc2626";c.style.backgroundColor=(v>0?"rgba(22,163,74,":"rgba(220,38,38,")+(0.06+0.30*Math.abs(v)/max)+")";}else if(v==null)c.className="opt-missing";}
+      strikes.forEach(function(k){var tr=body.insertRow();active.slice().reverse().forEach(function(n){add(tr,val(k,"P",n));});var c=tr.insertCell();c.className="opt-k";c.textContent=fmtStrike(k);active.forEach(function(n){add(tr,val(k,"C",n));});});
+      result.textContent="";
+      var note=document.createElement("p");note.className="opt-note";note.textContent="対象限月："+e.label+"｜最新："+(now||"未取得")+"｜比較："+(prior||"未取得")+"｜単位：枚、緑＝買超方向、赤＝売超方向。";result.appendChild(note);
+      if(!strikes.length){var p=document.createElement("p");p.className="opt-note";p.textContent="この限月の公表データはまだ読み込まれていません。";result.appendChild(p);return;}
+      var wrap=document.createElement("div");wrap.className="opt-chain-scroll";wrap.appendChild(table);result.appendChild(wrap);
+    }
+    var select=document.createElement("select");[["change","前週比"],["balance","ネット建玉"]].forEach(function(a){var o=document.createElement("option");o.value=a[0];o.textContent=a[1];select.appendChild(o);});select.onchange=function(){mode=select.value;draw();};controls.appendChild(select);
+    firms.forEach(function(n){var label=document.createElement("label");label.style.marginLeft="10px";var c=document.createElement("input");c.type="checkbox";c.checked=true;c.onchange=function(){if(c.checked)selected.add(n);else selected.delete(n);draw();};label.appendChild(c);label.appendChild(document.createTextNode(n));controls.appendChild(label);});
+    panel.querySelector("[data-template]").onclick=function(){msg.textContent="CSVヘッダー: date,expiry,strike,side,firm,net（date/expiryはYYYY-MM-DD、sideはPまたはC、firmは上記略称、netは買超を正・売超を負。数値はカンマなし）";};
+    panel.querySelector("input[type=file]").onchange=async function(ev){try{
+      var file=ev.target.files[0];if(!file)return;var lines=(await file.text()).replace(/^\uFEFF/,"").trim().split(/\r?\n/);
+      if(lines.shift().trim()!=="date,expiry,strike,side,firm,net")throw Error("ヘッダーが違います。CSV形式を確認してください。");
+      var incoming=lines.filter(function(l){return l.trim();}).map(function(l){var a=l.split(",").map(function(v){return v.trim();});if(a.length!==6||!/^\d{4}-\d{2}-\d{2}$/.test(a[0])||!/^\d{4}-\d{2}-\d{2}$/.test(a[1])||!/^\d+$/.test(a[2])||!["P","C"].includes(a[3])||!firms.includes(a[4])||!/^[-+]?\d+$/.test(a[5]))throw Error("不正な行があります。");return {date:a[0],expiry:a[1],strike:Number(a[2]),side:a[3],firm:a[4],net:Number(a[5])};});
+      var m=new Map(data.concat(incoming).map(function(r){return [[r.date,r.expiry,r.strike,r.side,r.firm].join("|"),r];}));data=Array.from(m.values());try{localStorage.setItem(key,JSON.stringify(data));}catch(err){}msg.textContent=incoming.length+"行を読み込みました。";draw();
+    }catch(err){msg.textContent=err.message;}};
+    draw();
+  }
+
   function render(root, block) {
     var market = root.getAttribute("data-opt-market");
     var meta = META[market] || { title: market, note: "" };
@@ -244,7 +288,7 @@
       }
       html += "<p class='opt-note'>" + meta.note + "</p>";
       root.innerHTML = html;
-      if(market === "jp")enableChainResize(root);
+      if(market === "jp"){enableChainResize(root);participantPanel(root,block,e);}
       var periodSelect=root.querySelector("[data-oi-period]");
       if(periodSelect)periodSelect.addEventListener("change",function(){oiPeriod=Number(periodSelect.value);draw();});
       root.querySelectorAll("[data-exp]").forEach(function (b) {
