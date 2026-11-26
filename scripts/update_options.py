@@ -217,8 +217,16 @@ def refresh_jp(root, stored, today_jst):
         expiries = parse_jp_oi(raw, spot)
         if not expiries:
             continue
-        return {"date": day.isoformat(), "spot": spot, "iv30": None,
-                "expiries": expiries}, True
+        block = {"date": day.isoformat(), "spot": spot, "iv30": None,
+                 "expiries": expiries}
+        # Keep prior daily snapshots for like-for-like strike comparisons.
+        history = list((stored or {}).get("history") or [])
+        if stored and stored.get("date") != block["date"]:
+            history.append({k: stored[k] for k in ("date", "expiries") if k in stored})
+        block["history"] = sorted(
+            {h["date"]: h for h in history if h.get("date") and h["date"] < block["date"]}.values(),
+            key=lambda h: h["date"])[-30:]
+        return block, True
     return stored, False
 
 
