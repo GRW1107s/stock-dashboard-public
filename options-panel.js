@@ -34,6 +34,7 @@
     ".opt-note{font-size:11px;color:#778;margin-top:8px}"
   ].join("");
   css += ".opt-chain-scroll{overflow:auto;max-height:680px;border:1px solid #dbe3ed;border-radius:6px;background:white}.opt-chain{width:100%;min-width:840px;border-collapse:separate;border-spacing:0;table-layout:auto;font-size:11px;font-variant-numeric:tabular-nums}.opt-chain th,.opt-chain td{padding:4px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid #e5eaf1;height:25px}.opt-chain thead th{position:sticky;top:0;background:#eaf0f6;z-index:2;text-align:center;height:26px}.opt-chain thead tr:nth-child(2) th{top:26px}.opt-chain .opt-k{text-align:center;background:#f1f5f9;font-weight:700;border-left:1px solid #dbe3ed;border-right:1px solid #dbe3ed}.opt-chain .opt-itm{background:#edf5ef}.opt-chain .opt-atm td{background:#eef2ff}.opt-chain .opt-up{color:#15803d;font-weight:600}.opt-chain .opt-down{color:#dc2626;font-weight:600}.opt-chain .opt-missing{color:#94a3b8}.opt-chain .opt-call-head{background:#e1ecfd;color:#1d4ed8}.opt-chain .opt-put-head{background:#fff0e5;color:#9a3412}.opt-chain .opt-spotline td{text-align:center;background:#e2e8f0;font-weight:700}.opt-chain-controls{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}.opt-chain-controls select{font:inherit;padding:4px 6px;border:1px solid #cbd5e1;border-radius:4px;background:white}.opt-chain .opt-k{min-width:80px}";
+  css += ".opt-chain .opt-alert{background:#fef3c7;font-weight:700}.opt-chain{min-width:1450px}";
   var style = document.createElement("style");
   style.textContent = css;
   document.head.appendChild(style);
@@ -69,27 +70,53 @@
     var map=new Map((prev&&prev.strikes||[]).map(function(r){return [r[0],r];}));
     var rows=e.strikes.slice().sort(function(a,b){return a[0]-b[0];});
     var atm=block.spot==null||!rows.length?null:rows.reduce(function(a,b){return Math.abs(a[0]-block.spot)<=Math.abs(b[0]-block.spot)?a:b;})[0];
+    // Compare the current session with up to 25 prior saved sessions.
+    // Missing strikes and dates are never imputed as zero.
+    var histMaps=history.slice(0,26).map(function(h){
+      var exp=(h.expiries||[]).find(function(x){return x.expiry===e.expiry;});
+      return new Map((exp&&exp.strikes||[]).map(function(r){return [r[0],r];}));
+    });
+    function ratio(n,d){return Number.isFinite(n)&&Number.isFinite(d)&&d>0?100*n/d:null;}
+    function zscore(v,values){
+      var a=values.filter(Number.isFinite);
+      if(!Number.isFinite(v)||a.length<20)return null;
+      var mean=a.reduce(function(x,y){return x+y;},0)/a.length;
+      var sd=Math.sqrt(a.reduce(function(x,y){return x+(y-mean)*(y-mean);},0)/(a.length-1));
+      return sd>0?(v-mean)/sd:null;
+    }
+    function stats(r,oi,vol,delta){
+      var past=histMaps.map(function(m){return m.get(r[0]);});
+      var vols=past.slice(0,25).map(function(x){return x?x[vol]:null;});
+      var diffs=past.slice(0,25).map(function(x,i){return x&&past[i+1]?x[oi]-past[i+1][oi]:null;});
+      var prevDay=past[0], daily=prevDay?r[oi]-prevDay[oi]:null;
+      return {pct:ratio(delta,map.has(r[0])?map.get(r[0])[oi]:null),turn:ratio(r[vol],prevDay?prevDay[oi]:null),vz:zscore(r[vol],vols),oz:zscore(daily,diffs)};
+    }
     function cell(v,kind,cls) {
       var missing=v==null||!Number.isFinite(v), c=cls||"";
       if(missing)c+=" opt-missing";
-      else if(kind==="chg")c+=v>0?" opt-up":v<0?" opt-down":"";
-      var t=missing?"—":kind==="iv"?v.toFixed(2)+"%":kind==="money"?v.toFixed(2):kind==="chg"?(v>0?"+":"")+fmtInt(v):fmtPx(v);
+      else if(kind==="chg"||kind==="pct"||kind==="z")c+=v>0?" opt-up":v<0?" opt-down":"";
+      if(!missing&&kind==="z"&&Math.abs(v)>=2)c+=" opt-alert";
+      var t=missing?"—":(kind==="iv"||kind==="pct"||kind==="ratio")?((kind==="pct"&&v>0)?"+":"")+v.toFixed(1)+"%":kind==="z"?(v>0?"+":"")+v.toFixed(2):kind==="money"?v.toFixed(2):kind==="chg"?(v>0?"+":"")+fmtInt(v):fmtPx(v);
       return "<td class='"+c+"'>"+t+"</td>";
     }
     var h="<div class='opt-chain-controls'><label>建玉比較 <select data-oi-period>";
     [1,3,10,25].forEach(function(p){h+="<option value='"+p+"'"+(p===period?" selected":"")+">"+p+"取引日</option>";});
     h+="</select></label><span class='opt-note' style='margin:0'>"+(prior?"比較日："+prior.date:"比較履歴不足")+"｜価格・IV・金額は取得済みのもののみ表示</span></div>";
-    h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='6' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='6' class='opt-call-head'>CALL コール</th></tr><tr><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高</th><th>建玉増減</th><th>建玉</th><th>建玉</th><th>建玉増減</th><th>出来高</th><th>増減額(億)</th><th>清算値</th><th>IV</th></tr></thead><tbody>";
+    h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='11' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='11' class='opt-call-head'>CALL コール</th></tr><tr><th>IV前日比</th><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高σ</th><th>出来高/建玉</th><th>出来高</th><th>建玉増減σ</th><th>建玉増減率</th><th>建玉増減</th><th>建玉</th><th>建玉</th><th>建玉増減</th><th>建玉増減率</th><th>建玉増減σ</th><th>出来高</th><th>出来高/建玉</th><th>出来高σ</th><th>増減額(億)</th><th>清算値</th><th>IV</th><th>IV前日比</th></tr></thead><tbody>";
     var marker=false;
     rows.forEach(function(r){
-      if(!marker&&block.spot!=null&&r[0]>block.spot){h+="<tr class='opt-spotline'><td colspan='13'>日経平均 "+fmtPx(block.spot)+"</td></tr>";marker=true;}
+      if(!marker&&block.spot!=null&&r[0]>block.spot){h+="<tr class='opt-spotline'><td colspan='23'>日経平均 "+fmtPx(block.spot)+"</td></tr>";marker=true;}
       var old=map.get(r[0]), cd=old?r[1]-old[1]:null,pd=old?r[2]-old[2]:null;
       var q=(e.quotes||{})[String(r[0])]||{}, c=q.call||{}, p=q.put||{};
       var cc=r[0]<block.spot?"opt-itm":"",pc=r[0]>block.spot?"opt-itm":"";
-      h+="<tr"+(r[0]===atm?" class='opt-atm'":"")+">"+cell(p.iv,"iv",pc)+cell(p.settlement,"price",pc)+cell(pd!=null&&p.settlement!=null?pd*p.settlement/100000:null,"money",pc)+cell(r[4],"int",pc)+cell(pd,"chg",pc)+cell(r[2],"int",pc)+"<td class='opt-k'>"+fmtStrike(r[0])+"</td>"+cell(r[1],"int",cc)+cell(cd,"chg",cc)+cell(r[3],"int",cc)+cell(cd!=null&&c.settlement!=null?cd*c.settlement/100000:null,"money",cc)+cell(c.settlement,"price",cc)+cell(c.iv,"iv",cc)+"</tr>";
+      var ps=stats(r,2,4,pd), cs=stats(r,1,3,cd);
+      var prevExp=history[0]&&(history[0].expiries||[]).find(function(x){return x.expiry===e.expiry;});
+      var pq=(prevExp&&prevExp.quotes||{})[String(r[0])]||{};
+      function ivdiff(cur,old){return Number.isFinite(cur.iv)&&old&&Number.isFinite(old.iv)?cur.iv-old.iv:null;}
+      h+="<tr"+(r[0]===atm?" class='opt-atm'":"")+">"+cell(ivdiff(p,pq.put),"pct",pc)+cell(p.iv,"iv",pc)+cell(p.settlement,"price",pc)+cell(pd!=null&&p.settlement!=null?pd*p.settlement/100000:null,"money",pc)+cell(ps.vz,"z",pc)+cell(ps.turn,"ratio",pc)+cell(r[4],"int",pc)+cell(ps.oz,"z",pc)+cell(ps.pct,"pct",pc)+cell(pd,"chg",pc)+cell(r[2],"int",pc)+"<td class='opt-k'>"+fmtStrike(r[0])+"</td>"+cell(r[1],"int",cc)+cell(cd,"chg",cc)+cell(cs.pct,"pct",cc)+cell(cs.oz,"z",cc)+cell(r[3],"int",cc)+cell(cs.turn,"ratio",cc)+cell(cs.vz,"z",cc)+cell(cd!=null&&c.settlement!=null?cd*c.settlement/100000:null,"money",cc)+cell(c.settlement,"price",cc)+cell(c.iv,"iv",cc)+cell(ivdiff(c,pq.call),"pct",cc)+"</tr>";
     });
-    if(!marker&&block.spot!=null)h+="<tr class='opt-spotline'><td colspan='13'>日経平均 "+fmtPx(block.spot)+"</td></tr>";
-    return h+"</tbody></table></div><p class='opt-note'>建玉増減＝同一限月・同一行使価格の建玉差。増減額＝建玉増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
+    if(!marker&&block.spot!=null)h+="<tr class='opt-spotline'><td colspan='23'>日経平均 "+fmtPx(block.spot)+"</td></tr>";
+    return h+"</tbody></table></div><p class='opt-note'>建玉増減＝同一限月・同一行使価格の建玉差。増減額＝建玉増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。建玉増減率＝比較期間の増減÷比較日の建玉。出来高/建玉＝当日出来高÷前日建玉。σは当日の値を過去最大25観測（最低20観測）の平均・標本標準偏差で標準化。建玉増減σは日次差、黄色は絶対値2以上。IV前日比はポイント差。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
   }
 
   function render(root, block) {
