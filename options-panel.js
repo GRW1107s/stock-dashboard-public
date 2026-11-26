@@ -69,7 +69,7 @@
     var history=(block.history||[]).filter(function(h){return h.date<block.date;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
     var prior=history[period-1], prev=prior&&prior.expiries.find(function(x){return x.expiry===e.expiry;});
     var map=new Map((prev&&prev.strikes||[]).map(function(r){return [r[0],r];}));
-    var rows=e.strikes.slice().sort(function(a,b){return a[0]-b[0];});
+    var rows=e.strikes.slice().sort(function(a,b){return b[0]-a[0];});
     var atm=block.spot==null||!rows.length?null:rows.reduce(function(a,b){return Math.abs(a[0]-block.spot)<=Math.abs(b[0]-block.spot)?a:b;})[0];
     // Compare the current session with up to 25 prior saved sessions.
     // Missing strikes and dates are never imputed as zero.
@@ -106,7 +106,7 @@
     h+="<div class='opt-chain-scroll'><table class='opt-chain'><thead><tr><th colspan='11' class='opt-put-head'>PUT プット</th><th rowspan='2' class='opt-k'>行使価格</th><th colspan='11' class='opt-call-head'>CALL コール</th></tr><tr><th>IV前日比</th><th>IV</th><th>清算値</th><th>増減額(億)</th><th>出来高σ</th><th>出来高/建玉</th><th>出来高</th><th>建玉増減σ</th><th>建玉増減率</th><th>建玉増減</th><th>建玉</th><th>建玉</th><th>建玉増減</th><th>建玉増減率</th><th>建玉増減σ</th><th>出来高</th><th>出来高/建玉</th><th>出来高σ</th><th>増減額(億)</th><th>清算値</th><th>IV</th><th>IV前日比</th></tr></thead><tbody>";
     var marker=false;
     rows.forEach(function(r){
-      if(!marker&&block.spot!=null&&r[0]>block.spot){h+="<tr class='opt-spotline'><td colspan='23'>日経平均 "+fmtPx(block.spot)+"</td></tr>";marker=true;}
+      if(!marker&&block.spot!=null&&r[0]<block.spot){h+="<tr class='opt-spotline'><td colspan='23'>日経平均 "+fmtPx(block.spot)+"</td></tr>";marker=true;}
       var old=map.get(r[0]), cd=old?r[1]-old[1]:null,pd=old?r[2]-old[2]:null;
       var q=(e.quotes||{})[String(r[0])]||{}, c=q.call||{}, p=q.put||{};
       var cc=r[0]<block.spot?"opt-itm":"",pc=r[0]>block.spot?"opt-itm":"";
