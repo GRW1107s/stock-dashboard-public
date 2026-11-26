@@ -33,7 +33,7 @@
     ".opt-spot{text-align:center;font-size:11px;color:#b45309;border-top:1px dashed #d9a441;margin:2px 0;padding-top:1px}",
     ".opt-note{font-size:11px;color:#778;margin-top:8px}"
   ].join("");
-  css += ".opt-chain-scroll{overflow:auto;max-height:680px;border:1px solid #dbe3ed;border-radius:6px;background:white}.opt-chain{width:100%;min-width:840px;border-collapse:separate;border-spacing:0;table-layout:auto;font-size:11px;font-variant-numeric:tabular-nums}.opt-chain th,.opt-chain td{padding:4px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid #e5eaf1;height:25px}.opt-chain thead th{position:sticky;top:0;background:#eaf0f6;z-index:2;text-align:center;height:26px}.opt-chain thead tr:nth-child(2) th{top:26px}.opt-chain .opt-k{text-align:center;background:#f1f5f9;font-weight:700;border-left:1px solid #dbe3ed;border-right:1px solid #dbe3ed}.opt-chain .opt-itm{background:#edf5ef}.opt-chain .opt-atm td{background:#eef2ff}.opt-chain .opt-up{color:#15803d;font-weight:600}.opt-chain .opt-down{color:#dc2626;font-weight:600}.opt-chain .opt-missing{color:#94a3b8}.opt-chain .opt-call-head{background:#e1ecfd;color:#1d4ed8}.opt-chain .opt-put-head{background:#fff0e5;color:#9a3412}.opt-chain .opt-spotline td{text-align:center;background:#e2e8f0;font-weight:700}.opt-chain-controls{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}.opt-chain-controls select{font:inherit;padding:4px 6px;border:1px solid #cbd5e1;border-radius:4px;background:white}.opt-chain .opt-k{min-width:80px}";
+  css += ".opt-chain-scroll{overflow:auto;max-height:680px;border:1px solid #dbe3ed;border-radius:6px;background:white}.opt-chain{width:100%;min-width:840px;border-collapse:separate;border-spacing:0;table-layout:auto;font-size:11px;font-variant-numeric:tabular-nums}.opt-chain th,.opt-chain td{padding:4px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid #e5eaf1;height:25px}.opt-chain thead th{position:sticky;top:0;background:#eaf0f6;z-index:2;text-align:center;height:26px}.opt-chain thead tr:nth-child(2) th{top:26px}.opt-chain .opt-k{text-align:center;background:#f1f5f9;font-weight:700;border-left:1px solid #dbe3ed;border-right:1px solid #dbe3ed}.opt-chain .opt-itm{background:#edf5ef}.opt-chain .opt-atm td{background:#eef2ff}.opt-chain .opt-up{color:#15803d;font-weight:600}.opt-chain .opt-down{color:#dc2626;font-weight:600}.opt-chain .opt-missing{color:#94a3b8}.opt-chain .opt-call-head{background:#e1ecfd;color:#1d4ed8}.opt-chain .opt-put-head{background:#e1ecfd;color:#1d4ed8}.opt-chain .opt-spotline td{text-align:center;background:#e2e8f0;font-weight:700}.opt-chain-controls{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}.opt-chain-controls select{font:inherit;padding:4px 6px;border:1px solid #cbd5e1;border-radius:4px;background:white}.opt-chain .opt-k{min-width:80px}";
   css += ".opt-chain .opt-alert{background:#fef3c7;font-weight:700}.opt-chain{min-width:1450px}";
   css += ".opt-chain.opt-resizable{table-layout:fixed;min-width:0;max-width:none}.opt-chain.opt-resizable td{overflow:hidden;text-overflow:ellipsis}.opt-chain.opt-resizable th{overflow:visible;padding-right:9px}.opt-chain.opt-resizable .opt-k{min-width:0}.opt-resize-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.opt-resize-grip{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:col-resize;touch-action:none;border-right:1px solid #cbd5e1;z-index:4}.opt-resize-grip:hover,.opt-resize-grip:focus{background:#93c5fd;outline:none}.opt-resizing,.opt-resizing *{cursor:col-resize!important;user-select:none!important}";
   var style = document.createElement("style");
@@ -92,13 +92,21 @@
       var prevDay=past[0], daily=prevDay?r[oi]-prevDay[oi]:null;
       return {pct:ratio(delta,map.has(r[0])?map.get(r[0])[oi]:null),turn:ratio(r[vol],prevDay?prevDay[oi]:null),vz:zscore(r[vol],vols),oz:zscore(daily,diffs)};
     }
+    // Common absolute scale across both sides of the selected expiry.
+    var oiMax=rows.reduce(function(m,r){return Math.max(m,Number(r[1])||0,Number(r[2])||0);},0);
     function cell(v,kind,cls) {
       var missing=v==null||!Number.isFinite(v), c=cls||"";
       if(missing)c+=" opt-missing";
       else if(kind==="chg"||kind==="pct"||kind==="z")c+=v>0?" opt-up":v<0?" opt-down":"";
       if(!missing&&kind==="z"&&Math.abs(v)>=2)c+=" opt-alert";
       var t=missing?"—":(kind==="iv"||kind==="pct"||kind==="ratio")?((kind==="pct"&&v>0)?"+":"")+v.toFixed(1)+"%":kind==="z"?(v>0?"+":"")+v.toFixed(2):kind==="money"?v.toFixed(2):kind==="chg"?(v>0?"+":"")+fmtInt(v):fmtPx(v);
-      return "<td class='"+c+"'>"+t+"</td>";
+      var heat="";
+      if(!missing&&kind==="oi"&&v>0&&oiMax>0){
+        var intensity=Math.sqrt(v/oiMax);
+        var alpha=0.06+0.64*intensity;
+        heat=" style='background-color:rgba(37,99,235,"+alpha.toFixed(3)+");color:"+(alpha>=0.58?"#102451":"#182437")+";font-weight:"+(intensity>=0.55?"700":"400")+"'";
+      }
+      return "<td class='"+c+"'"+heat+">"+t+"</td>";
     }
     var h="<div class='opt-chain-controls'><label>建玉比較 <select data-oi-period>";
     [1,3,10,25].forEach(function(p){h+="<option value='"+p+"'"+(p===period?" selected":"")+">"+p+"取引日</option>";});
@@ -114,10 +122,10 @@
       var prevExp=history[0]&&(history[0].expiries||[]).find(function(x){return x.expiry===e.expiry;});
       var pq=(prevExp&&prevExp.quotes||{})[String(r[0])]||{};
       function ivdiff(cur,old){return Number.isFinite(cur.iv)&&old&&Number.isFinite(old.iv)?cur.iv-old.iv:null;}
-      h+="<tr"+(r[0]===atm?" class='opt-atm'":"")+">"+cell(ivdiff(p,pq.put),"pct",pc)+cell(p.iv,"iv",pc)+cell(p.settlement,"price",pc)+cell(pd!=null&&p.settlement!=null?pd*p.settlement/100000:null,"money",pc)+cell(ps.vz,"z",pc)+cell(ps.turn,"ratio",pc)+cell(r[4],"int",pc)+cell(ps.oz,"z",pc)+cell(ps.pct,"pct",pc)+cell(pd,"chg",pc)+cell(r[2],"int",pc)+"<td class='opt-k'>"+fmtStrike(r[0])+"</td>"+cell(r[1],"int",cc)+cell(cd,"chg",cc)+cell(cs.pct,"pct",cc)+cell(cs.oz,"z",cc)+cell(r[3],"int",cc)+cell(cs.turn,"ratio",cc)+cell(cs.vz,"z",cc)+cell(cd!=null&&c.settlement!=null?cd*c.settlement/100000:null,"money",cc)+cell(c.settlement,"price",cc)+cell(c.iv,"iv",cc)+cell(ivdiff(c,pq.call),"pct",cc)+"</tr>";
+      h+="<tr"+(r[0]===atm?" class='opt-atm'":"")+">"+cell(ivdiff(p,pq.put),"pct",pc)+cell(p.iv,"iv",pc)+cell(p.settlement,"price",pc)+cell(pd!=null&&p.settlement!=null?pd*p.settlement/100000:null,"money",pc)+cell(ps.vz,"z",pc)+cell(ps.turn,"ratio",pc)+cell(r[4],"int",pc)+cell(ps.oz,"z",pc)+cell(ps.pct,"pct",pc)+cell(pd,"chg",pc)+cell(r[2],"oi",pc)+"<td class='opt-k'>"+fmtStrike(r[0])+"</td>"+cell(r[1],"oi",cc)+cell(cd,"chg",cc)+cell(cs.pct,"pct",cc)+cell(cs.oz,"z",cc)+cell(r[3],"int",cc)+cell(cs.turn,"ratio",cc)+cell(cs.vz,"z",cc)+cell(cd!=null&&c.settlement!=null?cd*c.settlement/100000:null,"money",cc)+cell(c.settlement,"price",cc)+cell(c.iv,"iv",cc)+cell(ivdiff(c,pq.call),"pct",cc)+"</tr>";
     });
     if(!marker&&block.spot!=null)h+="<tr class='opt-spotline'><td colspan='23'>日経平均 "+fmtPx(block.spot)+"</td></tr>";
-    return h+"</tbody></table></div><p class='opt-note'>建玉増減＝同一限月・同一行使価格の建玉差。増減額＝建玉増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。建玉増減率＝比較期間の増減÷比較日の建玉。出来高/建玉＝当日出来高÷前日建玉。σは当日の値を過去最大25観測（最低20観測）の平均・標本標準偏差で標準化。建玉増減σは日次差、黄色は絶対値2以上。IV前日比はポイント差。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
+    return h+"</tbody></table></div><p class='opt-note'>建玉増減＝同一限月・同一行使価格の建玉差。増減額＝建玉増減×当日清算値×1,000円（億円換算、資金流入額ではありません）。建玉増減率＝比較期間の増減÷比較日の建玉。出来高/建玉＝当日出来高÷前日建玉。σは当日の値を過去最大25観測（最低20観測）の平均・標本標準偏差で標準化。建玉増減σは日次差、黄色は絶対値2以上。IV前日比はポイント差。建玉セルは同一限月のプット・コール共通の最大建玉を基準に青色の濃淡で表示（平方根スケール）。薄緑：ITM、薄青：ATM。比較対象外・未取得は — 。</p>";
   }
 
 
