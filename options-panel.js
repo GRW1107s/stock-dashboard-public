@@ -231,8 +231,13 @@
     root.appendChild(panel);
     var key="nikkei-participants-weekly-v1", data=[];
     try{data=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(data))data=[];}catch(err){}
+    if(block&&Array.isArray(block.participants)&&block.participants.length){
+      var merged=new Map(data.map(function(r){return [[r.date,r.expiry,r.strike,r.side,r.firm].join("|"),r];}));
+      block.participants.forEach(function(r){merged.set([r.date,r.expiry,r.strike,r.side,r.firm].join("|"),r);});
+      data=Array.from(merged.values());
+    }
     var firms=["GS","JPM","UBS","BNP","MS","SG","ABN","野村"], selected=new Set(firms), mode="change";
-    panel.innerHTML="<strong>大口ポジション分析（週次・行使価格別）</strong><p class='opt-note'>JPX公表対象は期近限月のATM付近5行使価格・上位15参加者。公表対象外は —。証券会社経由の顧客取引を含みます。<br><a href='https://www.jpx.co.jp/markets/derivatives/open-interest/index.html' target='_blank' rel='noopener'>JPX 取引参加者別建玉残高一覧</a>｜CSV読込試験版（自動取得未対応）</p><label>CSV読込 <input type='file' accept='.csv,text/csv'></label> <button type='button' data-template>CSV形式</button><p data-message class='opt-note'></p><div data-controls></div><div data-result></div>";
+    panel.innerHTML="<strong>大口ポジション分析（週次・行使価格別）</strong><p class='opt-note'>JPX公表対象は期近限月のATM付近5行使価格・上位15参加者。公表対象外は —。証券会社経由の顧客取引を含みます。<br><a href='https://www.jpx.co.jp/markets/derivatives/open-interest/index.html' target='_blank' rel='noopener'>JPX 取引参加者別建玉残高一覧</a>｜週次データを自動取得（CSVで手動追加も可）</p><label>CSV読込 <input type='file' accept='.csv,text/csv'></label> <button type='button' data-template>CSV形式</button><p data-message class='opt-note'></p><div data-controls></div><div data-result></div>";
     var msg=panel.querySelector("[data-message]"), controls=panel.querySelector("[data-controls]"), result=panel.querySelector("[data-result]");
     function draw(){
       var allDates=Array.from(new Set(data.map(function(r){return r.date;}))).sort().reverse(), now=allDates[0], prior=allDates[1];
@@ -266,6 +271,30 @@
       var m=new Map(data.concat(incoming).map(function(r){return [[r.date,r.expiry,r.strike,r.side,r.firm].join("|"),r];}));data=Array.from(m.values());try{localStorage.setItem(key,JSON.stringify(data));}catch(err){}msg.textContent=incoming.length+"行を読み込みました。";draw();
     }catch(err){msg.textContent=err.message;}};
     draw();
+  }
+
+  function flowPanel(root,block,e){
+    var flow=block&&block.flow;
+    if(!flow||!Array.isArray(flow.rows)||!flow.rows.length)return;
+    var rows=flow.rows.filter(function(r){return r.expiry===e.expiry;});
+    var panel=document.createElement("section");
+    panel.style.cssText="margin:14px 0;padding:10px;border:1px solid #dbe3ed;border-radius:6px;background:white";
+    root.appendChild(panel);
+    panel.innerHTML="<strong>大口の出来高（日次・手口、日通し）</strong><p class='opt-note'>JPX取引参加者別取引高（日中＋夜間）から大口8社の出来高のみ。公表は銘柄ごとの上位参加者だけのため、未掲載は —。売買の区別はありません。<br>対象限月：" + e.label + "｜データ日付：" + flow.date + "｜単位：枚</p>";
+    if(!rows.length){panel.innerHTML+="<p class='opt-note'>この限月の公表データはまだありません。</p>";return;}
+    var firms=["GS","JPM","UBS","BNP","MS","SG","ABN","野村"];
+    var strikes=Array.from(new Set(rows.map(function(r){return r.strike;}))).sort(function(a,b){return b-a;});
+    var values=new Map(rows.map(function(r){return [[r.strike,r.side,r.firm].join("|"),r.vol];}));
+    var max=1;rows.forEach(function(r){max=Math.max(max,r.vol);});
+    var table=document.createElement("table");table.className="opt-chain";table.style.minWidth="0";table.style.tableLayout="auto";
+    var head=table.createTHead(), hr=head.insertRow();
+    function th(row,t,span){var c=document.createElement("th");c.textContent=t;c.colSpan=span||1;row.appendChild(c);return c;}
+    th(hr,"PUT",firms.length).className="opt-put-head";th(hr,"行使価格");th(hr,"CALL",firms.length).className="opt-call-head";
+    var names=head.insertRow();firms.slice().reverse().forEach(function(n){th(names,n);});th(names,"円");firms.forEach(function(n){th(names,n);});
+    var body=table.createTBody();
+    function add(tr,v){var c=tr.insertCell();c.textContent=v==null?"—":fmtInt(v);if(v){c.style.backgroundColor="rgba(37,99,235,"+(0.05+0.25*v/max).toFixed(3)+")";}else if(v==null)c.className="opt-missing";}
+    strikes.forEach(function(k){var tr=body.insertRow();firms.slice().reverse().forEach(function(n){add(tr,values.get([k,"P",n].join("|"))||null);});var c=tr.insertCell();c.className="opt-k";c.textContent=fmtStrike(k);firms.forEach(function(n){add(tr,values.get([k,"C",n].join("|"))||null);});});
+    var wrap=document.createElement("div");wrap.className="opt-chain-scroll";wrap.appendChild(table);panel.appendChild(wrap);
   }
 
   function render(root, block) {
@@ -334,7 +363,7 @@
       }
       html += "<p class='opt-note'>" + meta.note + "</p>";
       root.innerHTML = html;
-      if(market === "jp"){enableChainResize(root);participantPanel(root,block,e);}
+      if(market === "jp"){enableChainResize(root);participantPanel(root,block,e);flowPanel(root,block,e);}
       if(market==="jp"){
         [["oi","[data-opt-oi]"],["vol","[data-opt-vol]"]].forEach(function(pair){
           var input=root.querySelector(pair[1]);input.addEventListener("change",function(){var n=input.valueAsNumber;if(!Number.isFinite(n)||n<0||(filter.mode==="share"?n>100:!Number.isSafeInteger(n))){input.value=filter[pair[0]];return;}filter[pair[0]]=n;saveFilter();});

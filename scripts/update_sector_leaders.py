@@ -975,6 +975,13 @@ def main():
         update_options_run(ROOT)
     except Exception as err:
         print("OPTIONS_ERROR", str(err)[:150], flush=True)
+    # Large-player flow for the Nikkei options tab: weekly participant
+    # open interest (net by firm) and daily participant volume. Best-effort.
+    try:
+        from update_jp_flow import run as update_jp_flow_run
+        update_jp_flow_run(ROOT)
+    except Exception as err:
+        print("FLOW_ERROR", str(err)[:150], flush=True)
 
 
 if __name__ == "__main__":
