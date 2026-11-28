@@ -37,6 +37,7 @@
     dd: "DD（売り抜け日）が閾値以下"
   };
   var SELL_LABELS = {
+    creditRisk: "信用リスク警戒・データ不足（取引制限）",
     ma50: "株価が閾値日移動平均を下回る",
     loss8: "買値から閾値%下落",
     dropPct: "前日終値から閾値%以上下落",
@@ -435,6 +436,44 @@
     return map;
   }
 
+  // FRED ICE OAS is licensed data: parse user-provided CSV in memory only.
+  function parseCreditCsv(text, series) {
+    var lines = String(text).replace(/^\uFEFF/, "").trim().split(/\r?\n/);
+    function fields(line) { return line.split(",").map(function (x) { return x.trim().replace(/^"|"$/g, ""); }); }
+    var header = fields(lines.shift() || ""), dc = header.findIndex(function (x) { return /^(date|observation_date)$/i.test(x); }), vc = header.findIndex(function (x) { return x.toUpperCase() === series; });
+    if (dc < 0 || vc < 0) throw Error("CSVの列名が一致しません: " + series);
+    var map = new Map();
+    lines.forEach(function (line) {
+      var v = fields(line), date = v[dc], raw = v[vc];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "") || !raw || raw === ".") return;
+      var x = Number(raw), ts = Date.parse(date + "T00:00:00Z");
+      if (Number.isFinite(x) && x >= 0 && Number.isFinite(ts) && new Date(ts).toISOString().slice(0,10) === date) map.set(date,x);
+    });
+    var out = Array.from(map.entries()).sort(function(a,b){return a[0].localeCompare(b[0]);});
+    if (!out.length) throw Error("有効な観測値がありません: " + series);
+    return out;
+  }
+  // Daily close observations are not usable on their own observation date.
+  // Select the last strictly earlier date, at most 7 calendar days old.
+  function creditObservation(series, date, lag) {
+    if (!date || !series || !series.length) return null;
+    var lo=0, hi=series.length;
+    while(lo<hi){var mid=(lo+hi)>>1;if(series[mid][0]<date)lo=mid+1;else hi=mid;}
+    var i=lo-1;
+    if(i<0 || (Date.parse(date)-Date.parse(series[i][0]))/86400000>7 || i-lag<0) return null;
+    if (lag && (Date.parse(series[i][0])-Date.parse(series[i-lag][0]))/86400000>lag*2+10) return null;
+    return lag ? series[i][1]-series[i-lag][1] : series[i][1];
+  }
+  function creditAllowed(policy, date) {
+    if (!policy || !policy.rules || !policy.rules.length) return true;
+    var flags = policy.rules.map(function(r){
+      var v=creditObservation(policy.data[r.series],date,r.days||0);
+      return v==null ? null : v>=r.threshold;
+    });
+    // Missing required data are not a signal that conditions are safe.
+    if(flags.some(function(v){return v===null;}))return false;
+    return !(policy.join==="and"?flags.every(Boolean):flags.some(Boolean));
+  }
   function runBacktest(rows, cfg) {
     cfg = Object.assign({}, cfg, { __prepped: false });
     if (cfg.regime) cfg.regime = Object.assign({}, cfg.regime, { strategies: cfg.regime.strategies.map(function (sc) { return sc ? Object.assign({}, sc, { __prepped: false }) : sc; }) });
@@ -645,6 +684,9 @@
     }
 
     var from = Math.max(0, cfg.fromIdx), to = Math.min(n - 1, cfg.toIdx);
+    var credit = cfg.creditPolicy || null;
+    var creditFlags = credit && credit.rules && credit.rules.length ? dates.map(function(date){return creditAllowed(credit,date);}) : null;
+    function creditOk(d){return !creditFlags || (d>=0 && creditFlags[d]);}
     var regime = cfg.regime || null;
     function stockCond(def, id, d) {
       var nums = def.nums || {}, c = jCloses[d];
@@ -689,7 +731,7 @@
     function activeSc(d) { if (!regime) return cfg; var ti = trendIdxAt(d); return ti >= 0 ? (regime.strategies[ti] || null) : null; }
     var trades = [], pos = null, pendingBuy = false, pendingReason = null, pendingSell = null, waitRule = null;
     var pendingSc = null, pendingTrend = null;
-    if (cfg.startHeld && to >= from) pos = { execIdx: from, signalIdx: from, price: opens[from], date: dates[from], sc: activeSc(from) || cfg, trend: regime && trendIdxAt(from) >= 0 ? regime.names[trendIdxAt(from)] : null };
+    if (cfg.startHeld && to >= from && creditOk(from-1)) pos = { execIdx: from, signalIdx: from, price: opens[from], date: dates[from], sc: activeSc(from) || cfg, trend: regime && trendIdxAt(from) >= 0 ? regime.names[trendIdxAt(from)] : null };
     var equity = [], cash = 1;
     function executeSell(d, price, reason) {
       trades.push({ buyDate: pos.date, buyPrice: pos.price, sellDate: dates[d], sellPrice: price, ret: price / pos.price - 1, hold: d - pos.execIdx, reason: reason, open: false, trend: pos.trend || null, strategy: (pos.sc && pos.sc.__name) || null });
@@ -739,10 +781,10 @@
       equity.push(pos ? cash * closes[d] / pos.price : cash);
       if (d === to) break;
       if (pos && !pendingSell) {
-        var r = sellReason(d, pos);
+        var r = credit && credit.exit && !creditOk(d) ? "creditRisk" : sellReason(d, pos);
         if (r) pendingSell = r;
       }
-      if (!pos && !pendingBuy) {
+      if (!pos && !pendingBuy && creditOk(d)) {
         var buySc = null, buyTrend = null, canBuy = false;
         if (waitRule) { buySc = waitRule.sc; canBuy = buyCond(buySc, waitRule.buy, d); }
         else {
@@ -838,7 +880,7 @@
     };
   }
 
-  window.BacktestEngine = { runBacktest: runBacktest, computeTrendIdx: computeTrendIdx };
+  window.BacktestEngine = { runBacktest: runBacktest, computeTrendIdx: computeTrendIdx, parseCreditCsv: parseCreditCsv, creditAllowed: creditAllowed };
 
   // ---------- page wiring ----------
   function init() {
@@ -878,6 +920,9 @@
     var runBtn = document.getElementById("bt-run");
     var results = document.getElementById("bt-results");
     if (!runBtn || !results) return;
+    var activeCreditPolicy = null;
+    function runCreditBacktest(rows,cfg){return runBacktest(rows,activeCreditPolicy ? Object.assign({},cfg,{creditPolicy:activeCreditPolicy}) : cfg);}
+    var creditApi = null;
 
     // ---- Result export (CSV / Excel) -------------------------------------
     function btCollectTables() {
@@ -2033,6 +2078,49 @@
       };
     })();
 
+    // Credit risk gate is independent of trend switching and strategy slots.
+    if (MARKET === "us") creditApi = (function(){
+      var main=panel.querySelector(".bt-main"); if(!main)return null;
+      var sec=document.createElement("section");sec.className="bt-regime";sec.id="bt-credit-risk";
+      var HY="BAMLH0A0HYM2",CCC="BAMLH0A3HYC",data={};
+      function options(values,def){return values.map(function(v){return '<option value="'+v+'"'+(v===def?' selected':'')+'>'+v+'</option>';}).join("");}
+      function source(id,label){return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0"><label>'+label+' CSV <input type="file" accept=".csv,text/csv" data-credit-file="'+id+'"></label><a href="https://fred.stlouisfed.org/graph/fredgraph.csv?id='+id+'" target="_blank" rel="noopener">FRED CSV</a><span class="bt-res-note" data-credit-status="'+id+'">未読込</span></div>';}
+      function row(id,label,series,change,values,def){
+        return '<label style="display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;margin:5px 16px 5px 0"><input type="checkbox" data-credit-rule="'+id+'" data-series="'+series+'">'+label+(change?' <select class="bt-select" data-credit-days="'+id+'">'+options([5,10,20,40,60],20)+'</select>観測日で':'')+' <select class="bt-select" data-credit-value="'+id+'">'+options(values,def)+'</select>'+(change?'ポイント以上拡大':'%以上')+'</label>';
+      }
+      sec.innerHTML='<div class="bt-regime-head"><span class="bt-regime-title">信用リスク・暴落警戒</span><label>警戒時 <select class="bt-select" id="bt-credit-mode"><option value="off">使わない</option><option value="buy">新規買い禁止</option><option value="exit">新規買い禁止＋保有売却</option></select></label><label>警戒条件 <select class="bt-select" id="bt-credit-join"><option value="or">いずれか（OR）</option><option value="and">すべて（AND）</option></select></label></div>'+
+        '<div style="padding:8px 12px">'+row("hyLevel","HYスプレッド",HY,false,[3,3.5,4,4.5,5,6,7,8,10],5)+row("hyChange","HYスプレッド",HY,true,[.1,.25,.5,.75,1,1.5,2],.5)+'<br>'+row("cccLevel","CCC格以下スプレッド",CCC,false,[6,8,10,12,15,18,20,25,30],10)+row("cccChange","CCC格以下スプレッド",CCC,true,[.25,.5,1,1.5,2,3,5],1)+source(HY,"HY")+source(CCC,"CCC格以下")+
+        '<p class="bt-res-note" style="margin:6px 0">FRED / ICE Data Indices。2026年4月以降は直近3年分。利用許諾のあるCSVを読み込んでください（ブラウザ内のみ、アップロード・保存なし）。観測日の翌日以降に判定し、必要なデータがない期間は取引禁止。売却モードでは翌営業日寄り付きで決済。全パターンではこの設定を固定条件として使用します。</p><p class="bt-res-note" id="bt-credit-run-note" role="status"></p></div>';
+      main.parentNode.insertBefore(sec,main);
+      var note=sec.querySelector("#bt-credit-run-note");
+      sec.querySelectorAll("[data-credit-file]").forEach(function(input){
+        input.addEventListener("change",function(){
+          var key=input.getAttribute("data-credit-file"),label=sec.querySelector('[data-credit-status="'+key+'"]'),f=input.files[0];delete data[key];
+          if(!f){label.textContent="未読込";return;}
+          label.textContent="読込中";
+          f.text().then(function(t){if(input.files[0]!==f)return;var rows=parseCreditCsv(t,key);data[key]=rows;label.textContent=rows[0][0]+"〜"+rows[rows.length-1][0]+"（"+rows.length+"件）";}).catch(function(e){if(input.files[0]!==f)return;delete data[key];label.textContent="読込エラー："+e.message;});
+        });
+      });
+      return {collect:function(){
+        var mode=sec.querySelector("#bt-credit-mode").value;
+        if(mode==="off"){note.textContent="";return null;}
+        var rules=Array.from(sec.querySelectorAll("[data-credit-rule]:checked")).map(function(c){
+          var id=c.getAttribute("data-credit-rule"),days=sec.querySelector('[data-credit-days="'+id+'"]');
+          return {series:c.getAttribute("data-series"),days:days?Number(days.value):0,threshold:Number(sec.querySelector('[data-credit-value="'+id+'"]').value)};
+        });
+        if(!rules.length)throw Error("信用リスクの警戒条件を1つ以上選択してください。");
+        if(rules.some(function(r){return !data[r.series] || data[r.series].length<=r.days;}))throw Error("選択した信用スプレッドのCSVが未読込、または履歴が不足しています。");
+        var join=sec.querySelector("#bt-credit-join").value,used=Array.from(new Set(rules.map(function(r){return r.series;}))),ranges=used.map(function(k){var d=data[k];return k+" "+d[0][0]+"〜"+d[d.length-1][0];});
+        note.textContent="適用中："+(mode==="exit"?"新規買い禁止＋保有売却":"新規買い禁止")+" / "+join.toUpperCase()+" / "+rules.map(function(r){return r.series+(r.days?" "+r.days+"観測日の拡大幅":" 水準")+"≧"+r.threshold;}).join(" / ")+" / "+ranges.join(" / ")+"。期間外・欠損は取引禁止。";
+        var snapshot={};used.forEach(function(k){snapshot[k]=data[k];});
+        return {rules:rules,data:snapshot,join:join,exit:mode==="exit"};
+      }};
+    })();
+    function captureCredit(){
+      try{activeCreditPolicy=creditApi?creditApi.collect():null;return true;}
+      catch(e){activeCreditPolicy=null;results.textContent=e.message;return false;}
+    }
+
     function checked(group) {
       return Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt="' + group + '"]:checked')).map(function (b) { return b.value; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
     }
@@ -2115,7 +2203,7 @@
             out.push({ title: title, out: null, noData: "指定期間のデータがありません（保有データ：" + rows[0][0] + " 〜 " + lastDate + "）。" });
             return;
           }
-          var res = runBacktest(rows, {
+          var res = runCreditBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell, screen: cfgBase.screen, buyFormula: cfgBase.buyFormula, sellFormula: cfgBase.sellFormula,
             ddLimit: cfgBase.ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, trailStart: trailStartVal, trailDrop: trailDropVal, trailAtrStart: trailAtrStartVal, trailMult: trailMultVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
           });
@@ -2822,7 +2910,7 @@
             if (fromIdx < 0) return;
             var toIdx = Math.min(rows.length - 1, fromIdx + horizon - 1);
             if (toIdx <= fromIdx) return;
-            var out = runBacktest(rows, {
+            var out = runCreditBacktest(rows, {
               fromIdx: fromIdx, toIdx: toIdx, judgeRows: (ctx.store.__judge || {})[code] || null, buy: buy, sell: sell, buyFormula: buyFormulaNow, sellFormula: sellFormulaNow,
               ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, trailStart: trailStartVal, trailDrop: trailDropVal, trailAtrStart: trailAtrStartVal, trailMult: trailMultVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
             });
@@ -2924,8 +3012,9 @@
       mtEl.addEventListener("change", function () { try { localStorage.setItem("stock-dashboard-bt-mintrades-" + MARKET, mtEl.value); } catch (e) {} });
     }
     var runAllBtnEl = document.getElementById("bt-run-all");
-    if (runAllBtnEl) runAllBtnEl.addEventListener("click", runAllPatterns);
+    if (runAllBtnEl) runAllBtnEl.addEventListener("click", function(){if(captureCredit())runAllPatterns();});
     runBtn.addEventListener("click", function () {
+      if (!captureCredit()) return;
       var cmpSel = slotsApi.selected();
       if (cmpSel.length) { runCompare(); return; }
       if (((document.getElementById("bt-mode") || {}).value || "normal") === "rolling") { runRolling(); return; }
@@ -3010,7 +3099,7 @@
             entries.push({ title: title, out: null, noData: "指定期間のデータがありません（保有データ：" + rows[0][0] + " 〜 " + lastDate + "）。" });
             return;
           }
-          var out = runBacktest(rows, {
+          var out = runCreditBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, judgeRows: item.judgeRows || null, regime: ctx.regimeObj || null, buy: buyCfg, sell: sell, screen: screen, buyFormula: buyFormulaNow, sellFormula: sellFormulaNow,
             ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, trailStart: trailStartVal, trailDrop: trailDropVal, trailAtrStart: trailAtrStartVal, trailMult: trailMultVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
           });
@@ -3174,7 +3263,7 @@
               entries.push({ title: title, out: null, noData: "指定期間のデータがありません（保有データ：" + rows[0][0] + " 〜 " + lastDate + "）。" });
               return;
             }
-            entries.push({ title: title, out: runBacktest(rows, Object.assign({ fromIdx: fromIdx, toIdx: toIdx, judgeRows: item.judgeRows || null }, cfg)) });
+            entries.push({ title: title, out: runCreditBacktest(rows, Object.assign({ fromIdx: fromIdx, toIdx: toIdx, judgeRows: item.judgeRows || null }, cfg)) });
           });
           return { name: it.name, cfg: cfg, entries: entries };
         });
@@ -3454,7 +3543,7 @@
         function rollEntries(p, rd) {
           return rd.wins.map(function (w) {
             var t = validTargets[w.t];
-            return { title: t.title, out: runBacktest(t.rows, Object.assign({ fromIdx: w.fromIdx, toIdx: w.toIdx, judgeRows: t.judgeRows || null }, p.cfg)) };
+            return { title: t.title, out: runCreditBacktest(t.rows, Object.assign({ fromIdx: w.fromIdx, toIdx: w.toIdx, judgeRows: t.judgeRows || null }, p.cfg)) };
           });
         }
         function statOf(entries) {
@@ -3763,7 +3852,7 @@
         }
         function patEntries(p) {
           return targets.map(function (t) {
-            return t.rows ? { title: t.title, out: runBacktest(t.rows, Object.assign({ fromIdx: t.fromIdx, toIdx: t.toIdx, judgeRows: t.judgeRows || null }, p.cfg)) } : { title: t.title, out: null, noData: t.noData };
+            return t.rows ? { title: t.title, out: runCreditBacktest(t.rows, Object.assign({ fromIdx: t.fromIdx, toIdx: t.toIdx, judgeRows: t.judgeRows || null }, p.cfg)) } : { title: t.title, out: null, noData: t.noData };
           });
         }
         var done = 0;
