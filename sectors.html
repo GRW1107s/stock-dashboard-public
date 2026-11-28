@@ -93,7 +93,7 @@
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261120usbt" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./industry-ja.js?v=20261117gics" defer></script><script src="./us-industry-panels.js?v=20261125rk" defer></script><script src="./sector-column-filter.js?v=20261119qoq" defer></script><script src="./sector-screener.js?v=20261125us30" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日本株</a><a href="./sectors.html" aria-current="page">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261128resultsrestore" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./industry-ja.js?v=20261117gics" defer></script><script src="./us-industry-panels.js?v=20261125rk" defer></script><script src="./sector-column-filter.js?v=20261119qoq" defer></script><script src="./sector-screener.js?v=20261125us30" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日本株</a><a href="./sectors.html" aria-current="page">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>S&P500 11セクター 日次観測</h1><p class="sub">11セクターETFの騰落率・出来高増減率・判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はETFの当日騰落率−SPYの当日騰落率（％ポイント）。判定はETFの出来高を使用した独自の簡易指標で、セクター全銘柄への資金流入を直接測定するものではありません。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
@@ -463,6 +463,37 @@
   save();
 })();
 </script>
+<section id="backtest-results-panel" aria-label="バックテスト結果">
+<style>
+#backtest-results-panel{font-size:12px;color:#222;line-height:1.7}
+#backtest-results-panel .br-note{color:#666;margin:4px 0 14px}
+#backtest-results-panel .br-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+#backtest-results-panel input,#backtest-results-panel select{font:inherit;padding:7px 9px;border:1px solid #ccc;background:white;color:#222;border-radius:3px}
+#backtest-results-panel input{min-width:200px;flex:1;max-width:460px}
+#backtest-results-panel .br-layout{display:grid;grid-template-columns:minmax(205px,25%) minmax(0,1fr);gap:18px;align-items:start}
+#backtest-results-panel .br-list{border-top:1px solid #ddd}
+#backtest-results-panel .br-entry{display:block;width:100%;text-align:left;font:inherit;padding:11px 10px;border:0;border-bottom:1px solid #ddd;background:white;color:#333;cursor:pointer}
+#backtest-results-panel .br-entry[aria-pressed=true]{background:#f1f1f1;box-shadow:inset 3px 0 #444}
+#backtest-results-panel .br-entry:hover{background:#f7f7f7}
+#backtest-results-panel .br-entry small{display:block;color:#666;font-size:11px;margin-top:3px}
+#backtest-results-panel .br-detail{min-width:0;border:1px solid #ddd;padding:16px}
+#backtest-results-panel h2{font-size:19px;margin:0 0 5px}
+#backtest-results-panel h3{font-size:16px;margin:0 0 6px}
+#backtest-results-panel h4{font-size:13px;margin:18px 0 6px}
+#backtest-results-panel .br-meta{color:#666;font-size:11px}
+#backtest-results-panel .br-scroll{overflow:auto;max-width:100%}
+#backtest-results-panel table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#backtest-results-panel th,#backtest-results-panel td{border-bottom:1px solid #ddd;padding:7px 9px;text-align:right;position:static;background:white}
+#backtest-results-panel th{background:#f3f3f3;font-weight:600;color:#333;cursor:default}
+#backtest-results-panel th:first-child,#backtest-results-panel td:first-child{text-align:left}
+#backtest-results-panel .br-detail ul{margin:4px 0;padding-left:20px}
+#backtest-results-panel .br-summary{font-weight:600}
+@media(max-width:800px){#backtest-results-panel .br-layout{grid-template-columns:1fr}#backtest-results-panel .br-detail{padding:10px}}
+</style>
+<h2>バックテスト結果</h2><p class="br-note">ChatGPTで実施した検証の記録。検証条件、数値、結論、制約を保存します。実行画面の結果とは別の研究記録です。</p>
+<div class="br-controls"><input id="br-query" type="search" placeholder="検証名・銘柄・条件を検索" aria-label="検証結果を検索"><select id="br-category" aria-label="分類"><option value="">すべての分類</option></select><span id="br-count" role="status"></span></div>
+<div class="br-layout"><div id="br-list" class="br-list" aria-label="検証一覧"></div><article id="br-detail" class="br-detail" aria-live="polite">検証結果を読み込んでいます。</article></div>
+</section>
 </main><script>
 let rows=[],names={};const hasNum=v=>typeof v==='number'&&Number.isFinite(v);const fmt=v=>hasNum(v)?(v>0?'+':'')+v.toFixed(2)+'%':'—';const cls=v=>!hasNum(v)?'na':v>0?'pos':v<0?'neg':'';const keys=()=>Object.keys(names);
 function ddCircle(number){
@@ -656,4 +687,5 @@ document.addEventListener('click',function(e){
  }
 });
 </script><script src="./backtest.js?v=20261128ma2050100" defer></script>
+<script src="./backtest-results.js?v=20261128restore" defer></script>
 </body></html>
