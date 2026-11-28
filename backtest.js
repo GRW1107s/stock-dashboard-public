@@ -442,7 +442,7 @@
     function num(k, fallback, max) { var v = Number(p[k]); return Number.isFinite(v) && v >= 1 ? Math.min(max, Math.floor(v)) : fallback; }
     var lengths = [20,60,100];
     var lags = [3,5,10];
-    var pivot = num("pivot",10,100), upLimit = num("upThreshold",5,10), downLimit = num("downThreshold",5,10);
+    var pivot = 10, upLimit = num("upThreshold",5,10), downLimit = num("downThreshold",5,10);
     var c = rows.map(function(r){return +r[4];}), h=rows.map(function(r){return +r[2];}), l=rows.map(function(r){return +r[3];});
     var ma = lengths.map(function(len) { var sum=0, e=c[0]; return c.map(function(v,i){ if(p.maType !== "SMA"){e=i?e+(v-e)*2/(len+1):v;return e;} sum+=v-(i>=len?c[i-len]:0);return i>=len-1?sum/len:null;}); });
     var ready = Math.max.apply(null,lengths.map(function(v,j){return v+lags[j];}))-1;
@@ -1939,7 +1939,7 @@
         scoreControls.style.gap="8px 14px";
         cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
         var p = state.scoreSettings;
-        scoreControls.innerHTML='<span>移動平均線 <label><input type="checkbox" data-score-key="maType" value="SMA"'+(p.maType==="SMA"?" checked":"")+'> SMA</label> <label><input type="checkbox" data-score-key="maType" value="EMA"'+(p.maType!=="SMA"?" checked":"")+'> EMA</label></span><label>Pivot '+scoreInput("pivot",100)+'</label>';
+        scoreControls.innerHTML='<span>移動平均線 <label><input type="checkbox" data-score-key="maType" value="SMA"'+(p.maType==="SMA"?" checked":"")+'> SMA</label> <label><input type="checkbox" data-score-key="maType" value="EMA"'+(p.maType!=="SMA"?" checked":"")+'> EMA</label></span><span class="bt-res-note">Pivot 10（固定）</span>';
         var ma=p.maType==="SMA"?"SMA":"EMA";
         var names=TREND_NAMES[state.mode];
         names.forEach(function(name,di){
