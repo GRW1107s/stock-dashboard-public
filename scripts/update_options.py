@@ -47,8 +47,11 @@ NK_CODE = re.compile(r"^NIKKEI 225 ([CP])(\d{4})-(\d+)$")
 OCC_CODE = re.compile(r"^(SPXW|SPXO|SPX)(\d{6})([CP])(\d{8})$")
 
 
-def _fetch(url, timeout=60):
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
+def _fetch(url, timeout=60, headers=None):
+    all_headers = {"User-Agent": UA}
+    if headers:
+        all_headers.update(headers)
+    req = urllib.request.Request(url, headers=all_headers)
     with urllib.request.urlopen(req, timeout=timeout) as res:
         return res.read()
 
@@ -303,7 +306,13 @@ def refresh_us(root, stored):
     if rows:
         spot_hint = (rows[0].get("sp500") or {}).get("close")
         session_date = rows[0].get("date")
-    raw = _fetch(CBOE_SPX_URL, timeout=90)
+    # NOTE: CBOE's CDN Cloudflare-blocks requests without a Referer
+    # (HTTP 403). The options BOT fetches the same CDN with a Referer
+    # + Accept header and still works (2026-11-27), while this script
+    # sent only a User-Agent and the US block has stayed at 2026-11-18.
+    raw = _fetch(CBOE_SPX_URL, timeout=90, headers={
+        "Referer": "https://www.cboe.com/",
+        "Accept": "application/json,*/*"})
     block = parse_spx(json.loads(raw), spot_hint, session_date)
     if not block:
         return stored, False
