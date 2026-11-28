@@ -436,6 +436,32 @@
     return map;
   }
 
+  // Symmetric LoK trend-break scores, evaluated on confirmed daily bars.
+  function scoreTrendRows(rows, settings, mode) {
+    var p = settings || {}, n = rows.length;
+    function num(k, fallback, max) { var v = Number(p[k]); return Number.isFinite(v) && v >= 1 ? Math.min(max, Math.floor(v)) : fallback; }
+    var lengths = [num("short",20,500),num("medium",60,500),num("long",100,500)];
+    var lags = [num("slopeShort",3,100),num("slopeMedium",5,100),num("slopeLong",10,100)];
+    var pivot = num("pivot",10,100), upLimit = num("upThreshold",5,10), downLimit = num("downThreshold",5,10);
+    var c = rows.map(function(r){return +r[4];}), h=rows.map(function(r){return +r[2];}), l=rows.map(function(r){return +r[3];});
+    var ma = lengths.map(function(len) { var sum=0, e=c[0]; return c.map(function(v,i){ if(p.maType !== "SMA"){e=i?e+(v-e)*2/(len+1):v;return e;} sum+=v-(i>=len?c[i-len]:0);return i>=len-1?sum/len:null;}); });
+    var ready = Math.max.apply(null,lengths.map(function(v,j){return v+lags[j];}))-1;
+    var lh=null,ph=null,ll=null,pl=null,last=-1;
+    return c.map(function(v,i){
+      if(i>=pivot*2){var k=i-pivot, high=true, low=true;for(var j=k-pivot;j<=k+pivot;j++){if(j===k)continue;if(h[j]>h[k]||(j>k&&h[j]===h[k]))high=false;if(l[j]<l[k]||(j>k&&l[j]===l[k]))low=false;}if(high){ph=lh;lh=h[k];}if(low){pl=ll;ll=l[k];}}
+      if(i<ready)return -1;
+      var a=ma[0][i],b=ma[1][i],d=ma[2][i];
+      var bear=[v<a,v<b,v<d,a<=ma[0][i-lags[0]],b<=ma[1][i-lags[1]],d<=ma[2][i-lags[2]],a<b,b<d,ph!==null&&lh<ph&&v<=ph,(pl!==null&&ll<pl)||(ll!==null&&v<ll)];
+      var bull=[v>a,v>b,v>d,a>=ma[0][i-lags[0]],b>=ma[1][i-lags[1]],d>=ma[2][i-lags[2]],a>b,b>d,pl!==null&&ll>pl&&v>=pl,(ph!==null&&lh>ph)||(lh!==null&&v>lh)];
+      var u=bull.filter(Boolean).length, z=bear.filter(Boolean).length;
+      var direction=u>=upLimit&&u>z?1:z>=downLimit&&z>u?-1:0;
+      if(direction)last=direction;
+      if(mode==="2")return direction===1?0:direction===-1?1:last===1?0:last===-1?1:-1;
+      if(mode==="3")return direction===1?0:direction===-1?2:1;
+      return direction===1?1:direction===-1?3:last===-1?0:last===1?2:-1;
+    });
+  }
+
   function runBacktest(rows, cfg) {
     var ownInd = indicatorsFor(rows, cfg.maDays == null ? 50 : cfg.maDays);
     var ind = cfg.judgeRows ? indicatorsFor(cfg.judgeRows, cfg.maDays == null ? 50 : cfg.maDays) : ownInd;
@@ -639,6 +665,7 @@
 
     var from = Math.max(0, cfg.fromIdx), to = Math.min(n - 1, cfg.toIdx);
     var regime = cfg.regime || null;
+    var scoreStages = regime && regime.scoreSettings ? scoreTrendRows(rows, regime.scoreSettings, regime.mode) : null;
     function stockCond(def, id, d) {
       var nums = def.nums || {}, c = jCloses[d];
       var pm = /^sPx(\d+)(Up|Dn)$/.exec(id);
@@ -675,6 +702,7 @@
     }
     function trendIdxAt(d) {
       if (!regime) return -2;
+      if (scoreStages) return scoreStages[d] == null ? -1 : scoreStages[d];
       var list = regime.byDate.get(dates[d]) || [];
       for (var k = 0; k < list.length; k++) { if (stockItemsPass(regime.defs[list[k]], d)) return list[k]; }
       return -1;
@@ -1767,7 +1795,7 @@
       { id: "sHigherHigh", text: "株価の高値切上げ" }, { id: "sHigherLow", text: "株価の安値切上げ" },
       { id: "sLowerHigh", text: "株価の高値切り下げ" }, { id: "sLowerLow", text: "株価の安値切り下げ・安値割れ" }
     ];
-    var TREND_NAMES = { "2": ["上昇", "下落"], "3": ["強気", "レンジ", "弱気"], "4": ["Stage1", "Stage2", "Stage3", "Stage4"] };
+    var TREND_NAMES = { "2": ["上昇", "下落"], "3": ["上昇", "レンジ", "下落"], "4": ["Stage1 底値形成", "Stage2 上昇", "Stage3 天井形成", "Stage4 下落"] };
     // Each trend lists only the conditions that fit its direction:
     // bullish trends get bullish conditions, bearish ones bearish ones.
     var TREND_SETS = {
@@ -1821,10 +1849,10 @@
     }
     var regimeApi = (function setupRegime() {
       var KEY = "stock-dashboard-bt-regime-" + MARKET;
-      var state = { mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
+      var state = { scoreSettings: {maType:"EMA",short:20,medium:60,long:100,slopeShort:3,slopeMedium:5,slopeLong:10,pivot:10,upThreshold:5,downThreshold:5}, mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
       try {
         var saved = JSON.parse(localStorage.getItem(KEY) || "null");
-        if (saved && saved.defs) { state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
+        if (saved && saved.defs) { Object.assign(state.scoreSettings,saved.scoreSettings || {}); state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
       } catch (e) {}
       ["2", "3", "4"].forEach(function (mk) {
         (state.defs[mk] || []).forEach(function (def) {
@@ -1861,7 +1889,7 @@
       sec.innerHTML = '<div class="bt-regime-head"><span class="bt-regime-title">トレンド切替</span>' +
         '<select id="bt-regime-mode" class="bt-select" aria-label="トレンド切替の分類数"><option value="off">使わない</option><option value="2">2分類</option><option value="3">3分類</option><option value="4">4分類</option></select>' +
         '<label class="bt-regime-target" style="display:none">判定対象 <select id="bt-regime-target" class="bt-select" aria-label="トレンド判定対象">' + targets.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + "</option>"; }).join("") + "</select></label>" +
-        '<span class="bt-res-note">通常モードの実行に適用します。トレンドは各銘柄の株価で判定し、上から順に最初に当てはまったものを採用します（どれにも当てはまらなければ割当なし）。保有中のポジションは、開いた戦略の売り条件で判定します。</span></div>' +
+        '<span class="bt-res-note">通常モードの実行に適用します。トレンドは各銘柄の株価・MA・スイングの10条件スコアで判定します。保有中のポジションは、開いた戦略の売り条件で判定します。</span></div>' +
         '<div class="bt-regime-cards" id="bt-regime-cards"></div>';
       btMain.parentNode.insertBefore(sec, btMain);
       var modeEl = sec.querySelector("#bt-regime-mode");
@@ -1901,44 +1929,18 @@
         cardsEl.innerHTML = "";
         if (state.mode === "off") { cardsEl.style.display = "none"; return; }
         cardsEl.style.display = "";
-        cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
-        var names = TREND_NAMES[state.mode];
-        state.defs[state.mode].forEach(function (def, di) {
-          var allowed = TREND_SETS[state.mode][di] || [];
-          def.items = def.items.filter(function (id) { return allowed.indexOf(id) >= 0; });
-          var card = document.createElement("div");
-          card.className = "bt-regime-card";
-          card.innerHTML = '<div class="bt-regime-card-head"><strong>' + esc(names[di]) + '</strong>' +
-            '<span>組み合わせ <label><input type="checkbox" class="bt-regime-joinck" data-card="' + di + '" value="and"' + (def.join !== "or" ? " checked" : "") + '> すべて満たす（AND）</label> <label><input type="checkbox" class="bt-regime-joinck" data-card="' + di + '" value="or"' + (def.join === "or" ? " checked" : "") + '> いずれか満たす（OR）</label></span></div>' +
-            '<div class="bt-regime-items">' + (function () {
-              var rows = "";
-              [["t", "指数"], ["s", "株価"]].forEach(function (g) {
-                var items = TREND_ITEMS.filter(function (item) { return allowed.indexOf(item.id) >= 0 && item.id.charAt(0) === g[0]; });
-                if (!items.length) return;
-                rows += '<div class="bt-regime-group">' + g[1] + "</div>";
-                var curFam = null;
-                items.forEach(function (item) {
-                  var fam = trendFam(item.id);
-                  if (fam !== curFam) { if (curFam !== null) rows += "</div>"; rows += '<div class="bt-regime-fam">'; curFam = fam; }
-                  rows += '<label class="bt-regime-item"><input type="checkbox" class="bt-regime-ck" data-card="' + di + '" value="' + item.id + '"' + (def.items.indexOf(item.id) >= 0 ? " checked" : "") + "> " + itemHtml(def, item) + "</label>";
-                });
-                if (curFam !== null) rows += "</div>";
-              });
-              return rows;
-            })() + "</div>";
-          cardsEl.appendChild(card);
-        });
+        cardsEl.style.gridTemplateColumns = "minmax(0, 2fr) minmax(0, 1fr)";
+        var p = state.scoreSettings;
+        var card = document.createElement("div");card.className="bt-regime-card";
+        var html='<div class="bt-regime-card-head"><strong>トレンド判定（10条件スコア）</strong></div><div class="bt-regime-items"><label>移動平均線 <select class="bt-select" data-score-key="maType"><option value="SMA"'+(p.maType==="SMA"?" selected":"")+'>SMA</option><option value="EMA"'+(p.maType!=="SMA"?" selected":"")+'>EMA</option></select></label>';
+        [["short","短期MA",500],["medium","中期MA",500],["long","長期MA",500],["slopeShort","短期傾き比較日数",100],["slopeMedium","中期傾き比較日数",100],["slopeLong","長期傾き比較日数",100],["pivot","Pivot左右本数",100],["upThreshold","上昇判定閾値（/10）",10],["downThreshold","下落判定閾値（/10）",10]].forEach(function(x){html+='<label class="bt-regime-item">'+x[1]+' <input class="bt-select" type="number" min="1" max="'+x[2]+'" step="1" data-score-key="'+x[0]+'" value="'+esc(p[x[0]])+'" style="width:64px"></label>';});
+        html+='<div class="bt-regime-group">各方向10条件：株価とMA（3）、MA傾き（3）、MA配列（2）、高値・安値（2）</div><div>閾値以上かつ反対方向よりスコアが高い場合に方向を確定。2分類は中立時に直前方向を維持、3分類はレンジ、4分類は直前方向から底値形成・天井形成を判定。</div></div>';
+        card.innerHTML=html;cardsEl.appendChild(card);
         cardsEl.appendChild(assignEl);
       }
       function trendSummary(def) {
-        if (!def.items.length) return "（条件なし）";
-        var parts = def.items.map(function (id) {
-          var item = null;
-          TREND_ITEMS.forEach(function (x) { if (x.id === id) item = x; });
-          if (!item) return id;
-          return item.text.replace(/\[NUM:(\w+)\]/g, function (_, k) { return def.nums[k] == null ? (TREND_NUM_DEFAULTS[k] == null ? "" : TREND_NUM_DEFAULTS[k]) : def.nums[k]; });
-        });
-        return parts.join(def.join === "or" ? " または " : " かつ ");
+        return "10条件スコア / "+state.scoreSettings.maType+" / 上昇 "+state.scoreSettings.upThreshold+"・下落 "+state.scoreSettings.downThreshold;
+
       }
       function stratOptsFor(def) {
         return '<option value="-1"' + (def.strat < 0 ? " selected" : "") + ">割当なし</option>" + [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<option value="' + i + '"' + (def.strat === i ? " selected" : "") + ">戦略" + (i + 1) + "</option>"; }).join("");
@@ -1974,6 +1976,7 @@
       sec.addEventListener("change", function (e) {
         var t = e.target;
         if (!t || !t.getAttribute) return;
+        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maType")state.scoreSettings[sk]=t.value;else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();refreshAssignSums();return;}
         if (t.classList.contains("bt-regime-astrat")) {
           var da = parseInt(t.getAttribute("data-card"), 10);
           if (!isNaN(da) && state.mode !== "off") { state.defs[state.mode][da].strat = parseInt(t.value, 10); persist(); }
@@ -2004,6 +2007,7 @@
           if (state.mode === "off") return null;
           return {
             target: state.target,
+            mode: state.mode, scoreSettings: Object.assign({},state.scoreSettings),
             names: TREND_NAMES[state.mode].slice(),
             defs: state.defs[state.mode].map(function (d) { return { items: d.items.slice(), nums: Object.assign({}, d.nums), join: d.join, strat: d.strat }; })
           };
@@ -2945,9 +2949,9 @@
         return { names: ctx.names, loaded: ctx.loaded };
       }).then(function (ctx) {
         if (!regimeReq) { ctx.regimeObj = null; return ctx; }
-        return loadBenchRows(regimeReq.target, fromVal, toVal).then(function (brows) {
-          if (!brows || brows.length < 2) { ctx.regimeObj = null; return ctx; }
-          var byDate = computeTrendIdx(brows, regimeReq.defs);
+        return (regimeReq.scoreSettings ? Promise.resolve([]) : loadBenchRows(regimeReq.target, fromVal, toVal)).then(function (brows) {
+          if (!regimeReq.scoreSettings && (!brows || brows.length < 2)) { ctx.regimeObj = null; return ctx; }
+          var byDate = regimeReq.scoreSettings ? new Map() : computeTrendIdx(brows, regimeReq.defs);
           var states = slotsApi.allStates();
           var strategies = regimeReq.defs.map(function (def) {
             if (def.strat == null || def.strat < 0) return null;
@@ -2955,7 +2959,7 @@
             sc.__name = "戦略" + (def.strat + 1);
             return sc;
           });
-          ctx.regimeObj = { byDate: byDate, strategies: strategies, names: regimeReq.names, defs: regimeReq.defs };
+          ctx.regimeObj = { byDate: byDate, strategies: strategies, names: regimeReq.names, defs: regimeReq.defs, mode: regimeReq.mode, scoreSettings: regimeReq.scoreSettings };
           return ctx;
         }).catch(function () { ctx.regimeObj = null; return ctx; });
       }).then(function (ctx) {
