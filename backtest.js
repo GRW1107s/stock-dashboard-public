@@ -229,7 +229,7 @@
       // Swing pivots (Pine ta.pivothigh / pivotlow, 10 bars each side),
       // confirmed 10 bars after the pivot bar; last/prev pivot values are
       // carried forward from their confirmation bar.
-      var swingHH = [], swingLH = [], swingHL = [], swingLL = [];
+      var swingHH = [], swingLH = [], swingHL = [], swingLL = [], divBull = [], divBear = [];
       (function () {
         var confH = [], confL = [];
         for (var j = 10; j + 10 < n; j++) {
@@ -239,20 +239,22 @@
             if (highs[k] > highs[j]) isH = false;
             if (lows[k] < lows[j]) isL = false;
           }
-          if (isH) confH.push([j + 10, highs[j]]);
-          if (isL) confL.push([j + 10, lows[j]]);
+          if (isH) confH.push([j + 10, highs[j], rsi[j]]);
+          if (isL) confL.push([j + 10, lows[j], rsi[j]]);
         }
-        var lh = null, ph = null, ll = null, pl = null, ci = 0, cj = 0;
+        var lh = null, ph = null, ll = null, pl = null, lrH = null, prH = null, lrL = null, prL = null, ci = 0, cj = 0;
         for (var i = 0; i < n; i++) {
-          while (ci < confH.length && confH[ci][0] <= i) { ph = lh; lh = confH[ci][1]; ci++; }
-          while (cj < confL.length && confL[cj][0] <= i) { pl = ll; ll = confL[cj][1]; cj++; }
+          while (ci < confH.length && confH[ci][0] <= i) { prH = lrH; ph = lh; lh = confH[ci][1]; lrH = confH[ci][2]; ci++; }
+          while (cj < confL.length && confL[cj][0] <= i) { prL = lrL; pl = ll; ll = confL[cj][1]; lrL = confL[cj][2]; cj++; }
           swingHH.push(lh != null && ph != null && lh > ph);
           swingLH.push(lh != null && ph != null && lh < ph && !(closes[i] > ph));
           swingHL.push(ll != null && pl != null && ll > pl);
           swingLL.push((ll != null && pl != null && ll < pl) || (ll != null && closes[i] < ll));
+          divBull.push(ll != null && pl != null && lrL != null && prL != null && ll < pl && lrL > prL);
+          divBear.push(lh != null && ph != null && lrH != null && prH != null && lh > ph && lrH < prH);
         }
       })();
-      per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols, swingHH: swingHH, swingLH: swingLH, swingHL: swingHL, swingLL: swingLL,
+      per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols, swingHH: swingHH, swingLH: swingLH, swingHL: swingHL, swingLL: swingLL, divBull: divBull, divBear: divBear,
         ma20: ma20, ema9: ema9, ema21: ema21, emaBy: emaBy, ma50: ma50, ma150: ma150, ma200: ma200, ma200Prev: ma200Prev, rsi: rsi,
         ddActive: ddActive, pineFtd: pineFtd, pineWarning: pineWarning, pineWarningStart: pineWarningStart, pineByN: pineByN, sigma20: sigma20, smaBy: smaBy, pstd20: pstd20, macd: macd, macdSig: macdSig };
     }
@@ -262,7 +264,7 @@
       per.maSell[maDays] = ms;
     }
     var b = per.base;
-    return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols, swingHH: b.swingHH, swingLH: b.swingLH, swingHL: b.swingHL, swingLL: b.swingLL,
+    return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols, swingHH: b.swingHH, swingLH: b.swingLH, swingHL: b.swingHL, swingLL: b.swingLL, divBull: b.divBull, divBear: b.divBear,
       ma20: b.ma20, ema9: b.ema9, ema21: b.ema21, emaBy: b.emaBy, ma50: b.ma50, ma150: b.ma150, ma200: b.ma200, ma200Prev: b.ma200Prev, maSell: per.maSell[maDays], rsi: b.rsi,
       ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, pineByN: b.pineByN, sigma20: b.sigma20, smaBy: b.smaBy, pstd20: b.pstd20, macd: b.macd, macdSig: b.macdSig };
   }
@@ -392,6 +394,8 @@
       if (id === "tMaNear") { var na = sma(nums.tMaDays || 200); return na[i] != null && na[i] > 0 && Math.abs(closes[i] / na[i] - 1) <= (nums.tNearPct || 3) / 100; }
       if (id === "tRsiUp") return rsi[i] != null && rsi[i] >= (nums.tRsiUp || 50);
       if (id === "tRsiDn") return rsi[i] != null && rsi[i] <= (nums.tRsiDn || 50);
+      if (id === "tRsiDivUp") return !!ind.divBull[i];
+      if (id === "tRsiDivDn") return !!ind.divBear[i];
       if (id === "tSlope20Up") { var q1 = sma(20); return q1[i] != null && q1[i - 3] != null && q1[i] > q1[i - 3]; }
       if (id === "tSlope50Up") { var q2 = sma(50); return q2[i] != null && q2[i - 5] != null && q2[i] > q2[i - 5]; }
       if (id === "tSlope200Up") { var q3 = sma(200); return q3[i] != null && q3[i - 10] != null && q3[i] > q3[i - 10]; }
@@ -431,7 +435,7 @@
     var jFtd = ind.pineFtd, jWarn = ind.pineWarning;
     if (ind.pineByN && ind.pineByN[pineSel]) { jFtd = ind.pineByN[pineSel].ftd; jWarn = ind.pineByN[pineSel].warning; }
     var ma20, ema9, ema21, ma50, ma150, ma200, ma200Prev, maSell, rsi, ddActive, pineFtd, pineWarning, sigma20, jCloses, jVols, jHighs, jLows;
-    var smaS, smaL, smaSDn, smaLDn, macdA, macdSigA, pstdA, pmaA, hhA, lhA, hlA, llA;
+    var smaS, smaL, smaSDn, smaLDn, macdA, macdSigA, pstdA, pmaA, hhA, lhA, hlA, llA, divBullA, divBearA;
     function pickSma(src, p) { return (src.smaBy && src.smaBy[p]) || src.ma20; }
     if (ind === ownInd) {
       ma20 = ind.ma20; ema9 = ind.ema9; ema21 = ind.ema21; ma50 = ind.ma50; ma150 = ind.ma150; ma200 = ind.ma200; ma200Prev = ind.ma200Prev; maSell = ind.maSell;
@@ -440,7 +444,7 @@
       smaS = pickSma(ind, cfg.maShort || 20); smaL = pickSma(ind, cfg.maLong || 50);
       smaSDn = pickSma(ind, cfg.maShortDn || 20); smaLDn = pickSma(ind, cfg.maLongDn || 50);
       macdA = ind.macd; macdSigA = ind.macdSig; pstdA = ind.pstd20; pmaA = pickSma(ind, cfg.priceMaDays || 50);
-      hhA = ind.swingHH; lhA = ind.swingLH; hlA = ind.swingHL; llA = ind.swingLL;
+      hhA = ind.swingHH; lhA = ind.swingLH; hlA = ind.swingHL; llA = ind.swingLL; divBullA = ind.divBull; divBearA = ind.divBear;
     } else {
       var jIdx = new Map();
       ind.dates.forEach(function (d, j) { jIdx.set(d, j); });
@@ -451,7 +455,7 @@
       smaS = remap(pickSma(ind, cfg.maShort || 20)); smaL = remap(pickSma(ind, cfg.maLong || 50));
       smaSDn = remap(pickSma(ind, cfg.maShortDn || 20)); smaLDn = remap(pickSma(ind, cfg.maLongDn || 50));
       macdA = remap(ind.macd); macdSigA = remap(ind.macdSig); pstdA = remap(ind.pstd20); pmaA = remap(pickSma(ind, cfg.priceMaDays || 50));
-      hhA = remap(ind.swingHH); lhA = remap(ind.swingLH); hlA = remap(ind.swingHL); llA = remap(ind.swingLL);
+      hhA = remap(ind.swingHH); lhA = remap(ind.swingLH); hlA = remap(ind.swingHL); llA = remap(ind.swingLL); divBullA = remap(ind.divBull); divBearA = remap(ind.divBear);
     }
     var n = rows.length;
     // Per-strategy series lookups (regime mode runs several strategy
@@ -635,6 +639,8 @@
       if (sexD) { var se3 = emaOf(+sexD[1]), se4 = emaOf(+sexD[2]); return se3[d] != null && se4[d] != null && se3[d] < se4[d]; }
       if (id === "sRsiUp") return rsi[d] != null && rsi[d] >= (nums.sRsiUp || 50);
       if (id === "sRsiDn") return rsi[d] != null && rsi[d] <= (nums.sRsiDn || 50);
+      if (id === "sRsiDivUp") return !!divBullA[d];
+      if (id === "sRsiDivDn") return !!divBearA[d];
       if (id === "sSlope20Up") { var v1 = smaOf(20); return v1[d] != null && v1[d - 3] != null && v1[d] > v1[d - 3]; }
       if (id === "sSlope50Up") { var v2 = smaOf(50); return v2[d] != null && v2[d - 5] != null && v2[d] > v2[d - 5]; }
       if (id === "sSlope200Up") { var v3 = smaOf(200); return v3[d] != null && v3[d - 10] != null && v3[d] > v3[d - 10]; }
@@ -1691,6 +1697,8 @@
       { id: "tFtd", text: "Confirmed Uptrend（FTD発生後、DDが[NUM:tCuDd]以内）", nums: { tCuDd: [3, 4, 5, 6, 7] } },
       { id: "tRsiUp", text: "指数RSIが[NUM:tRsiUp]以上", nums: { tRsiUp: [50, 60, 70] } },
       { id: "tRsiDn", text: "指数RSIが[NUM:tRsiDn]以下", nums: { tRsiDn: [30, 40, 50] } },
+      { id: "tRsiDivUp", text: "指数RSIダイバージェンス（強気）" },
+      { id: "tRsiDivDn", text: "指数RSIダイバージェンス（弱気）" },
       { id: "sPx20Up", text: "株価＞20MA" },
       { id: "sPx50Up", text: "株価＞50MA" },
       { id: "sPx200Up", text: "株価＞200MA" },
@@ -1712,6 +1720,8 @@
       { id: "sEmaCrossDn21_50", text: "株価：21EMA＜50EMA" },
       { id: "sRsiUp", text: "株価RSIが[NUM:sRsiUp]以上", nums: { sRsiUp: [50, 60, 70] } },
       { id: "sRsiDn", text: "株価RSIが[NUM:sRsiDn]以下", nums: { sRsiDn: [30, 40, 50] } },
+      { id: "sRsiDivUp", text: "株価RSIダイバージェンス（強気）" },
+      { id: "sRsiDivDn", text: "株価RSIダイバージェンス（弱気）" },
       { id: "tSlope20Up", text: "指数の20MAが上向き" }, { id: "tSlope50Up", text: "指数の50MAが上向き" }, { id: "tSlope200Up", text: "指数の200MAが上向き" },
       { id: "tSlope20Dn", text: "指数の20MAが下向き" }, { id: "tSlope50Dn", text: "指数の50MAが下向き" }, { id: "tSlope200Dn", text: "指数の200MAが下向き" },
       { id: "tHigherHigh", text: "指数の高値切上げ" }, { id: "tHigherLow", text: "指数の安値切上げ" },
@@ -1725,9 +1735,9 @@
     // Each trend lists only the conditions that fit its direction:
     // bullish trends get bullish conditions, bearish ones bearish ones.
     var TREND_SETS = {
-      "2": [["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]],
-      "3": [["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]],
-      "4": [["tPx20Dn", "tPx50Dn", "tPx200Dn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx200Dn"], ["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tPx20Up", "tPx50Up", "tPx200Up", "tDd", "tRsiUp", "sPx20Up", "sPx50Up", "sPx200Up", "sRsiUp", "tLowerHigh", "sLowerHigh"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]]
+      "2": [["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "tRsiDivUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "sRsiDivUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "tRsiDivDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "sRsiDivDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]],
+      "3": [["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "tRsiDivUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "sRsiDivUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "tRsiDivDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "sRsiDivDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]],
+      "4": [["tPx20Dn", "tPx50Dn", "tPx200Dn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx200Dn"], ["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "tRsiDivUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "sRsiDivUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tPx20Up", "tPx50Up", "tPx200Up", "tDd", "tRsiUp", "tRsiDivUp", "sPx20Up", "sPx50Up", "sPx200Up", "sRsiUp", "sRsiDivUp", "tLowerHigh", "sLowerHigh"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "tRsiDivDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "sRsiDivDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]]
     };
     function trendDefaults(mode) {
       if (mode === "2") return [
@@ -1823,6 +1833,7 @@
       function persist() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
       function trendFam(id) {
         if (/Slope/.test(id)) return id.replace(/\d+/g, "");
+        if (/RsiDiv/.test(id)) return id.replace(/(Up|Dn)$/, "");
         if (/Higher/.test(id)) return "swingUp";
         if (/Lower/.test(id)) return "swingDn";
         if (/^sPx\d+(Up|Dn)$/.test(id)) return id.replace(/\d+/g, "");
