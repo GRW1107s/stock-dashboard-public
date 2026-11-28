@@ -45,10 +45,10 @@
     bollingerUp: "終値がボリンジャーバンド上限（20日、+閾値σ）以上",
     takeProfit: "買値から閾値%上昇", holdDays: "保有期間：閾値日", ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
 
-    rsiLe: "RSI（14日）が閾値以上"
+    rsiLe: "RSI（14日）が閾値以上", rsiDivDn: "RSI弱気のダイバージェンス", adlDivDn: "ADL弱気のダイバージェンス"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, streakDrop: 1, maCross20_50: 1, maCross20_200: 1, maCross50_200: 1, emaCross9_21: 1, emaCross9_50: 1, emaCross21_50: 1, macdCross: 1, priceMa20: 1, priceMa50: 1, priceMa200: 1, bollinger: 1, breakout: 1, ftd: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1, maCrossDn20_50: 1, maCrossDn20_200: 1, maCrossDn50_200: 1, emaCrossDn9_21: 1, emaCrossDn9_50: 1, emaCrossDn21_50: 1, macdCrossDn: 1, bollingerUp: 1, takeProfit: 1, holdDays: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1, maCrossDn20_50: 1, maCrossDn20_200: 1, maCrossDn50_200: 1, emaCrossDn9_21: 1, emaCrossDn9_50: 1, emaCrossDn21_50: 1, macdCrossDn: 1, bollingerUp: 1, takeProfit: 1, holdDays: 1, rsiDivDn: 1, adlDivDn: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -229,7 +229,19 @@
       // Swing pivots (Pine ta.pivothigh / pivotlow, 10 bars each side),
       // confirmed 10 bars after the pivot bar; last/prev pivot values are
       // carried forward from their confirmation bar.
-      var swingHH = [], swingLH = [], swingHL = [], swingLL = [], divBull = [], divBear = [];
+      var swingHH = [], swingLH = [], swingHL = [], swingLL = [], divBull = [], divBear = [], divBearAdl = [];
+      // Accumulation/Distribution Line (Chaikin): cumulative money-flow
+      // volume; a flat bar (high == low) contributes zero.
+      var adl = [];
+      (function () {
+        var run = 0;
+        for (var ai = 0; ai < n; ai++) {
+          var range = highs[ai] - lows[ai];
+          var mfm = range > 0 ? ((closes[ai] - lows[ai]) - (highs[ai] - closes[ai])) / range : 0;
+          run += mfm * (vols[ai] || 0);
+          adl.push(run);
+        }
+      })();
       (function () {
         var confH = [], confL = [];
         for (var j = 10; j + 10 < n; j++) {
@@ -239,12 +251,12 @@
             if (highs[k] > highs[j]) isH = false;
             if (lows[k] < lows[j]) isL = false;
           }
-          if (isH) confH.push([j + 10, highs[j], rsi[j]]);
+          if (isH) confH.push([j + 10, highs[j], rsi[j], adl[j]]);
           if (isL) confL.push([j + 10, lows[j], rsi[j]]);
         }
-        var lh = null, ph = null, ll = null, pl = null, lrH = null, prH = null, lrL = null, prL = null, ci = 0, cj = 0;
+        var lh = null, ph = null, ll = null, pl = null, lrH = null, prH = null, lrL = null, prL = null, laH = null, paH = null, ci = 0, cj = 0;
         for (var i = 0; i < n; i++) {
-          while (ci < confH.length && confH[ci][0] <= i) { prH = lrH; ph = lh; lh = confH[ci][1]; lrH = confH[ci][2]; ci++; }
+          while (ci < confH.length && confH[ci][0] <= i) { prH = lrH; ph = lh; lh = confH[ci][1]; lrH = confH[ci][2]; paH = laH; laH = confH[ci][3]; ci++; }
           while (cj < confL.length && confL[cj][0] <= i) { prL = lrL; pl = ll; ll = confL[cj][1]; lrL = confL[cj][2]; cj++; }
           swingHH.push(lh != null && ph != null && lh > ph);
           swingLH.push(lh != null && ph != null && lh < ph && !(closes[i] > ph));
@@ -252,9 +264,10 @@
           swingLL.push((ll != null && pl != null && ll < pl) || (ll != null && closes[i] < ll));
           divBull.push(ll != null && pl != null && lrL != null && prL != null && ll < pl && lrL > prL);
           divBear.push(lh != null && ph != null && lrH != null && prH != null && lh > ph && lrH < prH);
+          divBearAdl.push(lh != null && ph != null && laH != null && paH != null && lh > ph && laH < paH);
         }
       })();
-      per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols, swingHH: swingHH, swingLH: swingLH, swingHL: swingHL, swingLL: swingLL, divBull: divBull, divBear: divBear,
+      per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols, swingHH: swingHH, swingLH: swingLH, swingHL: swingHL, swingLL: swingLL, divBull: divBull, divBear: divBear, divBearAdl: divBearAdl,
         ma20: ma20, ema9: ema9, ema21: ema21, emaBy: emaBy, ma50: ma50, ma150: ma150, ma200: ma200, ma200Prev: ma200Prev, rsi: rsi,
         ddActive: ddActive, pineFtd: pineFtd, pineWarning: pineWarning, pineWarningStart: pineWarningStart, pineByN: pineByN, sigma20: sigma20, smaBy: smaBy, pstd20: pstd20, macd: macd, macdSig: macdSig };
     }
@@ -264,7 +277,7 @@
       per.maSell[maDays] = ms;
     }
     var b = per.base;
-    return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols, swingHH: b.swingHH, swingLH: b.swingLH, swingHL: b.swingHL, swingLL: b.swingLL, divBull: b.divBull, divBear: b.divBear,
+    return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols, swingHH: b.swingHH, swingLH: b.swingLH, swingHL: b.swingHL, swingLL: b.swingLL, divBull: b.divBull, divBear: b.divBear, divBearAdl: b.divBearAdl,
       ma20: b.ma20, ema9: b.ema9, ema21: b.ema21, emaBy: b.emaBy, ma50: b.ma50, ma150: b.ma150, ma200: b.ma200, ma200Prev: b.ma200Prev, maSell: per.maSell[maDays], rsi: b.rsi,
       ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, pineByN: b.pineByN, sigma20: b.sigma20, smaBy: b.smaBy, pstd20: b.pstd20, macd: b.macd, macdSig: b.macdSig };
   }
@@ -435,7 +448,7 @@
     var jFtd = ind.pineFtd, jWarn = ind.pineWarning;
     if (ind.pineByN && ind.pineByN[pineSel]) { jFtd = ind.pineByN[pineSel].ftd; jWarn = ind.pineByN[pineSel].warning; }
     var ma20, ema9, ema21, ma50, ma150, ma200, ma200Prev, maSell, rsi, ddActive, pineFtd, pineWarning, sigma20, jCloses, jVols, jHighs, jLows;
-    var smaS, smaL, smaSDn, smaLDn, macdA, macdSigA, pstdA, pmaA, hhA, lhA, hlA, llA, divBullA, divBearA;
+    var smaS, smaL, smaSDn, smaLDn, macdA, macdSigA, pstdA, pmaA, hhA, lhA, hlA, llA, divBullA, divBearA, divBearAdlA;
     function pickSma(src, p) { return (src.smaBy && src.smaBy[p]) || src.ma20; }
     if (ind === ownInd) {
       ma20 = ind.ma20; ema9 = ind.ema9; ema21 = ind.ema21; ma50 = ind.ma50; ma150 = ind.ma150; ma200 = ind.ma200; ma200Prev = ind.ma200Prev; maSell = ind.maSell;
@@ -444,7 +457,7 @@
       smaS = pickSma(ind, cfg.maShort || 20); smaL = pickSma(ind, cfg.maLong || 50);
       smaSDn = pickSma(ind, cfg.maShortDn || 20); smaLDn = pickSma(ind, cfg.maLongDn || 50);
       macdA = ind.macd; macdSigA = ind.macdSig; pstdA = ind.pstd20; pmaA = pickSma(ind, cfg.priceMaDays || 50);
-      hhA = ind.swingHH; lhA = ind.swingLH; hlA = ind.swingHL; llA = ind.swingLL; divBullA = ind.divBull; divBearA = ind.divBear;
+      hhA = ind.swingHH; lhA = ind.swingLH; hlA = ind.swingHL; llA = ind.swingLL; divBullA = ind.divBull; divBearA = ind.divBear; divBearAdlA = ind.divBearAdl;
     } else {
       var jIdx = new Map();
       ind.dates.forEach(function (d, j) { jIdx.set(d, j); });
@@ -455,7 +468,7 @@
       smaS = remap(pickSma(ind, cfg.maShort || 20)); smaL = remap(pickSma(ind, cfg.maLong || 50));
       smaSDn = remap(pickSma(ind, cfg.maShortDn || 20)); smaLDn = remap(pickSma(ind, cfg.maLongDn || 50));
       macdA = remap(ind.macd); macdSigA = remap(ind.macdSig); pstdA = remap(ind.pstd20); pmaA = remap(pickSma(ind, cfg.priceMaDays || 50));
-      hhA = remap(ind.swingHH); lhA = remap(ind.swingLH); hlA = remap(ind.swingHL); llA = remap(ind.swingLL); divBullA = remap(ind.divBull); divBearA = remap(ind.divBear);
+      hhA = remap(ind.swingHH); lhA = remap(ind.swingLH); hlA = remap(ind.swingHL); llA = remap(ind.swingLL); divBullA = remap(ind.divBull); divBearA = remap(ind.divBear); divBearAdlA = remap(ind.divBearAdl);
     }
     var n = rows.length;
     // Per-strategy series lookups (regime mode runs several strategy
@@ -590,6 +603,8 @@
         return hi2 != null && c <= hi2 * (1 - (sc.highPct == null ? 20 : sc.highPct) / 100);
       }
       if (id === "rsiLe") return sc.rsiSell != null && rsi[i] != null && rsi[i] >= sc.rsiSell;
+      if (id === "rsiDivDn") return !!divBearA[i];
+      if (id === "adlDivDn") return !!divBearAdlA[i];
       if (id === "dropPct") return sc.dropPct != null && i > 0 && jCloses[i - 1] > 0 && c / jCloses[i - 1] - 1 <= -sc.dropPct / 100;
       // Pine's orange warning remains active until FTD even if DD falls below 5.
       // A new FTD bar is the final orange bar, but is not a sell signal.
@@ -1109,7 +1124,7 @@
     var curReentryRules = [];
     var curExitRules = [];
     var BUY_RULE_IDS = ["vol15", "maCross20_50", "maCross20_200", "maCross50_200", "emaCross9_21", "emaCross9_50", "emaCross21_50", "rsiGe", "bounceClose", "ftd", "macdCross", "bollinger", "breakout", "priceMa20", "priceMa50", "priceMa200", "streakDrop"];
-    var SELL_RULE_IDS = ["maCrossDn20_50", "maCrossDn20_200", "maCrossDn50_200", "emaCrossDn9_21", "emaCrossDn9_50", "emaCrossDn21_50", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe", "macdCrossDn", "bollingerUp", "takeProfit", "holdDays"];
+    var SELL_RULE_IDS = ["maCrossDn20_50", "maCrossDn20_200", "maCrossDn50_200", "emaCrossDn9_21", "emaCrossDn9_50", "emaCrossDn21_50", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe", "macdCrossDn", "bollingerUp", "takeProfit", "holdDays", "rsiDivDn", "adlDivDn"];
     // IF rows live inside the formula frames, anchored on the TRIGGER
     // side (GRW 2026-11-24): re-entry rules (triggered by a sell) in the
     // sell frame, exit rules (triggered by a buy) in the buy frame.
@@ -3474,7 +3489,7 @@
         }
         function renderRollAll() {
           var ddTxt = function (v) { return v == null ? "—" : v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
-          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", holdDays: "保有期間", streakDrop: "連続下落%" };
+          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", holdDays: "保有期間", streakDrop: "連続下落%", rsiDivDn: "RSI弱気ダイバージェンス", adlDivDn: "ADL弱気ダイバージェンス" };
           function groupedHeat(gi) {
             var dB = dims[gi.rsiGe], dS = dims[gi.rsiLe], dD = dims[gi.ddGe];
             var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
@@ -3738,7 +3753,7 @@
         }
         function renderAll() {
           var ddTxt = function (v) { return v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
-          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", holdDays: "保有期間", streakDrop: "連続下落%" };
+          var AXIS_LABEL = { rsiGe: "買いRSI", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", holdDays: "保有期間", streakDrop: "連続下落%", rsiDivDn: "RSI弱気ダイバージェンス", adlDivDn: "ADL弱気ダイバージェンス" };
           function groupedHeat(gi) {
             var dB = dims[gi.rsiGe], dS = dims[gi.rsiLe], dD = dims[gi.ddGe];
             var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
