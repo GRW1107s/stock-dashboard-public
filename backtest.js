@@ -443,7 +443,7 @@
     function num(k, fallback, max) { var v = Number(p[k]); return Number.isFinite(v) && v >= 1 ? Math.min(max, Math.floor(v)) : fallback; }
     var lengths = trendMaLengths(p);
     var lags = [3,5,10];
-    var pivot = 10, upLimit = num("upThreshold",5,10), downLimit = num("downThreshold",5,10);
+    var pivot = 10, upLimit = num("upThreshold",5,10), downLimit = mode === "3" ? 3 : num("downThreshold",5,10);
     var c = rows.map(function(r){return +r[4];}), h=rows.map(function(r){return +r[2];}), l=rows.map(function(r){return +r[3];});
     var ma = lengths.map(function(len) { var sum=0, e=c[0]; return c.map(function(v,i){ if(p.maType !== "SMA"){e=i?e+(v-e)*2/(len+1):v;return e;} sum+=v-(i>=len?c[i-len]:0);return i>=len-1?sum/len:null;}); });
     var ready = Math.max.apply(null,lengths.map(function(v,j){return v+lags[j];}))-1;
@@ -1948,7 +1948,7 @@
           var down=di===names.length-1;
           var card=document.createElement("div");card.className="bt-regime-card";
           var h='<div class="bt-regime-card-head"><strong>'+esc(name)+'</strong>';
-          if(up||down) h+='<span>組み合わせ <label>'+scoreInput(up?"upThreshold":"downThreshold",10)+' / 10 条件以上</label></span>';
+          if(up||down) h+='<span>組み合わせ <label>'+(down&&state.mode==="3"?'<strong>3</strong>':scoreInput(up?"upThreshold":"downThreshold",10))+' / 10 条件以上'+(down&&state.mode==="3"?"（固定）":"")+'</label></span>';
           h+='</div><div class="bt-regime-items">';
           function group(title,items,checked){
             h+='<div class="bt-regime-fam" aria-label="'+esc(title)+'">';
@@ -1979,7 +1979,7 @@
       function trendSummary(def) {
         var i=state.defs[state.mode].indexOf(def), p=state.scoreSettings;
         var up=state.mode==="4"?i===1:i===0;
-        if(up||i===state.defs[state.mode].length-1) return p.maType+" "+trendMaLengths(p).join("/")+" "+(up?"上昇":"下落")+" "+(up?p.upThreshold:p.downThreshold)+"/10以上";
+        if(up||i===state.defs[state.mode].length-1) return p.maType+" "+trendMaLengths(p).join("/")+" "+(up?"上昇":"下落")+" "+(up?p.upThreshold:state.mode==="3"?3:p.downThreshold)+"/10以上";
         return state.mode==="3"?"上昇・下落未確定":i===0?"下落後の中立":"上昇後の中立";
       }
       function stratOptsFor(def) {
@@ -2047,7 +2047,7 @@
           if (state.mode === "off") return null;
           return {
             target: state.target,
-            mode: state.mode, scoreSettings: Object.assign({},state.scoreSettings),
+            mode: state.mode, scoreSettings: Object.assign({},state.scoreSettings,state.mode==="3"?{downThreshold:3}:{}),
             names: TREND_NAMES[state.mode].slice(),
             defs: state.defs[state.mode].map(function (d) { return { items: d.items.slice(), nums: Object.assign({}, d.nums), join: d.join, strat: d.strat }; })
           };
