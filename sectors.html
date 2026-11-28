@@ -93,7 +93,7 @@
 .page-tabs a:first-child{margin-left:0}
 .page-tabs a[aria-current="page"]{position:relative;z-index:1}
 
-</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261128restore" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./industry-ja.js?v=20261117gics" defer></script><script src="./us-industry-panels.js?v=20261125rk" defer></script><script src="./sector-column-filter.js?v=20261119qoq" defer></script><script src="./sector-screener.js?v=20261125us30" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日本株</a><a href="./sectors.html" aria-current="page">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
+</style><link rel="stylesheet" href="./dashboard-nav.css?v=20261106inset30"><link rel="stylesheet" href="./sector-screener.css?v=20261119tgt"><script src="./dashboard-nav.js?v=20261120usbt" defer></script><script src="./asof-date.js?v=20261118asof" defer></script><script src="./industry-ja.js?v=20261117gics" defer></script><script src="./us-industry-panels.js?v=20261125rk" defer></script><script src="./sector-column-filter.js?v=20261119qoq" defer></script><script src="./sector-screener.js?v=20261125us30" defer></script></head><body><main><nav class="page-tabs" aria-label="ページ切り替え"><a href="./index.html">市場概況</a><a href="./jp-sectors.html">日本株</a><a href="./sectors.html" aria-current="page">米国株</a><a href="./semiconductors.html">日経半導体</a><a href="./us-semiconductors.html">米国半導体</a><a href="./us-anomalies.html">米国アノマリー</a><a href="./jp-themes.html">日本株テーマ投資</a></nav>
 <h1>S&P500 11セクター 日次観測</h1><p class="sub">11セクターETFの騰落率・出来高増減率・判定</p>
 <div class="guide"><span class="dot buy">✓</span> 買い集め：上昇＋出来高増加　 <span class="dot sell">×</span> 売り抜け：−0.20%以下＋出来高増加　 <span class="ftd">FTD</span> 反発試行4日目以降に+1.25%以上＋出来高増加<br><span class="muted">「強さ」はETFの当日騰落率−SPYの当日騰落率（％ポイント）。判定はETFの出来高を使用した独自の簡易指標で、セクター全銘柄への資金流入を直接測定するものではありません。<br>※ IBD公式判定の完全再現ではなく、Stalling Dayは含みません。</span><div class="dd-expiry-note" aria-label="DDの失効条件"><strong>DD失効条件</strong> ① 発生日から25取引日が経過 ② DD当日の終値から5%以上上昇。どちらかに該当すると有効DD件数から除外します。</div></div>
 
@@ -117,7 +117,7 @@
 </section>
 <section id="leader-screener-panel" class="leader-screen"></section>
 <style>
-.bt-subtabs{display:flex;gap:8px;margin:10px 0 4px}.bt-subtab{padding:6px 16px;border:1px solid #b7c8db;background:#fff;color:#334155;border-radius:999px;font-size:13.5px;cursor:pointer}.bt-subtab.is-active{background:#2563eb;border-color:#2563eb;color:#fff}.bt-rot-avg td{background:#f1f5f9;font-weight:600}.bt-rot-table{width:auto;min-width:0;table-layout:auto}.bt-regime{margin:14px 0 4px;padding:10px 12px;border:1px solid #dbe3ec;border-radius:10px;background:#fbfcfe}.bt-regime-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.bt-regime-title{font-weight:700}.bt-regime-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px;margin-top:10px}.bt-regime-card{border:1px solid #dbe3ec;border-radius:10px;padding:10px 12px;background:#fff}.bt-regime-card-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:8px}.bt-regime-items{display:flex;flex-direction:column;gap:6px}.bt-regime-item{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.bt-block.buy,.bt-block.sell{display:flex;flex-wrap:wrap;column-gap:26px}.bt-block-head,.bt-group,.bt-formula{flex:1 1 100%}.bt-block.buy .bt-item,.bt-block.sell .bt-item{flex:1 1 330px;max-width:calc(50% - 13px)}.bt-block.buy .bt-item,.bt-block.sell .bt-item{font-size:12px;line-height:normal;padding:3px 6px}.bt-item .bt-item-text{flex:1 1 auto}.bt-item .bt-ck{flex:0 0 auto;margin-top:2px}@media (max-width:1000px){.bt-block.buy .bt-item,.bt-block.sell .bt-item{max-width:100%}}.bt-regime-flex{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.bt-regime-left{flex:1 1 520px;min-width:300px}.bt-regime-assign{flex:1 1 330px;border:1px solid #dbe3ec;border-radius:10px;padding:10px 12px;background:#fff}.bt-regime-assign-title{font-weight:700;margin-bottom:6px}.bt-regime-assign-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed #e3e9f0}.bt-regime-assign-name{font-weight:700;min-width:58px}.bt-regime-assign-sum{flex:1;color:#5b6b80;font-size:12px}.bt-regime-assign-arrow{color:#2563eb;font-weight:700}.bt-regime-flex{align-items:stretch;margin-top:10px}.bt-regime-cards{flex:1 1 auto;min-width:0;margin-top:0}.bt-regime-assign{flex:0 0 330px}@media (max-width:1100px){.bt-regime-cards{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))!important}.bt-regime-assign{flex:1 1 100%}}.bt-regime-cards{margin-top:10px}.bt-regime-assign{flex:none;width:auto}.bt-fam{display:flex;flex-wrap:wrap;gap:2px 16px;align-items:center}
+.bt-subtabs{display:flex;gap:8px;margin:10px 0 4px}.bt-subtab{padding:6px 16px;border:1px solid #b7c8db;background:#fff;color:#334155;border-radius:999px;font-size:13.5px;cursor:pointer}.bt-subtab.is-active{background:#2563eb;border-color:#2563eb;color:#fff}.bt-rot-avg td{background:#f1f5f9;font-weight:600}.bt-rot-table{width:auto;min-width:0;table-layout:auto}.bt-regime{margin:14px 0 4px;padding:10px 12px;border:1px solid #dbe3ec;border-radius:10px;background:#fbfcfe}.bt-regime-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.bt-regime-title{font-weight:700}.bt-regime-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px;margin-top:10px}.bt-regime-card{border:1px solid #dbe3ec;border-radius:10px;padding:10px 12px;background:#fff}.bt-regime-card-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:8px}.bt-regime-items{display:flex;flex-direction:column;gap:6px}.bt-regime-item{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.bt-block.buy,.bt-block.sell{display:flex;flex-wrap:wrap;column-gap:26px}.bt-block-head,.bt-group,.bt-formula{flex:1 1 100%}.bt-block.buy .bt-item,.bt-block.sell .bt-item{flex:1 1 330px;max-width:calc(50% - 13px)}.bt-block.buy .bt-item,.bt-block.sell .bt-item{font-size:12px;line-height:normal;padding:3px 6px}.bt-item .bt-item-text{flex:1 1 auto}.bt-item .bt-ck{flex:0 0 auto;margin-top:2px}@media (max-width:1000px){.bt-block.buy .bt-item,.bt-block.sell .bt-item{max-width:100%}}.bt-regime-flex{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.bt-regime-left{flex:1 1 520px;min-width:300px}.bt-regime-assign{flex:1 1 330px;border:1px solid #dbe3ec;border-radius:10px;padding:10px 12px;background:#fff}.bt-regime-assign-title{font-weight:700;margin-bottom:6px}.bt-regime-assign-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed #e3e9f0}.bt-regime-assign-name{font-weight:700;min-width:58px}.bt-regime-assign-sum{flex:1;color:#5b6b80;font-size:12px}.bt-regime-assign-arrow{color:#2563eb;font-weight:700}.bt-regime-flex{align-items:stretch;margin-top:10px}.bt-regime-cards{flex:1 1 auto;min-width:0;margin-top:0}.bt-regime-assign{flex:0 0 330px}@media (max-width:1100px){.bt-regime-cards{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))!important}.bt-regime-assign{flex:1 1 100%}}.bt-regime-cards{margin-top:10px}.bt-regime-assign{flex:none;width:auto}.bt-fam{display:flex;flex-wrap:wrap;gap:2px 16px;align-items:center}.bt-group-parent{font-size:13px;color:#0f172a;margin-top:12px}.bt-block.buy .bt-group:not(.bt-group-parent){margin-left:12px}
 .bt-grid .bt-block.buy .bt-item,.bt-grid .bt-block.sell .bt-item{flex:0 0 auto;max-width:none}
 .bt-block.buy,.bt-block.sell{color:#000}
 .bt-regime-fam{display:flex;flex-wrap:wrap;gap:2px 16px}.bt-regime-group{font-weight:700;color:#334155;margin-top:6px}.bt-regime-items>.bt-regime-group:first-child{margin-top:0}.bt-rot-head{font-size:14px;margin:16px 0 6px}.bt-rot-gap td{text-align:center;color:#64748b;background:#f8fafc}.bt-rot-cols{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}.bt-rot-col{flex:1 1 340px;min-width:0}.bt-settings{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:10px 0 14px}
@@ -284,7 +284,8 @@
 <div class="bt-grid">
 <div class="bt-block buy">
 <div class="bt-block-head"><h3>買いシグナル</h3><button type="button" class="bt-clear" data-bt-clear="buy">すべて外す</button></div>
-<p class="bt-group">順張り</p>
+<p class="bt-group bt-group-parent">順張り</p>
+<p class="bt-group">ブレイクアウト</p>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="vol15" aria-label="条件を有効化"></span><span class="bt-item-text">出来高が20日平均の1.5倍以上</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross20_50" aria-label="条件を有効化"></span><span class="bt-item-text">20MA＞50MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross20_200" aria-label="条件を有効化"></span><span class="bt-item-text">20MA＞200MA</span></div>
@@ -299,7 +300,7 @@
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="breakout" aria-label="条件を有効化"></span><span class="bt-item-text">当日高値が直近<select class="bt-select" data-bt-num="breakoutDays" aria-label="ブレイクアウトの日数"><option value="20" selected>20</option><option value="60">60</option><option value="120">120</option><option value="252">252</option></select>日の最高値を上回る</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="ftd" aria-label="条件を有効化"></span><span class="bt-item-text">FTD（フォロースルーデー）が発生</span></div>
 <p class="bt-group">押し目買い</p>
-<p class="bt-group">反発買い</p>
+<p class="bt-group bt-group-parent">逆張り</p>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="rsiGe" aria-label="条件を有効化"></span><span class="bt-item-text">RSI（14日）が<select class="bt-select" data-bt-num="rsiBuy" aria-label="買いのRSI閾値"><option value="25">25</option><option value="30" selected>30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option></select>以下</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="bounceClose" aria-label="条件を有効化"></span><span class="bt-item-text">前日に<select class="bt-select" data-bt-num="bounceCloseSigma" aria-label="引け成行買いのσ閾値"><option value="1.5">1.5</option><option value="1.6">1.6</option><option value="1.7">1.7</option><option value="1.8">1.8</option><option value="1.9">1.9</option><option value="2" selected>2</option><option value="2.1">2.1</option><option value="2.2">2.2</option><option value="2.3">2.3</option><option value="2.4">2.4</option><option value="2.5">2.5</option><option value="2.6">2.6</option><option value="2.7">2.7</option><option value="2.8">2.8</option><option value="2.9">2.9</option><option value="3">3</option></select>σ以上下落したとき、引け成行で買う</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="streakDrop" aria-label="条件を有効化"></span><span class="bt-item-text">連続下落が<select class="bt-select" data-bt-num="streakPct" aria-label="連続下落の下落率"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select>%以上または<select class="bt-select" data-bt-num="streakSigma" aria-label="連続下落のσ"><option value="1.5">1.5</option><option value="1.6">1.6</option><option value="1.7">1.7</option><option value="1.8">1.8</option><option value="1.9">1.9</option><option value="2.0" selected>2.0</option><option value="2.1">2.1</option><option value="2.2">2.2</option><option value="2.3">2.3</option><option value="2.4">2.4</option><option value="2.5">2.5</option><option value="2.6">2.6</option><option value="2.7">2.7</option><option value="2.8">2.8</option><option value="2.9">2.9</option><option value="3.0">3.0</option></select>σ以上</span></div>
@@ -459,37 +460,6 @@
   save();
 })();
 </script>
-<section id="backtest-results-panel" aria-label="バックテスト結果">
-<style>
-#backtest-results-panel{font-size:12px;color:#222;line-height:1.7}
-#backtest-results-panel .br-note{color:#666;margin:4px 0 14px}
-#backtest-results-panel .br-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
-#backtest-results-panel input,#backtest-results-panel select{font:inherit;padding:7px 9px;border:1px solid #ccc;background:white;color:#222;border-radius:3px}
-#backtest-results-panel input{min-width:200px;flex:1;max-width:460px}
-#backtest-results-panel .br-layout{display:grid;grid-template-columns:minmax(205px,25%) minmax(0,1fr);gap:18px;align-items:start}
-#backtest-results-panel .br-list{border-top:1px solid #ddd}
-#backtest-results-panel .br-entry{display:block;width:100%;text-align:left;font:inherit;padding:11px 10px;border:0;border-bottom:1px solid #ddd;background:white;color:#333;cursor:pointer}
-#backtest-results-panel .br-entry[aria-pressed=true]{background:#f1f1f1;box-shadow:inset 3px 0 #444}
-#backtest-results-panel .br-entry:hover{background:#f7f7f7}
-#backtest-results-panel .br-entry small{display:block;color:#666;font-size:11px;margin-top:3px}
-#backtest-results-panel .br-detail{min-width:0;border:1px solid #ddd;padding:16px}
-#backtest-results-panel h2{font-size:19px;margin:0 0 5px}
-#backtest-results-panel h3{font-size:16px;margin:0 0 6px}
-#backtest-results-panel h4{font-size:13px;margin:18px 0 6px}
-#backtest-results-panel .br-meta{color:#666;font-size:11px}
-#backtest-results-panel .br-scroll{overflow:auto;max-width:100%}
-#backtest-results-panel table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
-#backtest-results-panel th,#backtest-results-panel td{border-bottom:1px solid #ddd;padding:7px 9px;text-align:right;position:static;background:white}
-#backtest-results-panel th{background:#f3f3f3;font-weight:600;color:#333;cursor:default}
-#backtest-results-panel th:first-child,#backtest-results-panel td:first-child{text-align:left}
-#backtest-results-panel .br-detail ul{margin:4px 0;padding-left:20px}
-#backtest-results-panel .br-summary{font-weight:600}
-@media(max-width:800px){#backtest-results-panel .br-layout{grid-template-columns:1fr}#backtest-results-panel .br-detail{padding:10px}}
-</style>
-<h2>バックテスト結果</h2><p class="br-note">ChatGPTで実施した検証の記録。検証条件、数値、結論、制約を保存します。実行画面の結果とは別の研究記録です。</p>
-<div class="br-controls"><input id="br-query" type="search" placeholder="検証名・銘柄・条件を検索" aria-label="検証結果を検索"><select id="br-category" aria-label="分類"><option value="">すべての分類</option></select><span id="br-count" role="status"></span></div>
-<div class="br-layout"><div id="br-list" class="br-list" aria-label="検証一覧"></div><article id="br-detail" class="br-detail" aria-live="polite">検証結果を読み込んでいます。</article></div>
-</section>
 </main><script>
 let rows=[],names={};const hasNum=v=>typeof v==='number'&&Number.isFinite(v);const fmt=v=>hasNum(v)?(v>0?'+':'')+v.toFixed(2)+'%':'—';const cls=v=>!hasNum(v)?'na':v>0?'pos':v<0?'neg':'';const keys=()=>Object.keys(names);
 function ddCircle(number){
@@ -682,6 +652,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261128bg" defer></script>
-<script src="./backtest-results.js?v=20261128a" defer></script>
+</script><script src="./backtest.js?v=20261128jn" defer></script>
 </body></html>
