@@ -440,7 +440,7 @@
   function scoreTrendRows(rows, settings, mode) {
     var p = settings || {}, n = rows.length;
     function num(k, fallback, max) { var v = Number(p[k]); return Number.isFinite(v) && v >= 1 ? Math.min(max, Math.floor(v)) : fallback; }
-    var lengths = [20,60,100];
+    var lengths = [20,50,100];
     var lags = [3,5,10];
     var pivot = 10, upLimit = num("upThreshold",5,10), downLimit = num("downThreshold",5,10);
     var c = rows.map(function(r){return +r[4];}), h=rows.map(function(r){return +r[2];}), l=rows.map(function(r){return +r[3];});
@@ -1849,7 +1849,7 @@
     }
     var regimeApi = (function setupRegime() {
       var KEY = "stock-dashboard-bt-regime-" + MARKET;
-      var state = { scoreSettings: {maType:"EMA",short:20,medium:60,long:100,slopeShort:3,slopeMedium:5,slopeLong:10,pivot:10,upThreshold:5,downThreshold:5}, mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
+      var state = { scoreSettings: {maType:"EMA",short:20,medium:50,long:100,slopeShort:3,slopeMedium:5,slopeLong:10,pivot:10,upThreshold:5,downThreshold:5}, mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
       try {
         var saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && saved.defs) { Object.assign(state.scoreSettings,saved.scoreSettings || {}); state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
@@ -1960,9 +1960,9 @@
             ["SMA","EMA"].forEach(function(kind){
               var active=kind===ma;
               h+='<div class="bt-regime-group" style="font-weight:500">'+kind+'</div>';
-              group("株価と移動平均線 "+kind,[20,60,100].map(function(n){return "株価"+op+n+kind;}),active);
-              group("移動平均線の傾き "+kind,[20,60,100].map(function(n){return n+kind+"が"+slope;}),active);
-              group("移動平均線の配列 "+kind,["20"+kind+op+"60"+kind,"60"+kind+op+"100"+kind],active);
+              group("株価と移動平均線 "+kind,[20,50,100].map(function(n){return "株価"+op+n+kind;}),active);
+              group("移動平均線の傾き "+kind,[20,50,100].map(function(n){return n+kind+"が"+slope;}),active);
+              group("移動平均線の配列 "+kind,["20"+kind+op+"50"+kind,"50"+kind+op+"100"+kind],active);
             });
             h+='<div class="bt-regime-group">共通</div>';
             group("高値・安値",up?["安値切り上げ","高値切り上げ・高値突破"]:["高値切り下げ","安値切り下げ・安値割れ"]);
