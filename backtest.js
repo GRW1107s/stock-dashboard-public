@@ -17,7 +17,7 @@
     roe17: "ROEが17%以上",
     rsiGe: "RSI（14日）が閾値以下",
     vol15: "出来高が20日平均の1.5倍以上",
-    maCross5_20: "5MA＞20MA", maCross20_50: "20MA＞50MA", maCross50_100: "50MA＞100MA", maCross100_150: "100MA＞150MA", maCross150_200: "150MA＞200MA", emaCross9_21: "9EMA＞21EMA", macdCross: "MACDがシグナル線より上",
+    maCross20_50: "20MA＞50MA", maCross20_200: "20MA＞200MA", maCross50_200: "50MA＞200MA", emaCross9_21: "9EMA＞21EMA", emaCross9_50: "9EMA＞50EMA", emaCross21_50: "21EMA＞50EMA", macdCross: "MACDがシグナル線より上",
     bollinger: "終値がボリンジャーバンド下限（20日、−閾値σ）以下",
 
     breakout: "当日高値が直近閾値日の最高値を上回る",
@@ -41,14 +41,14 @@
     loss8: "買値から閾値%下落",
     dropPct: "前日終値から閾値%以上下落",
     high25: "52週高値から閾値%以上下落",
-    maCrossDn5_20: "5MA＜20MA", maCrossDn20_50: "20MA＜50MA", maCrossDn50_100: "50MA＜100MA", maCrossDn100_150: "100MA＜150MA", maCrossDn150_200: "150MA＜200MA", emaCrossDn9_21: "9EMA＜21EMA", macdCrossDn: "MACDがシグナル線より下",
+    maCrossDn20_50: "20MA＜50MA", maCrossDn20_200: "20MA＜200MA", maCrossDn50_200: "50MA＜200MA", emaCrossDn9_21: "9EMA＜21EMA", emaCrossDn9_50: "9EMA＜50EMA", emaCrossDn21_50: "21EMA＜50EMA", macdCrossDn: "MACDがシグナル線より下",
     bollingerUp: "終値がボリンジャーバンド上限（20日、+閾値σ）以上",
     takeProfit: "買値から閾値%上昇", holdDays: "保有期間：閾値日", ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
 
     rsiLe: "RSI（14日）が閾値以上"
   };
-  var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, streakDrop: 1, maCross5_20: 1, maCross20_50: 1, maCross50_100: 1, maCross100_150: 1, maCross150_200: 1, emaCross9_21: 1, macdCross: 1, priceMa20: 1, priceMa50: 1, priceMa100: 1, priceMa150: 1, priceMa200: 1, bollinger: 1, breakout: 1, ftd: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1, maCrossDn5_20: 1, maCrossDn20_50: 1, maCrossDn50_100: 1, maCrossDn100_150: 1, maCrossDn150_200: 1, emaCrossDn9_21: 1, macdCrossDn: 1, bollingerUp: 1, takeProfit: 1, holdDays: 1 };
+  var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, streakDrop: 1, maCross20_50: 1, maCross20_200: 1, maCross50_200: 1, emaCross9_21: 1, emaCross9_50: 1, emaCross21_50: 1, macdCross: 1, priceMa20: 1, priceMa50: 1, priceMa200: 1, bollinger: 1, breakout: 1, ftd: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1, maCrossDn20_50: 1, maCrossDn20_200: 1, maCrossDn50_200: 1, emaCrossDn9_21: 1, emaCrossDn9_50: 1, emaCrossDn21_50: 1, macdCrossDn: 1, bollingerUp: 1, takeProfit: 1, holdDays: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -498,7 +498,7 @@
         for (var bk = i - bn; bk < i; bk++) { if (jHighs[bk] != null && (bhi === null || jHighs[bk] > bhi)) bhi = jHighs[bk]; }
         return bhi !== null && jHighs[i] > bhi;
       }
-      if (id === "emaCross9_21") { var e1 = emaOf(9), e2 = emaOf(21); return e1[i] != null && e2[i] != null && e1[i] > e2[i]; }
+      var exB = /^emaCross(\d+)_(\d+)$/.exec(id); if (exB) { var es1 = emaOf(+exB[1]), es2 = emaOf(+exB[2]); return es1[i] != null && es2[i] != null && es1[i] > es2[i]; }
       if (id === "vol15") {
         var avg = sma(jVols, i - 1, 20);
         return avg != null && avg > 0 && jVols[i] >= 1.5 * avg;
@@ -581,7 +581,7 @@
       if (id === "bollingerUp") return sc.bollSellSigma != null && pstdA[i] != null && ma20[i] != null && c >= ma20[i] + sc.bollSellSigma * pstdA[i];
       if (id === "takeProfit") return closes[i] >= pos.price * (1 + (sc.profitPct == null ? 10 : sc.profitPct) / 100);
       if (id === "holdDays") return sc.holdDays != null && (i - pos.execIdx) >= sc.holdDays;
-      if (id === "emaCrossDn9_21") { var e3 = emaOf(9), e4 = emaOf(21); return e3[i] != null && e4[i] != null && e3[i] < e4[i]; }
+      var exD = /^emaCrossDn(\d+)_(\d+)$/.exec(id); if (exD) { var ed1 = emaOf(+exD[1]), ed2 = emaOf(+exD[2]); return ed1[i] != null && ed2[i] != null && ed1[i] < ed2[i]; }
       if (id === "ma50") { var ms = smaOf(sc.maDays == null ? 50 : sc.maDays); return ms[i] != null && c < ms[i]; }
 
       if (id === "loss8") return closes[i] <= pos.price * (1 - (sc.lossPct == null ? 8 : sc.lossPct) / 100);
@@ -1021,6 +1021,8 @@
         var v = (item.querySelector("input.bt-check") || {}).value || "";
         if (/^maCross\d+_\d+$/.test(v)) return "maCross";
         if (/^maCrossDn\d+_\d+$/.test(v)) return "maCrossDn";
+        if (/^emaCross\d+_\d+$/.test(v)) return "emaCross";
+        if (/^emaCrossDn\d+_\d+$/.test(v)) return "emaCrossDn";
         if (/^priceMa\d+$/.test(v)) return "priceMa";
         return null;
       }
@@ -1106,8 +1108,8 @@
     // per-item re-entry selects. Data shapes are unchanged.
     var curReentryRules = [];
     var curExitRules = [];
-    var BUY_RULE_IDS = ["vol15", "maCross5_20", "maCross20_50", "maCross50_100", "maCross100_150", "maCross150_200", "emaCross9_21", "rsiGe", "bounceClose", "ftd", "macdCross", "bollinger", "breakout", "priceMa20", "priceMa50", "priceMa100", "priceMa150", "priceMa200", "streakDrop"];
-    var SELL_RULE_IDS = ["maCrossDn5_20", "maCrossDn20_50", "maCrossDn50_100", "maCrossDn100_150", "maCrossDn150_200", "emaCrossDn9_21", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe", "macdCrossDn", "bollingerUp", "takeProfit", "holdDays"];
+    var BUY_RULE_IDS = ["vol15", "maCross20_50", "maCross20_200", "maCross50_200", "emaCross9_21", "emaCross9_50", "emaCross21_50", "rsiGe", "bounceClose", "ftd", "macdCross", "bollinger", "breakout", "priceMa20", "priceMa50", "priceMa200", "streakDrop"];
+    var SELL_RULE_IDS = ["maCrossDn20_50", "maCrossDn20_200", "maCrossDn50_200", "emaCrossDn9_21", "emaCrossDn9_50", "emaCrossDn21_50", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe", "macdCrossDn", "bollingerUp", "takeProfit", "holdDays"];
     // IF rows live inside the formula frames, anchored on the TRIGGER
     // side (GRW 2026-11-24): re-entry rules (triggered by a sell) in the
     // sell frame, exit rules (triggered by a buy) in the buy frame.

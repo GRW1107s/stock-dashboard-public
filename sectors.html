@@ -286,17 +286,15 @@
 <div class="bt-block-head"><h3>買いシグナル</h3><button type="button" class="bt-clear" data-bt-clear="buy">すべて外す</button></div>
 <p class="bt-group">順張り</p>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="vol15" aria-label="条件を有効化"></span><span class="bt-item-text">出来高が20日平均の1.5倍以上</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross5_20" aria-label="条件を有効化"></span><span class="bt-item-text">5MA＞20MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross20_50" aria-label="条件を有効化"></span><span class="bt-item-text">20MA＞50MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross50_100" aria-label="条件を有効化"></span><span class="bt-item-text">50MA＞100MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross100_150" aria-label="条件を有効化"></span><span class="bt-item-text">100MA＞150MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross150_200" aria-label="条件を有効化"></span><span class="bt-item-text">150MA＞200MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross20_200" aria-label="条件を有効化"></span><span class="bt-item-text">20MA＞200MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="maCross50_200" aria-label="条件を有効化"></span><span class="bt-item-text">50MA＞200MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="emaCross9_21" aria-label="条件を有効化"></span><span class="bt-item-text">9EMA＞21EMA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="emaCross9_50" aria-label="条件を有効化"></span><span class="bt-item-text">9EMA＞50EMA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="emaCross21_50" aria-label="条件を有効化"></span><span class="bt-item-text">21EMA＞50EMA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="macdCross" aria-label="条件を有効化"></span><span class="bt-item-text">MACDがシグナル線より上</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa20" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞20MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa50" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞50MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa100" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞100MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa150" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞150MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="priceMa200" aria-label="条件を有効化"></span><span class="bt-item-text">株価＞200MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="breakout" aria-label="条件を有効化"></span><span class="bt-item-text">当日高値が直近<select class="bt-select" data-bt-num="breakoutDays" aria-label="ブレイクアウトの日数"><option value="20" selected>20</option><option value="60">60</option><option value="120">120</option><option value="252">252</option></select>日の最高値を上回る</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="buy" value="ftd" aria-label="条件を有効化"></span><span class="bt-item-text">FTD（フォロースルーデー）が発生</span></div>
@@ -315,12 +313,12 @@
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="bollingerUp" aria-label="条件を有効化"></span><span class="bt-item-text">終値がボリンジャーバンド上限（20日、+<select class="bt-select" data-bt-num="bollSellSigma" aria-label="ボリンジャーバンドのσ"><option value="1.5">1.5</option><option value="2" selected>2</option><option value="2.5">2.5</option><option value="3">3</option></select>σ）以上</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="holdDays" aria-label="条件を有効化"></span><span class="bt-item-text">保有期間：<select class="bt-select" data-bt-num="holdDays" aria-label="保有日数"><option value="5">5</option><option value="10">10</option><option value="20" selected>20</option><option value="30">30</option><option value="60">60</option><option value="90">90</option><option value="120">120</option><option value="252">252</option></select>日</span></div>
 <p class="bt-group">損切り</p>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn5_20" aria-label="条件を有効化"></span><span class="bt-item-text">5MA＜20MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn20_50" aria-label="条件を有効化"></span><span class="bt-item-text">20MA＜50MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn50_100" aria-label="条件を有効化"></span><span class="bt-item-text">50MA＜100MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn100_150" aria-label="条件を有効化"></span><span class="bt-item-text">100MA＜150MA</span></div>
-<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn150_200" aria-label="条件を有効化"></span><span class="bt-item-text">150MA＜200MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn20_200" aria-label="条件を有効化"></span><span class="bt-item-text">20MA＜200MA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="maCrossDn50_200" aria-label="条件を有効化"></span><span class="bt-item-text">50MA＜200MA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="emaCrossDn9_21" aria-label="条件を有効化"></span><span class="bt-item-text">9EMA＜21EMA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="emaCrossDn9_50" aria-label="条件を有効化"></span><span class="bt-item-text">9EMA＜50EMA</span></div>
+<div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="emaCrossDn21_50" aria-label="条件を有効化"></span><span class="bt-item-text">21EMA＜50EMA</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="macdCrossDn" aria-label="条件を有効化"></span><span class="bt-item-text">MACDがシグナル線より下</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="ma50" checked aria-label="条件を有効化"></span><span class="bt-item-text">株価が<select class="bt-select" data-bt-num="maSellDays" aria-label="売りの移動平均日数"><option value="20">20</option><option value="50" selected>50</option><option value="200">200</option></select>日移動平均を下回る</span></div>
 <div class="bt-item"><span class="bt-ck"><input type="checkbox" class="bt-check" data-bt="sell" value="ddGe" aria-label="条件を有効化"></span><span class="bt-item-text">DD（売り抜け日）が<select class="bt-select" data-bt-num="ddSell" aria-label="売りのDD閾値"><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option></select>以上（直近25取引日）</span></div>
@@ -652,5 +650,5 @@ document.addEventListener('click',function(e){
   },250);
  }
 });
-</script><script src="./backtest.js?v=20261128ud" defer></script>
+</script><script src="./backtest.js?v=20261128gr" defer></script>
 </body></html>
