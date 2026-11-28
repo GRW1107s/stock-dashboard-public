@@ -33,6 +33,25 @@ def fetch(url, timeout=25):
         return response.read(5_000_000).decode(response.headers.get_content_charset() or 'utf-8', 'replace')
 
 
+def fetch_fred_series(series_id):
+    """FRED daily series as {date: value} (no API key needed).
+
+    fredgraph.csv marks missing observations '.' or blank; both are
+    skipped. Values exist for every calendar day (weekends carry the
+    previous close), so callers pick the value dated on each session.
+    """
+    text = fetch(f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}')
+    out = {}
+    for line in text.splitlines():
+        parts = line.split(',')
+        if len(parts) != 2 or not re.match(r'^\d{4}-\d{2}-\d{2}$', parts[0]):
+            continue
+        value = numeric(parts[1])
+        if value is not None:
+            out[parts[0]] = value
+    return out
+
+
 def fetch_feargreed():
     """CNN Fear & Greed Index daily closes: {date: score}.
 
@@ -774,6 +793,39 @@ def main():
         print(f'TNX: {len(tnx)} sessions')
     except Exception as exc:
         print('WARNING TNX ingestion failed:', repr(exc))
+    # US credit spreads (ICE BofA option-adjusted spreads via FRED):
+    # HY = BAMLH0A0HYM2, CCC & lower = BAMLH0A3HYC, both published
+    # from 1996-12-31. Level + daily change, the same treatment as
+    # VIX/TNX. Previously published values are kept and the fresh
+    # download overlaid, so a failed fetch never wipes the series
+    # (GRW, 2026-11-28).
+    hy_spread, ccc_spread = {}, {}
+    for _key, _sid, _target in (('hy', 'BAMLH0A0HYM2', 'hy_spread'),
+                                ('ccc', 'BAMLH0A3HYC', 'ccc_spread')):
+        try:
+            _levels = {}
+            import glob as _glob2
+            for _path in _glob2.glob(str(ROOT / 'history-*.json')) + [str(ROOT / 'data.json')]:
+                try:
+                    _prev = json.loads(pathlib.Path(_path).read_text(encoding='utf-8'))
+                except Exception:
+                    continue
+                for _row in _prev.get('rows', []):
+                    _cell = _row.get(_key)
+                    if _cell and _cell.get('close') is not None and _row.get('date'):
+                        _levels[_row['date']] = _cell['close']
+            _fresh = fetch_fred_series(_sid)
+            _levels.update(_fresh)
+            _days = sorted(_levels)
+            _cells = {}
+            for _i, _day in enumerate(_days):
+                _prev_close = _levels[_days[_i - 1]] if _i else None
+                _cells[_day] = {'close': round(_levels[_day], 2),
+                                'change': round((_levels[_day] / _prev_close - 1) * 100, 4) if _prev_close else None}
+            globals()[_target] = _cells
+            print(f'SPREAD {_key}: {len(_cells)} sessions ({len(_fresh)} fresh)')
+        except Exception as exc:
+            print(f'WARNING spread {_key} ingestion failed:', repr(exc))
     nikkei = {}
     try:
         yahoo_prices = {}
@@ -891,7 +943,8 @@ def main():
                          'sp500': us['sp500'][day], 'nasdaq': us['nasdaq'][day],
                          'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
                          'soxx': us['soxx'].get(day),
-                         'vix': vix.get(day), 'tnx': tnx.get(day), 'feargreed': fg.get(day)})
+                         'vix': vix.get(day), 'tnx': tnx.get(day), 'feargreed': fg.get(day),
+                         'hy': hy_spread.get(day), 'ccc': ccc_spread.get(day)})
     # Pre-1992 NASDAQ-only archive rows (see the IXIC LONG fetch above).
     early_rows = []
     if ixic_long and us_days:
@@ -901,7 +954,8 @@ def main():
                                'sp500': None, 'nasdaq': ixic_long[day],
                                'nasdaq100': None, 'dow': None, 'soxx': None,
                                'vix': vix.get(day), 'tnx': tnx.get(day),
-                               'feargreed': fg.get(day)})
+                               'feargreed': fg.get(day),
+                               'hy': hy_spread.get(day), 'ccc': ccc_spread.get(day)})
     all_rows = rows_all + early_rows
     rows = rows_all[:PUBLISH_SESSIONS]
     if len(rows) < 25:
@@ -937,7 +991,7 @@ def main():
                 'latest': valid_tse_days[-1] if valid_tse_days else None}
     print('TSE DD COVERAGE:', coverage)
     result = {'updated_at': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
-              'source': {'us': 'Yahoo Finance unofficial', 'vix': 'Yahoo Finance unofficial (^VIX)', 'tnx': 'Yahoo Finance unofficial (^TNX)', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
+              'source': {'us': 'Yahoo Finance unofficial', 'vix': 'Yahoo Finance unofficial (^VIX)', 'tnx': 'Yahoo Finance unofficial (^TNX)', 'hy_spread': 'FRED BAMLH0A0HYM2 (ICE BofA US High Yield OAS)', 'ccc_spread': 'FRED BAMLH0A3HYC (ICE BofA CCC & Lower US High Yield OAS)', 'nasdaq100_volume': 'QQQ volume via Yahoo Finance unofficial',
                          'japan_indices': 'stock-marketdata.com index history',
                          'japan_volume': 'stock-marketdata.com', 'nikkei225': 'Yahoo Finance unofficial',
                          'nikkei_vi': 'Nikkei Indexes official daily CSV'},
