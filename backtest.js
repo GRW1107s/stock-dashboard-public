@@ -1939,7 +1939,7 @@
         scoreControls.style.gap="8px 14px";
         cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
         var p = state.scoreSettings;
-        scoreControls.innerHTML='<label>移動平均線 <select class="bt-select" data-score-key="maType"><option value="SMA"'+(p.maType==="SMA"?" selected":"")+'>SMA</option><option value="EMA"'+(p.maType!=="SMA"?" selected":"")+'>EMA</option></select></label><label>Pivot '+scoreInput("pivot",100)+'</label>';
+        scoreControls.innerHTML='<span>移動平均線 <label><input type="checkbox" data-score-key="maType" value="SMA"'+(p.maType==="SMA"?" checked":"")+'> SMA</label> <label><input type="checkbox" data-score-key="maType" value="EMA"'+(p.maType!=="SMA"?" checked":"")+'> EMA</label></span><label>Pivot '+scoreInput("pivot",100)+'</label>';
         var ma=p.maType==="SMA"?"SMA":"EMA";
         var names=TREND_NAMES[state.mode];
         names.forEach(function(name,di){
@@ -2010,7 +2010,7 @@
       sec.addEventListener("change", function (e) {
         var t = e.target;
         if (!t || !t.getAttribute) return;
-        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maType")state.scoreSettings[sk]=t.value;else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();renderCards();renderAssign();return;}
+        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maType"){if(t.checked)state.scoreSettings[sk]=t.value;else {t.checked=true;return;}}else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();renderCards();renderAssign();return;}
         if (t.classList.contains("bt-regime-astrat")) {
           var da = parseInt(t.getAttribute("data-card"), 10);
           if (!isNaN(da) && state.mode !== "off") { state.defs[state.mode][da].strat = parseInt(t.value, 10); persist(); }
