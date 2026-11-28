@@ -447,7 +447,7 @@
   }
 
   // Symmetric LoK trend-break scores, evaluated on confirmed daily bars.
-  function trendMaLengths(p) { return p && p.maPeriods === "5/20/50" ? [5,20,50] : [20,50,100]; }
+  function trendMaLengths(p) { return [20,50,100]; }
   function pbParams(num) {
     var out={};PULLBACK_DEFS.forEach(function(d){d.params.forEach(function(p){var v=Number(num(p[0],p[2]));out[p[0]]=p[1].indexOf(v)>=0?v:p[2];});});return out;
   }
@@ -1944,7 +1944,7 @@
       var state = { scoreSettings: {maType:"SMA",maPeriods:"20/50/100",short:20,medium:50,long:100,slopeShort:3,slopeMedium:5,slopeLong:10,pivot:10,upThreshold:5,downThreshold:5}, mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
       try {
         var saved = JSON.parse(localStorage.getItem(KEY) || "null");
-        if (saved && saved.defs) { Object.assign(state.scoreSettings,saved.scoreSettings || {},{maType:"SMA"}); state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
+        if (saved && saved.defs) { Object.assign(state.scoreSettings,saved.scoreSettings || {},{maType:"SMA",maPeriods:"20/50/100"}); state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
       } catch (e) {}
       ["2", "3", "4"].forEach(function (mk) {
         (state.defs[mk] || []).forEach(function (def) {
@@ -2031,7 +2031,7 @@
         scoreControls.style.gap="8px 14px";
         cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
         var p = state.scoreSettings;
-        scoreControls.innerHTML='<span>移動平均線 SMA（固定）</span><label>期間 <select class="bt-select" data-score-key="maPeriods" aria-label="トレンド移動平均期間"><option value="5/20/50"'+(p.maPeriods==="5/20/50"?" selected":"")+'>5/20/50</option><option value="20/50/100"'+(p.maPeriods!=="5/20/50"?" selected":"")+'>20/50/100</option></select></label><span class="bt-res-note">Pivot 10（固定）</span>';
+        scoreControls.innerHTML='<span>移動平均線 SMA 20/50/100（固定）</span><span class="bt-res-note">Pivot 10（固定）</span>';
         var ma="SMA", periods=trendMaLengths(p);
         var names=TREND_NAMES[state.mode];
         names.forEach(function(name,di){
@@ -2107,7 +2107,7 @@
       sec.addEventListener("change", function (e) {
         var t = e.target;
         if (!t || !t.getAttribute) return;
-        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maPeriods"){if(["5/20/50","20/50/100"].indexOf(t.value)<0)return;state.scoreSettings[sk]=t.value;}else if(sk==="maType"){return;}else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();renderCards();renderAssign();return;}
+        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maPeriods"||sk==="maType"){return;}else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();renderCards();renderAssign();return;}
         if (t.classList.contains("bt-regime-astrat")) {
           var da = parseInt(t.getAttribute("data-card"), 10);
           if (!isNaN(da) && state.mode !== "off") { state.defs[state.mode][da].strat = parseInt(t.value, 10); persist(); }
@@ -2138,7 +2138,7 @@
           if (state.mode === "off") return null;
           return {
             target: state.target,
-            mode: state.mode, scoreSettings: Object.assign({},state.scoreSettings,{maType:"SMA"},state.mode==="3"?{downThreshold:3}:{}),
+            mode: state.mode, scoreSettings: Object.assign({},state.scoreSettings,{maType:"SMA",maPeriods:"20/50/100"},state.mode==="3"?{downThreshold:3}:{}),
             names: TREND_NAMES[state.mode].slice(),
             defs: state.defs[state.mode].map(function (d) { return { items: d.items.slice(), nums: Object.assign({}, d.nums), join: d.join, strat: d.strat }; })
           };
