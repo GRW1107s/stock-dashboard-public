@@ -1858,13 +1858,19 @@
           card.innerHTML = '<div class="bt-regime-card-head"><strong>' + esc(names[di]) + '</strong>' +
             '<span>組み合わせ <label><input type="checkbox" class="bt-regime-joinck" data-card="' + di + '" value="and"' + (def.join !== "or" ? " checked" : "") + '> すべて満たす（AND）</label> <label><input type="checkbox" class="bt-regime-joinck" data-card="' + di + '" value="or"' + (def.join === "or" ? " checked" : "") + '> いずれか満たす（OR）</label></span></div>' +
             '<div class="bt-regime-items">' + (function () {
-              var rows = "", curFam = null;
-              TREND_ITEMS.filter(function (item) { return allowed.indexOf(item.id) >= 0; }).forEach(function (item) {
-                var fam = trendFam(item.id);
-                if (fam !== curFam) { if (curFam !== null) rows += "</div>"; rows += '<div class="bt-regime-fam">'; curFam = fam; }
-                rows += '<label class="bt-regime-item"><input type="checkbox" class="bt-regime-ck" data-card="' + di + '" value="' + item.id + '"' + (def.items.indexOf(item.id) >= 0 ? " checked" : "") + "> " + itemHtml(def, item) + "</label>";
+              var rows = "";
+              [["t", "指数"], ["s", "株価"]].forEach(function (g) {
+                var items = TREND_ITEMS.filter(function (item) { return allowed.indexOf(item.id) >= 0 && item.id.charAt(0) === g[0]; });
+                if (!items.length) return;
+                rows += '<div class="bt-regime-group">' + g[1] + "</div>";
+                var curFam = null;
+                items.forEach(function (item) {
+                  var fam = trendFam(item.id);
+                  if (fam !== curFam) { if (curFam !== null) rows += "</div>"; rows += '<div class="bt-regime-fam">'; curFam = fam; }
+                  rows += '<label class="bt-regime-item"><input type="checkbox" class="bt-regime-ck" data-card="' + di + '" value="' + item.id + '"' + (def.items.indexOf(item.id) >= 0 ? " checked" : "") + "> " + itemHtml(def, item) + "</label>";
+                });
+                if (curFam !== null) rows += "</div>";
               });
-              if (curFam !== null) rows += "</div>";
               return rows;
             })() + "</div>";
           cardsEl.appendChild(card);
