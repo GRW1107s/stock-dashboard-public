@@ -1750,7 +1750,7 @@
       { id: "sHigherHigh", text: "株価の高値切上げ" }, { id: "sHigherLow", text: "株価の安値切上げ" },
       { id: "sLowerHigh", text: "株価の高値切り下げ" }, { id: "sLowerLow", text: "株価の安値切り下げ・安値割れ" }
     ];
-    var TREND_NAMES = { "2": ["強気", "弱気"], "3": ["強気", "レンジ", "弱気"], "4": ["Stage1", "Stage2", "Stage3", "Stage4"] };
+    var TREND_NAMES = { "2": ["上昇", "下落"], "3": ["強気", "レンジ", "弱気"], "4": ["Stage1", "Stage2", "Stage3", "Stage4"] };
     // Each trend lists only the conditions that fit its direction:
     // bullish trends get bullish conditions, bearish ones bearish ones.
     var TREND_SETS = {
