@@ -1708,6 +1708,7 @@
       });
       store.slots.forEach(function (sl) {
         if (!sl || !Array.isArray(sl.buy) || !Array.isArray(sl.sell) || !sl.nums) { sl.buy = []; sl.sell = []; sl.nums = {}; }
+        if ([75,80,85].indexOf(Number(sl.nums.rsiSell)) < 0) sl.nums.rsiSell = "80";
         sl.cmp = !!sl.cmp;
         if (!Array.isArray(sl.reentry)) sl.reentry = [];
         if (!Array.isArray(sl.exitRules)) sl.exitRules = [];
@@ -2739,7 +2740,7 @@
       if (buyAll.includes("rsiGe")) { var v = numOf("rsiBuy"); rsiBuyVal = isFinite(v) ? v : 30; } else rsiBuyVal = null;
       if (buyAll.includes("bounceClose")) { var bc = numOf("bounceCloseSigma"); bounceCloseSigmaVal = isFinite(bc) ? bc : 2; } else bounceCloseSigmaVal = null;
       if (buyAll.includes("streakDrop")) { var sd1 = numOf("streakPct"); streakPctVal = isFinite(sd1) ? sd1 : 5; var sd2 = numOf("streakSigma"); streakSigmaVal = isFinite(sd2) ? sd2 : 2; } else { streakPctVal = null; streakSigmaVal = null; }
-      if (sellAll.includes("rsiLe")) { var w = numOf("rsiSell"); rsiSellVal = isFinite(w) ? w : 70; } else rsiSellVal = null;
+      if (sellAll.includes("rsiLe")) { var w = numOf("rsiSell"); rsiSellVal = [75,80,85].indexOf(w) >= 0 ? w : 80; } else rsiSellVal = null;
       if (sellAll.includes("dropPct")) { var d = numOf("dropSell"); dropPctVal = isFinite(d) ? d : 5; } else dropPctVal = null;
       if (sellAll.includes("ma50")) { var md = numOf("maSellDays"); maDaysVal = isFinite(md) ? md : 50; } else maDaysVal = null;
       if (sellAll.includes("loss8")) { var l = numOf("lossPct"); lossPctVal = isFinite(l) ? l : 8; } else lossPctVal = null;
@@ -3177,7 +3178,7 @@
       return {
         buy: buyList, sell: sell, screen: screen, buyFormula: buyFormula, sellFormula: sellFormula,
         ddLimit: null,
-        rsiBuy: Math.min(50, Math.max(25, num("rsiBuy", 30))), rsiSell: Math.min(85, Math.max(70, num("rsiSell", 70))),
+        rsiBuy: Math.min(50, Math.max(25, num("rsiBuy", 30))), rsiSell: [75,80,85].indexOf(num("rsiSell", 80)) >= 0 ? num("rsiSell", 80) : 80,
         dropPct: Math.min(10, Math.max(3, num("dropSell", 5))), ddSell: [5, 6, 7].reduce(function (a, o) { return Math.abs(o - num("ddSell", 5)) < Math.abs(a - num("ddSell", 5)) ? o : a; }, 5), lossPct: num("lossPct", 8), highPct: [5, 10, 15, 20].reduce(function (a, o) { return Math.abs(o - num("highPct", 20)) < Math.abs(a - num("highPct", 20)) ? o : a; }, 20), bounceCloseSigma: Math.min(3, Math.max(1.5, num("bounceCloseSigma", 2))), streakPct: Math.min(20, Math.max(1, num("streakPct", 5))), streakSigma: Math.min(3, Math.max(1.5, Math.round(num("streakSigma", 2) * 10) / 10)), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50),
         bollSigma: [1.5, 2, 2.5, 3].reduce(function (a, o) { return Math.abs(o - num("bollSigma", 2)) < Math.abs(a - num("bollSigma", 2)) ? o : a; }, 2), bollSellSigma: [1.5, 2, 2.5, 3].reduce(function (a, o) { return Math.abs(o - num("bollSellSigma", 2)) < Math.abs(a - num("bollSellSigma", 2)) ? o : a; }, 2),
         chBPivot: 3, chBRise: 20, chBMinDepth: 8, chBMaxDepth: 40, chBRim: 10, chBHandle: 15, chBMinDays: 3, chBMaxDays: 30, chBVolume: 1.2, chDPivot: 3, chDRise: 20, chDMinDepth: 8, chDMaxDepth: 40, chDRim: 10, chDHandle: 15, chDMinDays: 3, chDMaxDays: 30,
