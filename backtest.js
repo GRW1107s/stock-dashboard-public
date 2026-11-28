@@ -1959,7 +1959,7 @@
             h+='<div class="bt-regime-group">株価</div>';
             ["SMA","EMA"].forEach(function(kind){
               var active=kind===ma;
-              h+='<div class="bt-regime-group" style="font-weight:500"><label><input type="checkbox" data-score-key="maType" value="'+kind+'"'+(active?" checked":"")+'> '+kind+'</label></div>';
+              h+='<div class="bt-regime-group" style="font-weight:500">'+kind+'</div>';
               group("株価と移動平均線 "+kind,[20,60,100].map(function(n){return "株価"+op+n+kind;}),active);
               group("移動平均線の傾き "+kind,[20,60,100].map(function(n){return n+kind+"が"+slope;}),active);
               group("移動平均線の配列 "+kind,["20"+kind+op+"60"+kind,"60"+kind+op+"100"+kind],active);
