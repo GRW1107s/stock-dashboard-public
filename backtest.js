@@ -441,7 +441,7 @@
     var p = settings || {}, n = rows.length;
     function num(k, fallback, max) { var v = Number(p[k]); return Number.isFinite(v) && v >= 1 ? Math.min(max, Math.floor(v)) : fallback; }
     var lengths = [num("short",20,500),num("medium",60,500),num("long",100,500)];
-    var lags = [num("slopeShort",3,100),num("slopeMedium",5,100),num("slopeLong",10,100)];
+    var lags = [3,5,10];
     var pivot = num("pivot",10,100), upLimit = num("upThreshold",5,10), downLimit = num("downThreshold",5,10);
     var c = rows.map(function(r){return +r[4];}), h=rows.map(function(r){return +r[2];}), l=rows.map(function(r){return +r[3];});
     var ma = lengths.map(function(len) { var sum=0, e=c[0]; return c.map(function(v,i){ if(p.maType !== "SMA"){e=i?e+(v-e)*2/(len+1):v;return e;} sum+=v-(i>=len?c[i-len]:0);return i>=len-1?sum/len:null;}); });
@@ -1933,8 +1933,8 @@
         var p = state.scoreSettings;
         var card = document.createElement("div");card.className="bt-regime-card";
         var html='<div class="bt-regime-card-head"><strong>トレンド判定（10条件スコア）</strong></div><div class="bt-regime-items"><label>移動平均線 <select class="bt-select" data-score-key="maType"><option value="SMA"'+(p.maType==="SMA"?" selected":"")+'>SMA</option><option value="EMA"'+(p.maType!=="SMA"?" selected":"")+'>EMA</option></select></label>';
-        [["short","短期MA",500],["medium","中期MA",500],["long","長期MA",500],["slopeShort","短期傾き比較日数",100],["slopeMedium","中期傾き比較日数",100],["slopeLong","長期傾き比較日数",100],["pivot","Pivot左右本数",100],["upThreshold","上昇判定閾値（/10）",10],["downThreshold","下落判定閾値（/10）",10]].forEach(function(x){html+='<label class="bt-regime-item">'+x[1]+' <input class="bt-select" type="number" min="1" max="'+x[2]+'" step="1" data-score-key="'+x[0]+'" value="'+esc(p[x[0]])+'" style="width:64px"></label>';});
-        html+='<div class="bt-regime-group">各方向10条件：株価とMA（3）、MA傾き（3）、MA配列（2）、高値・安値（2）</div><div>閾値以上かつ反対方向よりスコアが高い場合に方向を確定。2分類は中立時に直前方向を維持、3分類はレンジ、4分類は直前方向から底値形成・天井形成を判定。</div></div>';
+        [["short","短期MA",500],["medium","中期MA",500],["long","長期MA",500],["pivot","Pivot左右本数",100],["upThreshold","上昇判定閾値（/10）",10],["downThreshold","下落判定閾値（/10）",10]].forEach(function(x){html+='<label class="bt-regime-item">'+x[1]+' <input class="bt-select" type="number" min="1" max="'+x[2]+'" step="1" data-score-key="'+x[0]+'" value="'+esc(p[x[0]])+'" style="width:64px"></label>';});
+        html+='<div class="bt-regime-group">各方向10条件：株価とMA（3）、MA傾き（短期3・中期5・長期10営業日前で固定）、MA配列（2）、高値・安値（2）</div><div>閾値以上かつ反対方向よりスコアが高い場合に方向を確定。2分類は中立時に直前方向を維持、3分類はレンジ、4分類は直前方向から底値形成・天井形成を判定。</div></div>';
         card.innerHTML=html;cardsEl.appendChild(card);
         cardsEl.appendChild(assignEl);
       }
