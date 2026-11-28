@@ -1929,13 +1929,39 @@
         cardsEl.innerHTML = "";
         if (state.mode === "off") { cardsEl.style.display = "none"; return; }
         cardsEl.style.display = "";
-        cardsEl.style.gridTemplateColumns = "minmax(0, 2fr) minmax(0, 1fr)";
+        cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
         var p = state.scoreSettings;
-        var card = document.createElement("div");card.className="bt-regime-card";
-        var html='<div class="bt-regime-card-head"><strong>トレンド判定（10条件スコア）</strong></div><div class="bt-regime-items"><label>移動平均線 <select class="bt-select" data-score-key="maType"><option value="SMA"'+(p.maType==="SMA"?" selected":"")+'>SMA</option><option value="EMA"'+(p.maType!=="SMA"?" selected":"")+'>EMA</option></select></label>';
+        var settings = document.createElement("div");
+        settings.className = "bt-regime-card";
+        settings.style.gridColumn = "1 / -1";
+        var html='<div class="bt-regime-card-head"><strong>共通設定</strong></div><div class="bt-regime-fam"><label>移動平均線 <select class="bt-select" data-score-key="maType"><option value="SMA"'+(p.maType==="SMA"?" selected":"")+'>SMA</option><option value="EMA"'+(p.maType!=="SMA"?" selected":"")+'>EMA</option></select></label>';
         [["pivot","Pivot左右本数",100],["upThreshold","上昇判定閾値（/10）",10],["downThreshold","下落判定閾値（/10）",10]].forEach(function(x){html+='<label class="bt-regime-item">'+x[1]+' <input class="bt-select" type="number" min="1" max="'+x[2]+'" step="1" data-score-key="'+x[0]+'" value="'+esc(p[x[0]])+'" style="width:64px"></label>';});
-        html+='<div class="bt-regime-group">各方向10条件：株価とMA（20・60・100日固定）、MA傾き（短期3・中期5・長期10営業日前で固定）、MA配列（2）、高値・安値（2）</div><div>閾値以上かつ反対方向よりスコアが高い場合に方向を確定。2分類は中立時に直前方向を維持、3分類はレンジ、4分類は直前方向から底値形成・天井形成を判定。</div></div>';
-        card.innerHTML=html;cardsEl.appendChild(card);
+        settings.innerHTML=html+'</div><div class="bt-res-note">チェックは固定。10条件のうち閾値以上を満たし、反対方向より得点が高い場合に方向を確定します。</div>';
+        cardsEl.appendChild(settings);
+        var ma=p.maType==="SMA"?"SMA":"EMA";
+        var names=TREND_NAMES[state.mode];
+        names.forEach(function(name,di){
+          var up=state.mode==="4"?di===1:di===0;
+          var down=di===names.length-1;
+          var card=document.createElement("div");card.className="bt-regime-card";
+          var h='<div class="bt-regime-card-head"><strong>'+esc(name)+'</strong></div><div class="bt-regime-items">';
+          function group(title,items){
+            h+='<div class="bt-regime-group">'+esc(title)+'</div><div class="bt-regime-fam">';
+            items.forEach(function(t){h+='<label class="bt-regime-item"><input type="checkbox" checked disabled aria-label="'+esc(t)+'（固定）"> '+esc(t)+'</label>';});
+            h+='</div>';
+          }
+          if(up||down){
+            var op=up?"＞":"＜", slope=up?"上向き":"下向き";
+            group("株価と移動平均線",[20,60,100].map(function(n){return "株価"+op+n+ma;}));
+            group("移動平均線の傾き",[20,60,100].map(function(n,i){return n+ma+" "+slope+"（"+[3,5,10][i]+"日前比）";}));
+            group("移動平均線の配列",["20"+ma+op+"60"+ma,"60"+ma+op+"100"+ma]);
+            group("高値・安値",up?["安値切り上げ","高値切り上げ・高値突破"]:["高値切り下げ","安値切り下げ・安値割れ"]);
+            h+='<div class="bt-res-note">判定：10条件中 '+esc(up?p.upThreshold:p.downThreshold)+' 条件以上、かつ反対方向より高得点</div>';
+          }else{
+            group("移行条件",state.mode==="3"?["上昇・下落の確定条件をいずれも満たさない"]:["上昇・下落の確定条件をいずれも満たさない",di===0?"直前の確定トレンドが下落":"直前の確定トレンドが上昇"]);
+          }
+          card.innerHTML=h+'</div>';cardsEl.appendChild(card);
+        });
         cardsEl.appendChild(assignEl);
       }
       function trendSummary(def) {
@@ -1976,7 +2002,7 @@
       sec.addEventListener("change", function (e) {
         var t = e.target;
         if (!t || !t.getAttribute) return;
-        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maType")state.scoreSettings[sk]=t.value;else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();refreshAssignSums();return;}
+        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maType")state.scoreSettings[sk]=t.value;else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();renderCards();renderAssign();return;}
         if (t.classList.contains("bt-regime-astrat")) {
           var da = parseInt(t.getAttribute("data-card"), 10);
           if (!isNaN(da) && state.mode !== "off") { state.defs[state.mode][da].strat = parseInt(t.value, 10); persist(); }
