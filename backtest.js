@@ -995,6 +995,25 @@
       });
     })();
 
+    // Items listed in two groups (the sell block's take-profit and
+    // stop-loss overlaps) share one state: mirror checkbox and parameter
+    // changes to every copy silently, so a single change event flows
+    // through and slot application sees the copies already in sync.
+    panel.addEventListener("change", function (e) {
+      var tg = e.target;
+      if (!tg || !tg.closest) return;
+      var item = tg.closest(".bt-item");
+      if (!item) return;
+      var block = tg.closest(".bt-block.buy, .bt-block.sell");
+      if (!block) return;
+      var own = item.querySelector("input.bt-check");
+      if (!own) return;
+      var copies = Array.from(block.querySelectorAll(".bt-item")).filter(function (it) { var b = it.querySelector("input.bt-check"); return b && b.value === own.value && it !== item; });
+      if (!copies.length) return;
+      if (tg === own) copies.forEach(function (it) { it.querySelector("input.bt-check").checked = own.checked; });
+      if (tg.hasAttribute && tg.hasAttribute("data-bt-num")) { var k = tg.getAttribute("data-bt-num"); copies.forEach(function (it) { var s2 = it.querySelector('select[data-bt-num="' + k + '"]'); if (s2) s2.value = tg.value; }); }
+    }, true);
+
     // Lay similar signal items side by side: consecutive MA-cross checks
     // share one family row (mirrors the trend cards' family rows).
     panel.querySelectorAll(".bt-block.buy, .bt-block.sell").forEach(function (block) {
@@ -1680,18 +1699,18 @@
       { id: "tPx50Dn", text: "指数＜50MA" },
       { id: "tPx200Dn", text: "指数＜200MA" },
       { id: "tMaNear", text: "指数が[NUM:tMaDays]日MAの±[NUM:tNearPct]%以内", nums: { tMaDays: [20, 50, 200], tNearPct: [1, 2, 3, 5] } },
-      { id: "tCross20_50", text: "20MA＞50MA" },
-      { id: "tCross20_200", text: "20MA＞200MA" },
-      { id: "tCross50_200", text: "50MA＞200MA" },
-      { id: "tCrossDn20_50", text: "20MA＜50MA" },
-      { id: "tCrossDn20_200", text: "20MA＜200MA" },
-      { id: "tCrossDn50_200", text: "50MA＜200MA" },
-      { id: "tEmaCross9_21", text: "9EMA＞21EMA" },
-      { id: "tEmaCross9_50", text: "9EMA＞50EMA" },
-      { id: "tEmaCross21_50", text: "21EMA＞50EMA" },
-      { id: "tEmaCrossDn9_21", text: "9EMA＜21EMA" },
-      { id: "tEmaCrossDn9_50", text: "9EMA＜50EMA" },
-      { id: "tEmaCrossDn21_50", text: "21EMA＜50EMA" },
+      { id: "tCross20_50", text: "指数：20MA＞50MA" },
+      { id: "tCross20_200", text: "指数：20MA＞200MA" },
+      { id: "tCross50_200", text: "指数：50MA＞200MA" },
+      { id: "tCrossDn20_50", text: "指数：20MA＜50MA" },
+      { id: "tCrossDn20_200", text: "指数：20MA＜200MA" },
+      { id: "tCrossDn50_200", text: "指数：50MA＜200MA" },
+      { id: "tEmaCross9_21", text: "指数：9EMA＞21EMA" },
+      { id: "tEmaCross9_50", text: "指数：9EMA＞50EMA" },
+      { id: "tEmaCross21_50", text: "指数：21EMA＞50EMA" },
+      { id: "tEmaCrossDn9_21", text: "指数：9EMA＜21EMA" },
+      { id: "tEmaCrossDn9_50", text: "指数：9EMA＜50EMA" },
+      { id: "tEmaCrossDn21_50", text: "指数：21EMA＜50EMA" },
       { id: "tDd", text: "Market in correction（DD[NUM:tDdN]以上）", nums: { tDdN: [5, 6, 7] } },
       { id: "tDdNot", text: "Market in correctionでない（DD[NUM:tDdN]）", nums: { tDdN: [5, 6, 7] } },
       { id: "tFtd", text: "Confirmed Uptrend（FTD発生後、DDが[NUM:tCuDd]以内）", nums: { tCuDd: [3, 4, 5, 6, 7] } },
@@ -1970,7 +1989,7 @@
     })();
 
     function checked(group) {
-      return Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt="' + group + '"]:checked')).map(function (b) { return b.value; });
+      return Array.from(panel.querySelectorAll('input[type="checkbox"][data-bt="' + group + '"]:checked')).map(function (b) { return b.value; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
     }
     function numOf(key) {
       var el = panel.querySelector('[data-bt-num="' + key + '"]');
@@ -3236,9 +3255,11 @@
         return;
       }
       function dimsFor(kind) {
-        var dims = [];
+        var dims = [], seenDim = {};
         panel.querySelectorAll('input[type="checkbox"][data-bt="' + kind + '"]:checked').forEach(function (b) {
           var id = b.value;
+          if (seenDim[id]) return;
+          seenDim[id] = 1;
           if (kind === "buy" && !(BUY_EVALUABLE[id] || id === "dd")) return;
           if (kind === "sell" && !SELL_EVALUABLE[id]) return;
           var label = b.closest(".bt-item");
