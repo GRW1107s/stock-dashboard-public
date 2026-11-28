@@ -43,12 +43,12 @@
     high25: "52週高値から閾値%以上下落",
     maCrossDn5_20: "5MA＜20MA", maCrossDn20_50: "20MA＜50MA", maCrossDn50_100: "50MA＜100MA", maCrossDn100_150: "100MA＜150MA", maCrossDn150_200: "150MA＜200MA", emaCrossDn9_21: "9EMA＜21EMA", macdCrossDn: "MACDがシグナル線より下",
     bollingerUp: "終値がボリンジャーバンド上限（20日、+閾値σ）以上",
-    takeProfit: "買値から閾値%上昇", holdDays: "保有期間：閾値日", ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
+    takeProfit: "買値から閾値%上昇", trailPct: "トレーリングストップ（%）", trailAtr: "トレーリングストップ（ATR）", holdDays: "保有期間：閾値日", ddGe: "DD（売り抜け日）が5以上（直近25取引日）",
 
     rsiLe: "RSI(14)が閾値以上", rsi2Le: "RSI(2)が閾値以上"
   };
   var BUY_EVALUABLE = { vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, rsi2Ge: 1, bopGe: 1, bounceClose: 1, streakDrop: 1, maCross5_20: 1, maCross20_50: 1, maCross50_100: 1, maCross100_150: 1, maCross150_200: 1, emaCross9_21: 1, macdCross: 1, priceMa20: 1, priceMa50: 1, priceMa100: 1, priceMa150: 1, priceMa200: 1, bollinger: 1, breakout: 1, ftd: 1 };
-  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, rsi2Le: 1, dropPct: 1, ddGe: 1, maCrossDn5_20: 1, maCrossDn20_50: 1, maCrossDn50_100: 1, maCrossDn100_150: 1, maCrossDn150_200: 1, emaCrossDn9_21: 1, macdCrossDn: 1, bollingerUp: 1, takeProfit: 1, holdDays: 1 };
+  var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, rsi2Le: 1, dropPct: 1, ddGe: 1, maCrossDn5_20: 1, maCrossDn20_50: 1, maCrossDn50_100: 1, maCrossDn100_150: 1, maCrossDn150_200: 1, emaCrossDn9_21: 1, macdCrossDn: 1, bollingerUp: 1, takeProfit: 1, trailPct: 1, trailAtr: 1, holdDays: 1 };
 
   function sma(arr, i, n) {
     if (i + 1 < n) return null;
@@ -259,7 +259,14 @@
           divBear.push(lh != null && ph != null && lrH != null && prH != null && lh > ph && lrH < prH);
         }
       })();
-      per.base = { dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols, swingHH: swingHH, swingLH: swingLH, swingHL: swingHL, swingLL: swingLL, divBull: divBull, divBear: divBear,
+      // Wilder ATR(14) on daily OHLCV.
+      var atr14 = [], av = 0;
+      for (var ai = 0; ai < n; ai++) {
+        var tr = ai === 0 ? highs[ai] - lows[ai] : Math.max(highs[ai] - lows[ai], Math.abs(highs[ai] - closes[ai - 1]), Math.abs(lows[ai] - closes[ai - 1]));
+        if (ai < 14) av += tr / 14; else av = (13 * av + tr) / 14;
+        atr14.push(ai >= 13 ? av : null);
+      }
+      per.base = { atr14: atr14, dates: dates, opens: opens, highs: highs, lows: lows, closes: closes, vols: vols, swingHH: swingHH, swingLH: swingLH, swingHL: swingHL, swingLL: swingLL, divBull: divBull, divBear: divBear,
         ma20: ma20, ema9: ema9, ema21: ema21, emaBy: emaBy, ma50: ma50, ma150: ma150, ma200: ma200, ma200Prev: ma200Prev, rsi: rsi, rsi2: rsi2, bop: bop,
         ddActive: ddActive, pineFtd: pineFtd, pineWarning: pineWarning, pineWarningStart: pineWarningStart, pineByN: pineByN, sigma20: sigma20, smaBy: smaBy, pstd20: pstd20, macd: macd, macdSig: macdSig };
     }
@@ -269,7 +276,7 @@
       per.maSell[maDays] = ms;
     }
     var b = per.base;
-    return { dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols, swingHH: b.swingHH, swingLH: b.swingLH, swingHL: b.swingHL, swingLL: b.swingLL, divBull: b.divBull, divBear: b.divBear,
+    return { atr14: b.atr14, dates: b.dates, opens: b.opens, highs: b.highs, lows: b.lows, closes: b.closes, vols: b.vols, swingHH: b.swingHH, swingLH: b.swingLH, swingHL: b.swingHL, swingLL: b.swingLL, divBull: b.divBull, divBear: b.divBear,
       ma20: b.ma20, ema9: b.ema9, ema21: b.ema21, emaBy: b.emaBy, ma50: b.ma50, ma150: b.ma150, ma200: b.ma200, ma200Prev: b.ma200Prev, maSell: per.maSell[maDays], rsi: b.rsi, rsi2: b.rsi2, bop: b.bop,
       ddActive: b.ddActive, pineFtd: b.pineFtd, pineWarning: b.pineWarning, pineWarningStart: b.pineWarningStart, pineByN: b.pineByN, sigma20: b.sigma20, smaBy: b.smaBy, pstd20: b.pstd20, macd: b.macd, macdSig: b.macdSig };
   }
@@ -429,6 +436,8 @@
   }
 
   function runBacktest(rows, cfg) {
+    cfg = Object.assign({}, cfg, { __prepped: false });
+    if (cfg.regime) cfg.regime = Object.assign({}, cfg.regime, { strategies: cfg.regime.strategies.map(function (sc) { return sc ? Object.assign({}, sc, { __prepped: false }) : sc; }) });
     var ownInd = indicatorsFor(rows, cfg.maDays == null ? 50 : cfg.maDays);
     var ind = cfg.judgeRows ? indicatorsFor(cfg.judgeRows, cfg.maDays == null ? 50 : cfg.maDays) : ownInd;
     // Execution, equity and the loss-from-buy-price check always use the
@@ -583,7 +592,9 @@
       if (sc.buy.indexOf("dd") < 0 && !ddOk(sc, i)) return false;
       return true;
     }
+    function isTrail(id) { return id === "trailPct" || id === "trailAtr"; }
     function sellCond(sc, id, i, pos) {
+      if (isTrail(id)) return !!(pos.trailHits && pos.trailHits[id]);
       var c = jCloses[i];
       var mxD = /^maCrossDn(\d+)_(\d+)$/.exec(id); if (mxD) { var md1 = smaOf(+mxD[1]), md2 = smaOf(+mxD[2]); return md1[i] != null && md2[i] != null && md1[i] < md2[i]; }
       if (id === "macdCrossDn") return macdA[i] != null && macdSigA[i] != null && macdA[i] < macdSigA[i];
@@ -606,24 +617,25 @@
       if (id === "ddGe") { var wn = warnOf(sc); return sc.ddSell != null && wn.warning[i] && !wn.ftd[i]; }
       return false;
     }
-    function sellReason(i, pos) {
+    function sellReason(i, pos, leaf) {
       var sc = prepSc(pos && pos.sc ? pos.sc : cfg);
+      var test = leaf || function (id) { return sellCond(sc, id, i, pos); };
       if (pos && pos.reason && sc.__exitMap[pos.reason]) {
-        return sellCond(sc, sc.__exitMap[pos.reason], i, pos) ? sc.__exitMap[pos.reason] : null;
+        return test(sc.__exitMap[pos.reason]) ? sc.__exitMap[pos.reason] : null;
       }
       if (Array.isArray(sc.sellFormula)) {
         if (!sc.__sellAst) return null;
-        if (!evalFormula(sc.__sellAst, function (id) { return sellCond(sc, id, i, pos); })) return null;
+        if (!evalFormula(sc.__sellAst, test)) return null;
         for (var fi = 0; fi < sc.sellFormula.length; fi++) {
           var fid = sc.sellFormula[fi];
-          if (fid !== "and" && fid !== "or" && fid !== "not" && fid !== "(" && fid !== ")" && sellCond(sc, fid, i, pos)) return fid;
+          if (fid !== "and" && fid !== "or" && fid !== "not" && fid !== "(" && fid !== ")" && test(fid)) return fid;
         }
         return "formula";
       }
       var orAny = false, orFired = false, firstTrue = null;
       for (var j = 0; j < sc.sell.length; j++) {
         var id = sc.sell[j];
-        var t = sellCond(sc, id, i, pos);
+        var t = test(id);
         if (t && firstTrue === null) firstTrue = id;
         if (!sc.__sellOrSet || sc.__sellOrSet.has(id)) { orAny = true; if (t) orFired = true; }
         else if (!t) return null;
@@ -679,28 +691,51 @@
     var pendingSc = null, pendingTrend = null;
     if (cfg.startHeld && to >= from) pos = { execIdx: from, signalIdx: from, price: opens[from], date: dates[from], sc: activeSc(from) || cfg, trend: regime && trendIdxAt(from) >= 0 ? regime.names[trendIdxAt(from)] : null };
     var equity = [], cash = 1;
+    function executeSell(d, price, reason) {
+      trades.push({ buyDate: pos.date, buyPrice: pos.price, sellDate: dates[d], sellPrice: price, ret: price / pos.price - 1, hold: d - pos.execIdx, reason: reason, open: false, trend: pos.trend || null, strategy: (pos.sc && pos.sc.__name) || null });
+      cash *= price / pos.price;
+      waitRule = null;
+      var sellSc = pos.sc || cfg;
+      if (sellSc.reentry) for (var ri = 0; ri < sellSc.reentry.length; ri++) {
+        if (sellSc.reentry[ri].sell === reason) { waitRule = { buy: sellSc.reentry[ri].buy, sc: sellSc }; break; }
+      }
+      pos = null; pendingSell = null;
+    }
+    // Update from previously observed highs and ATR only.
+    function trailAtOpen(d) {
+      var sc = prepSc(pos.sc || cfg), ids = pos.reason && sc.__exitMap[pos.reason] ? [sc.__exitMap[pos.reason]] : sc.sell;
+      pos.trailHits = {};
+      if (!ids.some(isTrail)) return;
+      var high = pos.trailHigh == null ? pos.price : pos.trailHigh;
+      var levels = pos.trailLevels || (pos.trailLevels = {});
+      ids.filter(isTrail).forEach(function (id) {
+        var start = id === "trailPct" ? (sc.trailStart == null ? 5 : sc.trailStart) : (sc.trailAtrStart == null ? 10 : sc.trailAtrStart);
+        if (high < pos.price * (1 + start / 100)) return;
+        var a = ownInd.atr14[d - 1];
+        var px = id === "trailPct" ? high * (1 - (sc.trailDrop == null ? 3 : sc.trailDrop) / 100) : a != null ? high - a * (sc.trailMult == null ? 1 : sc.trailMult) : null;
+        if (px != null && px > 0) levels[id] = Math.max(levels[id] || 0, px);
+      });
+      var low = ownInd.lows[d], open = opens[d];
+      ids.filter(isTrail).forEach(function (id) { pos.trailHits[id] = levels[id] != null && (open <= levels[id] || low <= levels[id]); });
+      // Mixed AND conditions needing the close cannot execute retroactively.
+      if (Array.isArray(sc.sellFormula) && sc.sellFormula.indexOf("not") >= 0) return;
+      var touched = ids.filter(function (id) { return isTrail(id) && pos.trailHits[id]; }).map(function (id) { return levels[id]; }).sort(function (a,b) { return b-a; });
+      for (var ti = 0; ti < touched.length; ti++) {
+        var fill = Math.min(open, touched[ti]);
+        var reason = sellReason(d, pos, function (id) { return isTrail(id) && levels[id] != null && fill <= levels[id]; });
+        if (reason && isTrail(reason)) { executeSell(d, fill, reason); return; }
+      }
+    }
     for (var d = from; d <= to; d++) {
       if (pendingBuy && !pos) {
         pos = { execIdx: d, signalIdx: d - 1, price: opens[d], date: dates[d], reason: pendingReason, sc: pendingSc || cfg, trend: pendingTrend };
         pendingBuy = false; pendingReason = null; pendingSc = null; pendingTrend = null;
         waitRule = null;
       } else if (pendingSell && pos) {
-        var ret = opens[d] / pos.price - 1;
-        trades.push({
-          buyDate: pos.date, buyPrice: pos.price, sellDate: dates[d],
-          sellPrice: opens[d], ret: ret, hold: d - pos.execIdx,
-          reason: pendingSell, open: false, trend: pos.trend || null, strategy: (pos.sc && pos.sc.__name) || null
-        });
-        cash *= opens[d] / pos.price;
-        waitRule = null;
-        var sellSc = pos.sc || cfg;
-        if (sellSc.reentry) {
-          for (var ri = 0; ri < sellSc.reentry.length; ri++) {
-            if (sellSc.reentry[ri].sell === pendingSell) { waitRule = { buy: sellSc.reentry[ri].buy, sc: sellSc }; break; }
-          }
-        }
-        pos = null; pendingSell = null;
+        executeSell(d, opens[d], pendingSell);
       }
+      if (pos) trailAtOpen(d);
+      if (pos) pos.trailHigh = Math.max(pos.trailHigh == null ? pos.price : pos.trailHigh, ownInd.highs[d]);
       equity.push(pos ? cash * closes[d] / pos.price : cash);
       if (d === to) break;
       if (pos && !pendingSell) {
@@ -1117,7 +1152,7 @@
     var curReentryRules = [];
     var curExitRules = [];
     var BUY_RULE_IDS = ["vol15", "maCross5_20", "maCross20_50", "maCross50_100", "maCross100_150", "maCross150_200", "emaCross9_21", "rsiGe", "rsi2Ge", "bopGe", "bounceClose", "ftd", "macdCross", "bollinger", "breakout", "priceMa20", "priceMa50", "priceMa100", "priceMa150", "priceMa200", "streakDrop"];
-    var SELL_RULE_IDS = ["maCrossDn5_20", "maCrossDn20_50", "maCrossDn50_100", "maCrossDn100_150", "maCrossDn150_200", "emaCrossDn9_21", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe", "rsi2Le", "macdCrossDn", "bollingerUp", "takeProfit", "holdDays"];
+    var SELL_RULE_IDS = ["maCrossDn5_20", "maCrossDn20_50", "maCrossDn50_100", "maCrossDn100_150", "maCrossDn150_200", "emaCrossDn9_21", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe", "rsi2Le", "macdCrossDn", "bollingerUp", "takeProfit", "trailPct", "trailAtr", "holdDays"];
     // IF rows live inside the formula frames, anchored on the TRIGGER
     // side (GRW 2026-11-24): re-entry rules (triggered by a sell) in the
     // sell frame, exit rules (triggered by a buy) in the buy frame.
@@ -2082,7 +2117,7 @@
           }
           var res = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, buy: cfgBase.buy, sell: cfgBase.sell, screen: cfgBase.screen, buyFormula: cfgBase.buyFormula, sellFormula: cfgBase.sellFormula,
-            ddLimit: cfgBase.ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
+            ddLimit: cfgBase.ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, trailStart: trailStartVal, trailDrop: trailDropVal, trailAtrStart: trailAtrStartVal, trailMult: trailMultVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
           });
           out.push({ title: title, out: res });
         });
@@ -2561,7 +2596,7 @@
       if (entries.length) select(0);
     }
 
-    var rsiBuyVal = null, rsiSellVal = null, rsi2BuyVal = 20, rsi2SellVal = 70, bopBuyVal = 0.3, dropPctVal = null, ddSellVal = null, ddGateVal = null, lossPctVal = null, highPctVal = null, bounceCloseSigmaVal = null, streakPctVal = null, streakSigmaVal = null, maDaysVal = null, bollSigmaVal = null, bollSellSigmaVal = null, breakoutDaysVal = null, profitPctVal = null, holdDaysVal = null;
+    var rsiBuyVal = null, rsiSellVal = null, rsi2BuyVal = 20, rsi2SellVal = 70, bopBuyVal = 0.3, dropPctVal = null, ddSellVal = null, ddGateVal = null, lossPctVal = null, highPctVal = null, bounceCloseSigmaVal = null, streakPctVal = null, streakSigmaVal = null, maDaysVal = null, bollSigmaVal = null, bollSellSigmaVal = null, breakoutDaysVal = null, profitPctVal = null, holdDaysVal = null, trailStartVal = 5, trailDropVal = 3, trailAtrStartVal = 10, trailMultVal = 1;
     function condLabel(group, id) {
       if (id === "bopGe") return "BOPが" + bopBuyVal + "以上";
       if (id === "rsi2Ge") return "RSI(2)が" + rsi2BuyVal + "以下";
@@ -2581,6 +2616,8 @@
       if (id === "bollinger") return "終値がボリンジャーバンド下限（20日、−" + (bollSigmaVal == null ? "閾値" : bollSigmaVal) + "σ）以下";
       if (id === "breakout") return "当日高値が直近" + (breakoutDaysVal == null ? "閾値" : breakoutDaysVal) + "日の最高値を上回る";
       if (id === "bollingerUp") return "終値がボリンジャーバンド上限（20日、+" + (bollSellSigmaVal == null ? "閾値" : bollSellSigmaVal) + "σ）以上";
+      if (id === "trailPct") return "含み益" + trailStartVal + "%後、最高値から" + trailDropVal + "%下落（逆指値）";
+      if (id === "trailAtr") return "含み益" + trailAtrStartVal + "%後、最高値からATR(14)×" + trailMultVal + "下落（逆指値）";
       if (id === "takeProfit") return "買値から" + (profitPctVal == null ? "閾値" : profitPctVal) + "%上昇";
       if (id === "holdDays") return "保有期間：" + (holdDaysVal == null ? "閾値" : holdDaysVal) + "日";
       var pmL = /^priceMa(\d+)$/.exec(id); if (pmL) return "株価＞" + pmL[1] + "MA";
@@ -2588,6 +2625,8 @@
       return ((group === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id);
     }
     function readRsi(buyAll, sellAll) {
+      function trailNum(key, def) { var v = numOf(key); return isFinite(v) ? v : def; }
+      trailStartVal = trailNum("trailStart", 5); trailDropVal = trailNum("trailDrop", 3); trailAtrStartVal = trailNum("trailAtrStart", 10); trailMultVal = trailNum("trailMult", 1);
       var bv = numOf("bopBuy"); bopBuyVal = isFinite(bv) ? bv : 0.3;
       var b2 = numOf("rsi2Buy"), s2 = numOf("rsi2Sell");
       rsi2BuyVal = isFinite(b2) ? b2 : 20; rsi2SellVal = isFinite(s2) ? s2 : 70;
@@ -2785,7 +2824,7 @@
             if (toIdx <= fromIdx) return;
             var out = runBacktest(rows, {
               fromIdx: fromIdx, toIdx: toIdx, judgeRows: (ctx.store.__judge || {})[code] || null, buy: buy, sell: sell, buyFormula: buyFormulaNow, sellFormula: sellFormulaNow,
-              ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
+              ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, trailStart: trailStartVal, trailDrop: trailDropVal, trailAtrStart: trailAtrStartVal, trailMult: trailMultVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
             });
             var title = esc(code) + (ctx.names[code] ? " " + esc(ctx.names[code]) : "");
             entries.push({ title: title, out: out });
@@ -2973,7 +3012,7 @@
           }
           var out = runBacktest(rows, {
             fromIdx: fromIdx, toIdx: toIdx, judgeRows: item.judgeRows || null, regime: ctx.regimeObj || null, buy: buyCfg, sell: sell, screen: screen, buyFormula: buyFormulaNow, sellFormula: sellFormulaNow,
-            ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
+            ddLimit: ddLimit, rsiBuy: rsiBuyVal, rsiSell: rsiSellVal, rsi2Buy: rsi2BuyVal, rsi2Sell: rsi2SellVal, bopBuy: bopBuyVal, dropPct: dropPctVal, ddSell: ddSellVal, lossPct: lossPctVal, highPct: highPctVal, bounceCloseSigma: bounceCloseSigmaVal, streakPct: streakPctVal, streakSigma: streakSigmaVal, maDays: maDaysVal, bollSigma: bollSigmaVal, bollSellSigma: bollSellSigmaVal, breakoutDays: breakoutDaysVal, profitPct: profitPctVal, holdDays: holdDaysVal, trailStart: trailStartVal, trailDrop: trailDropVal, trailAtrStart: trailAtrStartVal, trailMult: trailMultVal, reentry: slotsApi.activeReentry(), exitRules: slotsApi.activeExitRules(), startHeld: slotsApi.activeStartHeld()
           });
           entries.push({ title: title, out: out });
         });
@@ -3037,6 +3076,7 @@
         dropPct: Math.min(10, Math.max(3, num("dropSell", 5))), ddSell: [5, 6, 7].reduce(function (a, o) { return Math.abs(o - num("ddSell", 5)) < Math.abs(a - num("ddSell", 5)) ? o : a; }, 5), lossPct: num("lossPct", 8), highPct: [5, 10, 15, 20].reduce(function (a, o) { return Math.abs(o - num("highPct", 20)) < Math.abs(a - num("highPct", 20)) ? o : a; }, 20), bounceCloseSigma: Math.min(3, Math.max(1.5, num("bounceCloseSigma", 2))), streakPct: Math.min(20, Math.max(1, num("streakPct", 5))), streakSigma: Math.min(3, Math.max(1.5, Math.round(num("streakSigma", 2) * 10) / 10)), maDays: [20, 50, 200].reduce(function (a, o) { return Math.abs(o - num("maSellDays", 50)) < Math.abs(a - num("maSellDays", 50)) ? o : a; }, 50),
         bollSigma: [1.5, 2, 2.5, 3].reduce(function (a, o) { return Math.abs(o - num("bollSigma", 2)) < Math.abs(a - num("bollSigma", 2)) ? o : a; }, 2), bollSellSigma: [1.5, 2, 2.5, 3].reduce(function (a, o) { return Math.abs(o - num("bollSellSigma", 2)) < Math.abs(a - num("bollSellSigma", 2)) ? o : a; }, 2),
         breakoutDays: [20, 60, 120, 252].reduce(function (a, o) { return Math.abs(o - num("breakoutDays", 20)) < Math.abs(a - num("breakoutDays", 20)) ? o : a; }, 20),
+        trailStart: Math.min(50, Math.max(0, num("trailStart", 5))), trailDrop: Math.min(50, Math.max(0.1, num("trailDrop", 3))), trailAtrStart: Math.min(50, Math.max(0, num("trailAtrStart", 10))), trailMult: Math.min(10, Math.max(0.1, num("trailMult", 1))),
         profitPct: Math.min(50, Math.max(1, num("profitPct", 10))), holdDays: [5, 10, 20, 30, 60, 90, 120, 252].reduce(function (a, o) { return Math.abs(o - num("holdDays", 20)) < Math.abs(a - num("holdDays", 20)) ? o : a; }, 20),
                 reentry: (st.reentry || []).filter(function (r) { return r && SELL_EVALUABLE[r.sell] && ["vol15", "rsiGe", "rsi2Ge", "bopGe", "bounceClose", "ftd", "breakout", "streakDrop"].indexOf(r.buy) >= 0; }).map(function (r) { return { sell: r.sell, buy: r.buy }; }),
         exitRules: (st.exitRules || []).filter(function (r) { return r && BUY_EVALUABLE[r.buy] && SELL_EVALUABLE[r.sell]; }).map(function (r) { return { buy: r.buy, sell: r.sell }; }),
@@ -3280,11 +3320,12 @@
           if (kind === "buy" && !(BUY_EVALUABLE[id] || id === "dd")) return;
           if (kind === "sell" && !SELL_EVALUABLE[id]) return;
           var label = b.closest(".bt-item");
-          var sel = label ? label.querySelector("select[data-bt-num]") : null;
-          var states = [null];
-          if (sel) Array.from(sel.options).forEach(function (o) { states.push(o.value); });
-          else states.push("on");
-          dims.push({ kind: kind, id: id, key: sel ? sel.getAttribute("data-bt-num") : null, states: states });
+          var selects = label ? Array.from(label.querySelectorAll("select[data-bt-num]")) : [];
+          var keys = selects.map(function (el) { return el.getAttribute("data-bt-num"); });
+          var states = [null], combos = [""];
+          selects.forEach(function (el) { var next = []; combos.forEach(function (prefix) { Array.from(el.options).forEach(function (o) { next.push(prefix ? prefix + "/" + o.value : o.value); }); }); combos = next; });
+          if (selects.length) states = states.concat(combos); else states.push("on");
+          dims.push({ kind: kind, id: id, key: keys[0] || null, keys: keys, states: states });
         });
         return dims;
       }
@@ -3301,7 +3342,7 @@
             var q = { buy: p.buy.slice(), sell: p.sell.slice(), nums: Object.assign({}, p.nums), st: p.st.concat([si]) };
             if (st !== null) {
               q[dim.kind].push(dim.id);
-              if (dim.key) q.nums[dim.key] = st;
+              if (dim.keys.length) { var vals = String(st).split("/"); dim.keys.forEach(function (key, ki) { q.nums[key] = vals[ki]; }); }
             }
             next.push(q);
           });
@@ -3316,6 +3357,8 @@
         if (cxP) return cxP[3] + (cxP[1] === "maCross" ? "MA" : "EMA") + (cxP[2] ? "＜" : "＞") + cxP[4] + (cxP[1] === "maCross" ? "MA" : "EMA");
         if (id === "ddGe") return "DD（売り抜け日）が" + (nums.ddSell != null ? nums.ddSell : "5") + "以上（直近25取引日）";
         if (id === "dd") return "DD（売り抜け日）が" + (nums.dd != null ? nums.dd : "5") + "以下（直近25取引日）";
+        if (id === "trailPct") return "含み益" + (nums.trailStart == null ? 5 : nums.trailStart) + "%後、最高値から" + (nums.trailDrop == null ? 3 : nums.trailDrop) + "%下落（逆指値）";
+        if (id === "trailAtr") return "含み益" + (nums.trailAtrStart == null ? 10 : nums.trailAtrStart) + "%後、ATR(14)×" + (nums.trailMult == null ? 1 : nums.trailMult) + "追跡（逆指値）";
         var lab = (kind === "sell" ? SELL_LABELS : BUY_LABELS)[id] || id;
         var key = PARAM_KEY[id];
         if (key && nums[key] != null) lab = lab.replace("閾値", nums[key]);
@@ -3483,7 +3526,7 @@
         }
         function renderRollAll() {
           var ddTxt = function (v) { return v == null ? "—" : v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
-          var AXIS_LABEL = { rsiGe: "買いRSI(14)", rsi2Ge: "買いRSI(2)", bopGe: "BOP", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI(14)", rsi2Le: "売りRSI(2)", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", holdDays: "保有期間", streakDrop: "連続下落%" };
+          var AXIS_LABEL = { rsiGe: "買いRSI(14)", rsi2Ge: "買いRSI(2)", bopGe: "BOP", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI(14)", rsi2Le: "売りRSI(2)", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", trailPct: "追跡：発動%/下落%", trailAtr: "追跡：発動%/ATR倍率", holdDays: "保有期間", streakDrop: "連続下落%" };
           function groupedHeat(gi) {
             var dB = dims[gi.rsiGe], dS = dims[gi.rsiLe], dD = dims[gi.ddGe];
             var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
@@ -3747,7 +3790,7 @@
         }
         function renderAll() {
           var ddTxt = function (v) { return v > 0 ? "-" + (v * 100).toFixed(2) + "%" : "0.00%"; };
-          var AXIS_LABEL = { rsiGe: "買いRSI(14)", rsi2Ge: "買いRSI(2)", bopGe: "BOP", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI(14)", rsi2Le: "売りRSI(2)", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", holdDays: "保有期間", streakDrop: "連続下落%" };
+          var AXIS_LABEL = { rsiGe: "買いRSI(14)", rsi2Ge: "買いRSI(2)", bopGe: "BOP", vol15: "出来高条件", bounceClose: "前日σ下落（引け）", dd: "DD以下", ftd: "FTD", ma50: "MA日数", loss8: "買値から%", dropPct: "前日終値から%", highPct: "52週高値から%", ddGe: "DD以上", rsiLe: "売りRSI(14)", rsi2Le: "売りRSI(2)", macdCross: "MACDクロス", macdCrossDn: "MACDクロス", bollinger: "ボリンジャーσ", bollingerUp: "ボリンジャーσ", breakout: "ブレイク日数", takeProfit: "利確%", trailPct: "追跡：発動%/下落%", trailAtr: "追跡：発動%/ATR倍率", holdDays: "保有期間", streakDrop: "連続下落%" };
           function groupedHeat(gi) {
             var dB = dims[gi.rsiGe], dS = dims[gi.rsiLe], dD = dims[gi.ddGe];
             var stateTxt = function (dim, si) { var v = dim.states[si]; return v === null ? "なし" : v === "on" ? "あり" : v; };
