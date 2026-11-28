@@ -30,7 +30,7 @@
     breakoutRetest: "ブレイクアウト後の押し目",
     bollinger: "終値がボリンジャーバンド下限（20日、−閾値σ）以下",
 
-    breakout: "当日高値が直近閾値日の最高値を上回る",
+    breakout: "○○日高値突破",
     bounceClose: "前日にσ以上下落したとき、引け成行で買う",
     streakDrop: "連続下落が閾値%以上または閾値σ以上",
     sector: "所属セクターが上位を維持",
@@ -2725,7 +2725,7 @@
       var cxL = /^(maCross|emaCross)(Dn)?(\d+)_(\d+)$/.exec(id);
       if (cxL) return cxL[3] + (cxL[1] === "maCross" ? "MA" : "EMA") + (cxL[2] ? "＜" : "＞") + cxL[4] + (cxL[1] === "maCross" ? "MA" : "EMA");
       if (id === "bollinger") return "終値がボリンジャーバンド下限（20日、−" + (bollSigmaVal == null ? "閾値" : bollSigmaVal) + "σ）以下";
-      if (id === "breakout") return "当日高値が直近" + (breakoutDaysVal == null ? "閾値" : breakoutDaysVal) + "日の最高値を上回る";
+      if (id === "breakout") return (breakoutDaysVal == null ? "○○" : breakoutDaysVal) + "日高値突破";
       if (id === "bollingerUp") return "終値がボリンジャーバンド上限（20日、+" + (bollSellSigmaVal == null ? "閾値" : bollSellSigmaVal) + "σ）以上";
       if (id === "takeProfit") return "買値から" + (profitPctVal == null ? "閾値" : profitPctVal) + "%上昇";
       if (id === "holdDays") return "保有期間：" + (holdDaysVal == null ? "閾値" : holdDaysVal) + "日";
