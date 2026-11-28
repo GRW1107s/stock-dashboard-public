@@ -54,7 +54,7 @@
 
     rsiLe: "RSI（14日）が閾値以上", rsiDivDn: "RSI弱気のダイバージェンス", adlDivDn: "ADL弱気のダイバージェンス"
   };
-  var BUY_EVALUABLE = { trendlineLower: 1, maTouch: 1, fibRetracement: 1, highPullback: 1, sigmaPullback: 1, atrPullback: 1, breakoutRetest: 1, vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, streakDrop: 1, maCross20_50: 1, maCross20_200: 1, maCross50_200: 1, emaCross9_21: 1, emaCross9_50: 1, emaCross21_50: 1, macdCross: 1, priceMa20: 1, priceMa50: 1, priceMa200: 1, bollinger: 1, breakout: 1 };
+  var BUY_EVALUABLE = { trendlineLower: 1, maTouch: 1, fibRetracement: 1, highPullback: 1, sigmaPullback: 1, atrPullback: 1, breakoutRetest: 1, vol15: 1, tt1: 1, tt2: 1, tt3: 1, tt4: 1, tt5: 1, tt6: 1, tt7: 1, rsiGe: 1, bounceClose: 1, streakDrop: 1, maCross20_50: 1, maCross20_200: 1, maCross50_200: 1, emaCross9_21: 1, emaCross9_50: 1, emaCross21_50: 1, macdCross: 1, priceMa20: 1, bollinger: 1, breakout: 1 };
   var SELL_EVALUABLE = { ma50: 1, loss8: 1, high25: 1, rsiLe: 1, dropPct: 1, ddGe: 1, maCrossDn20_50: 1, maCrossDn20_200: 1, maCrossDn50_200: 1, emaCrossDn9_21: 1, emaCrossDn9_50: 1, emaCrossDn21_50: 1, macdCrossDn: 1, bollingerUp: 1, takeProfit: 1, holdDays: 1, rsiDivDn: 1, adlDivDn: 1 };
 
   function sma(arr, i, n) {
@@ -1237,7 +1237,7 @@
     // per-item re-entry selects. Data shapes are unchanged.
     var curReentryRules = [];
     var curExitRules = [];
-    var BUY_RULE_IDS = ["trendlineLower", "maTouch", "fibRetracement", "highPullback", "sigmaPullback", "atrPullback", "breakoutRetest", "vol15", "maCross20_50", "maCross20_200", "maCross50_200", "emaCross9_21", "emaCross9_50", "emaCross21_50", "rsiGe", "bounceClose", "macdCross", "bollinger", "breakout", "priceMa20", "priceMa50", "priceMa200", "streakDrop"];
+    var BUY_RULE_IDS = ["trendlineLower", "maTouch", "fibRetracement", "highPullback", "sigmaPullback", "atrPullback", "breakoutRetest", "vol15", "maCross20_50", "maCross20_200", "maCross50_200", "emaCross9_21", "emaCross9_50", "emaCross21_50", "rsiGe", "bounceClose", "macdCross", "bollinger", "breakout", "priceMa20", "streakDrop"];
     var SELL_RULE_IDS = ["maCrossDn20_50", "maCrossDn20_200", "maCrossDn50_200", "emaCrossDn9_21", "emaCrossDn9_50", "emaCrossDn21_50", "ma50", "loss8", "dropPct", "high25", "ddGe", "rsiLe", "macdCrossDn", "bollingerUp", "takeProfit", "holdDays", "rsiDivDn", "adlDivDn"];
     // IF rows live inside the formula frames, anchored on the TRIGGER
     // side (GRW 2026-11-24): re-entry rules (triggered by a sell) in the
@@ -1713,7 +1713,7 @@
         if (!Array.isArray(sl.exitRules)) sl.exitRules = [];
         if (!Array.isArray(sl.buyFormula)) sl.buyFormula = buildDefaultFormula(sl.buy || [], sl.buyOr || []);
         if (!Array.isArray(sl.sellFormula)) sl.sellFormula = buildDefaultFormula(sl.sell || [], Array.isArray(sl.sellOr) ? sl.sellOr : (sl.sell || []));
-        var keepBuy = function (id) { return id !== "cupHandleBreak" && id !== "cupHandleDip" && id !== "ftd"; };
+        var keepBuy = function (id) { return id !== "cupHandleBreak" && id !== "cupHandleDip" && id !== "ftd" && (!/^priceMa\d+$/.test(id) || id === "priceMa20"); };
         sl.buy = sl.buy.filter(keepBuy);
         sl.buyFormula = normalizeFormula(sl.buyFormula.filter(keepBuy));
         sl.reentry = sl.reentry.filter(function (r) { return r && keepBuy(r.buy); });
