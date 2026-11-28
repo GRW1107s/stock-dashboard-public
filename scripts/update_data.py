@@ -72,11 +72,12 @@ def numeric(value):
         return None
 
 
-def index_prices(symbol, tz_name='America/New_York', cutoff=dt.time(16, 15)):
+def index_prices(symbol, tz_name='America/New_York', cutoff=dt.time(16, 15), start_year=1990):
     # Full history since 1990 (the Dow series starts 1992): the recent 200
     # sessions feed data.json and every year feeds its own archive page.
+    # start_year=1971 is used for the NASDAQ Composite archive (below).
     end = int(time.time()) + 86400
-    start = int(dt.datetime(1990, 1, 1, tzinfo=dt.timezone.utc).timestamp())
+    start = int(dt.datetime(start_year, 1, 1, tzinfo=dt.timezone.utc).timestamp())
     params = urllib.parse.urlencode({'period1': start, 'period2': end, 'interval': '1d'})
     tz = ZoneInfo(tz_name)
     now = dt.datetime.now(tz)
@@ -106,8 +107,8 @@ def index_prices(symbol, tz_name='America/New_York', cutoff=dt.time(16, 15)):
     raise RuntimeError(f'Cannot fetch index series {symbol}: {last_error}')
 
 
-def us_prices(symbol):
-    return index_prices(symbol)
+def us_prices(symbol, start_year=1990):
+    return index_prices(symbol, start_year=start_year)
 
 
 def jp_prices(symbol):
@@ -673,6 +674,16 @@ def main():
     except Exception as exc:
         print('WARNING QQQ volume reference failed, keeping ^NDX volume:', repr(exc))
     us['nasdaq100'] = enrich_us(ndx)
+    # NASDAQ Composite from its inception (1971-02-05): before 1992 the
+    # other US index series have no Yahoo data, so those sessions cannot
+    # join the four-index rows below; they are published further down as
+    # nasdaq-only archive rows (GRW, 2026-11-28).
+    ixic_long = {}
+    try:
+        ixic_long = enrich_us(us_prices('^IXIC', start_year=1971))
+        print(f'IXIC LONG: {len(ixic_long)} sessions from {min(ixic_long) if ixic_long else None}')
+    except Exception as exc:
+        print('WARNING IXIC long-history fetch failed:', repr(exc))
     # SOXX (semiconductor ETF): judged like the other US indices and
     # shown in both overview tabs (GRW, 2026-11-20). Best-effort: a
     # failed fetch leaves empty cells rather than blocking the update.
@@ -881,16 +892,27 @@ def main():
                          'nasdaq100': us['nasdaq100'][day], 'dow': us['dow'][day],
                          'soxx': us['soxx'].get(day),
                          'vix': vix.get(day), 'tnx': tnx.get(day), 'feargreed': fg.get(day)})
+    # Pre-1992 NASDAQ-only archive rows (see the IXIC LONG fetch above).
+    early_rows = []
+    if ixic_long and us_days:
+        first_full = us_days[-1]
+        for day in sorted((d for d in ixic_long if d < first_full), reverse=True):
+            early_rows.append({'date': day, 'japan_date': None,
+                               'sp500': None, 'nasdaq': ixic_long[day],
+                               'nasdaq100': None, 'dow': None, 'soxx': None,
+                               'vix': vix.get(day), 'tnx': tnx.get(day),
+                               'feargreed': fg.get(day)})
+    all_rows = rows_all + early_rows
     rows = rows_all[:PUBLISH_SESSIONS]
     if len(rows) < 25:
         raise ValueError('US market history insufficient')
     # Per-year archive pages for the history tab: history-YYYY.json holds
     # that year's US rows plus the TSE rows they reference (and the rest of
     # that year's TSE rows), so each year is a self-contained page.
-    years = sorted({int(r['date'][:4]) for r in rows_all}, reverse=True)
+    years = sorted({int(r['date'][:4]) for r in all_rows}, reverse=True)
     tse_by_date_full = {r['date']: r for r in tse_full}
     for year in years:
-        yrows = [r for r in rows_all if int(r['date'][:4]) == year]
+        yrows = [r for r in all_rows if int(r['date'][:4]) == year]
         needed = {r['japan_date'] for r in yrows if r.get('japan_date')}
         ytse = [r for r in tse_full
                 if int(r['date'][:4]) == year or r['date'] in needed]
