@@ -1222,6 +1222,10 @@
           return items;
         }
         if (!groupItems().length) return;
+        if (label === "buy:逆張り") {
+          groupItems().forEach(function (it) { it.style.display = ""; });
+          return;
+        }
         var btn = makeBtn(!!saved["g:" + label]);
         function apply() {
           var closed = !!saved["g:" + label];
