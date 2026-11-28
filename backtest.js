@@ -1949,17 +1949,22 @@
           var h='<div class="bt-regime-card-head"><strong>'+esc(name)+'</strong>';
           if(up||down) h+='<span>組み合わせ <label>'+scoreInput(up?"upThreshold":"downThreshold",10)+' / 10 条件以上</label></span>';
           h+='</div><div class="bt-regime-items">';
-          function group(title,items){
+          function group(title,items,checked){
             h+='<div class="bt-regime-fam" aria-label="'+esc(title)+'">';
-            items.forEach(function(t){h+='<label class="bt-regime-item"><input type="checkbox" checked disabled aria-label="'+esc(t)+'（固定）"> '+esc(t)+'</label>';});
+            items.forEach(function(t){h+='<label class="bt-regime-item"><input type="checkbox"'+(checked===false?"":" checked")+' disabled aria-label="'+esc(t)+'（一括選択）"> '+esc(t)+'</label>';});
             h+='</div>';
           }
           if(up||down){
             var op=up?"＞":"＜", slope=up?"上向き":"下向き";
             h+='<div class="bt-regime-group">株価</div>';
-            group("株価と移動平均線",[20,60,100].map(function(n){return "株価"+op+n+ma;}));
-            group("移動平均線の傾き",[20,60,100].map(function(n,i){return n+ma+"が"+slope;}));
-            group("移動平均線の配列",["20"+ma+op+"60"+ma,"60"+ma+op+"100"+ma]);
+            ["SMA","EMA"].forEach(function(kind){
+              var active=kind===ma;
+              h+='<div class="bt-regime-group" style="font-weight:500"><label><input type="checkbox" data-score-key="maType" value="'+kind+'"'+(active?" checked":"")+'> '+kind+'</label></div>';
+              group("株価と移動平均線 "+kind,[20,60,100].map(function(n){return "株価"+op+n+kind;}),active);
+              group("移動平均線の傾き "+kind,[20,60,100].map(function(n){return n+kind+"が"+slope;}),active);
+              group("移動平均線の配列 "+kind,["20"+kind+op+"60"+kind,"60"+kind+op+"100"+kind],active);
+            });
+            h+='<div class="bt-regime-group">共通</div>';
             group("高値・安値",up?["安値切り上げ","高値切り上げ・高値突破"]:["高値切り下げ","安値切り下げ・安値割れ"]);
             h+='<div class="bt-res-note">反対方向より高得点。傾き：3・5・10日前比（固定）</div>';
           }else{
