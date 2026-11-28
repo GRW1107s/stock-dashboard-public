@@ -437,10 +437,11 @@
   }
 
   // Symmetric LoK trend-break scores, evaluated on confirmed daily bars.
+  function trendMaLengths(p) { return p && p.maPeriods === "5/20/50" ? [5,20,50] : [20,50,100]; }
   function scoreTrendRows(rows, settings, mode) {
     var p = settings || {}, n = rows.length;
     function num(k, fallback, max) { var v = Number(p[k]); return Number.isFinite(v) && v >= 1 ? Math.min(max, Math.floor(v)) : fallback; }
-    var lengths = [20,50,100];
+    var lengths = trendMaLengths(p);
     var lags = [3,5,10];
     var pivot = 10, upLimit = num("upThreshold",5,10), downLimit = num("downThreshold",5,10);
     var c = rows.map(function(r){return +r[4];}), h=rows.map(function(r){return +r[2];}), l=rows.map(function(r){return +r[3];});
@@ -1849,7 +1850,7 @@
     }
     var regimeApi = (function setupRegime() {
       var KEY = "stock-dashboard-bt-regime-" + MARKET;
-      var state = { scoreSettings: {maType:"EMA",short:20,medium:50,long:100,slopeShort:3,slopeMedium:5,slopeLong:10,pivot:10,upThreshold:5,downThreshold:5}, mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
+      var state = { scoreSettings: {maType:"EMA",maPeriods:"20/50/100",short:20,medium:50,long:100,slopeShort:3,slopeMedium:5,slopeLong:10,pivot:10,upThreshold:5,downThreshold:5}, mode: "off", target: MARKET === "us" ? "sp500" : "1306", defs: { "2": trendDefaults("2"), "3": trendDefaults("3"), "4": trendDefaults("4") } };
       try {
         var saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && saved.defs) { Object.assign(state.scoreSettings,saved.scoreSettings || {}); state.mode = saved.mode || "off"; state.target = saved.target || state.target; if (saved.defs["2"]) state.defs["2"] = saved.defs["2"]; if (saved.defs["3"]) state.defs["3"] = saved.defs["3"]; if (saved.defs["4"]) state.defs["4"] = saved.defs["4"]; }
@@ -1939,8 +1940,8 @@
         scoreControls.style.gap="8px 14px";
         cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
         var p = state.scoreSettings;
-        scoreControls.innerHTML='<span>移動平均線 <label><input type="checkbox" data-score-key="maType" value="SMA"'+(p.maType==="SMA"?" checked":"")+'> SMA</label> <label><input type="checkbox" data-score-key="maType" value="EMA"'+(p.maType!=="SMA"?" checked":"")+'> EMA</label></span><span class="bt-res-note">Pivot 10（固定）</span>';
-        var ma=p.maType==="SMA"?"SMA":"EMA";
+        scoreControls.innerHTML='<span>移動平均線 <label><input type="checkbox" data-score-key="maType" value="SMA"'+(p.maType==="SMA"?" checked":"")+'> SMA</label> <label><input type="checkbox" data-score-key="maType" value="EMA"'+(p.maType!=="SMA"?" checked":"")+'> EMA</label></span><label>期間 <select class="bt-select" data-score-key="maPeriods" aria-label="トレンド移動平均期間"><option value="5/20/50"'+(p.maPeriods==="5/20/50"?" selected":"")+'>5/20/50</option><option value="20/50/100"'+(p.maPeriods!=="5/20/50"?" selected":"")+'>20/50/100</option></select></label><span class="bt-res-note">Pivot 10（固定）</span>';
+        var ma=p.maType==="SMA"?"SMA":"EMA", periods=trendMaLengths(p);
         var names=TREND_NAMES[state.mode];
         names.forEach(function(name,di){
           var up=state.mode==="4"?di===1:di===0;
@@ -1960,9 +1961,9 @@
             ["SMA","EMA"].forEach(function(kind){
               var active=kind===ma;
               h+='<div class="bt-regime-group" style="font-weight:500">'+kind+'</div>';
-              group("株価と移動平均線 "+kind,[20,50,100].map(function(n){return "株価"+op+n+kind;}),active);
-              group("移動平均線の傾き "+kind,[20,50,100].map(function(n){return n+kind+"が"+slope;}),active);
-              group("移動平均線の配列 "+kind,["20"+kind+op+"50"+kind,"50"+kind+op+"100"+kind],active);
+              group("株価と移動平均線 "+kind,periods.map(function(n){return "株価"+op+n+kind;}),active);
+              group("移動平均線の傾き "+kind,periods.map(function(n){return n+kind+"が"+slope;}),active);
+              group("移動平均線の配列 "+kind,[periods[0]+kind+op+periods[1]+kind,periods[1]+kind+op+periods[2]+kind],active);
             });
             h+='<div class="bt-regime-group">共通</div>';
             group("高値・安値",up?["安値切り上げ","高値切り上げ・高値突破"]:["高値切り下げ","安値切り下げ・安値割れ"]);
@@ -1978,7 +1979,7 @@
       function trendSummary(def) {
         var i=state.defs[state.mode].indexOf(def), p=state.scoreSettings;
         var up=state.mode==="4"?i===1:i===0;
-        if(up||i===state.defs[state.mode].length-1) return p.maType+" "+(up?"上昇":"下落")+" "+(up?p.upThreshold:p.downThreshold)+"/10以上";
+        if(up||i===state.defs[state.mode].length-1) return p.maType+" "+trendMaLengths(p).join("/")+" "+(up?"上昇":"下落")+" "+(up?p.upThreshold:p.downThreshold)+"/10以上";
         return state.mode==="3"?"上昇・下落未確定":i===0?"下落後の中立":"上昇後の中立";
       }
       function stratOptsFor(def) {
@@ -2015,7 +2016,7 @@
       sec.addEventListener("change", function (e) {
         var t = e.target;
         if (!t || !t.getAttribute) return;
-        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maType"){if(t.checked)state.scoreSettings[sk]=t.value;else {t.checked=true;return;}}else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();renderCards();renderAssign();return;}
+        var sk=t.getAttribute("data-score-key"); if(sk){if(sk==="maPeriods"){if(["5/20/50","20/50/100"].indexOf(t.value)<0)return;state.scoreSettings[sk]=t.value;}else if(sk==="maType"){if(t.checked)state.scoreSettings[sk]=t.value;else {t.checked=true;return;}}else {var v=Number(t.value);if(!Number.isInteger(v)||v<1||v>Number(t.max)){t.value=state.scoreSettings[sk];return;}state.scoreSettings[sk]=v;}persist();renderCards();renderAssign();return;}
         if (t.classList.contains("bt-regime-astrat")) {
           var da = parseInt(t.getAttribute("data-card"), 10);
           if (!isNaN(da) && state.mode !== "off") { state.defs[state.mode][da].strat = parseInt(t.value, 10); persist(); }
