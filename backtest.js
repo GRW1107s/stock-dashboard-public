@@ -1760,21 +1760,27 @@
       "3": [["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "tRsiDivUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "sRsiDivUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tMaNear", "tDdNot", "sMaNear"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "tRsiDivDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "sRsiDivDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]],
       "4": [["tPx20Dn", "tPx50Dn", "tPx200Dn", "tDdNot", "sPx20Dn", "sPx50Dn", "sPx200Dn"], ["tPx20Up", "tPx50Up", "tPx200Up", "tCross20_50", "tCross20_200", "tCross50_200", "tEmaCross9_21", "tEmaCross9_50", "tEmaCross21_50", "tFtd", "tRsiUp", "tRsiDivUp", "sPx20Up", "sPx50Up", "sPx200Up", "sCross20_50", "sCross20_200", "sCross50_200", "sEmaCross9_21", "sEmaCross9_50", "sEmaCross21_50", "sRsiUp", "sRsiDivUp", "tSlope20Up", "tSlope50Up", "tSlope200Up", "tHigherHigh", "tHigherLow", "sSlope20Up", "sSlope50Up", "sSlope200Up", "sHigherHigh", "sHigherLow"], ["tPx20Up", "tPx50Up", "tPx200Up", "tDd", "tRsiUp", "tRsiDivUp", "sPx20Up", "sPx50Up", "sPx200Up", "sRsiUp", "sRsiDivUp", "tLowerHigh", "sLowerHigh"], ["tPx20Dn", "tPx50Dn", "tPx200Dn", "tCrossDn20_50", "tCrossDn20_200", "tCrossDn50_200", "tEmaCrossDn9_21", "tEmaCrossDn9_50", "tEmaCrossDn21_50", "tDd", "tRsiDn", "tRsiDivDn", "sPx20Dn", "sPx50Dn", "sPx200Dn", "sCrossDn20_50", "sCrossDn20_200", "sCrossDn50_200", "sEmaCrossDn9_21", "sEmaCrossDn9_50", "sEmaCrossDn21_50", "sRsiDn", "sRsiDivDn", "tSlope20Dn", "tSlope50Dn", "tSlope200Dn", "tLowerHigh", "tLowerLow", "sSlope20Dn", "sSlope50Dn", "sSlope200Dn", "sLowerHigh", "sLowerLow"]]
     };
+    // GRW 2026-11-28: for now the trend judgment targets the stock only.
+    // Index items stay defined (and the engine still judges them) but are
+    // not offered in the cards; saved defs lose them at the render prune.
+    Object.keys(TREND_SETS).forEach(function (m) {
+      TREND_SETS[m] = TREND_SETS[m].map(function (set) { return set.filter(function (id) { return id.charAt(0) === "s"; }); });
+    });
     function trendDefaults(mode) {
       if (mode === "2") return [
-        { items: ["tPx200Up"], nums: { tMaDays: 200 }, join: "and", strat: 0 },
-        { items: ["tPx200Dn"], nums: { tMaDays: 200 }, join: "and", strat: -1 }
+        { items: ["sPx200Up"], nums: { sMaDays: 200 }, join: "and", strat: 0 },
+        { items: ["sPx200Dn"], nums: { sMaDays: 200 }, join: "and", strat: -1 }
       ];
       if (mode === "3") return [
-        { items: ["tPx200Up"], nums: { tMaDays: 200 }, join: "and", strat: 0 },
-        { items: ["tMaNear"], nums: { tMaDays: 200, tNearPct: 3 }, join: "and", strat: -1 },
-        { items: ["tPx200Dn"], nums: { tMaDays: 200 }, join: "and", strat: -1 }
+        { items: ["sPx200Up"], nums: { sMaDays: 200 }, join: "and", strat: 0 },
+        { items: ["sMaNear"], nums: { sMaDays: 200, sNearPct: 3 }, join: "and", strat: -1 },
+        { items: ["sPx200Dn"], nums: { sMaDays: 200 }, join: "and", strat: -1 }
       ];
       return [
-        { items: ["tPx200Dn", "tDdNot"], nums: { tMaDays: 200, tDdN: 5 }, join: "and", strat: -1 },
-        { items: ["tPx200Up", "tDdNot"], nums: { tMaDays: 200, tDdN: 5 }, join: "and", strat: 0 },
-        { items: ["tPx200Up", "tDd"], nums: { tMaDays: 200, tDdN: 5 }, join: "and", strat: -1 },
-        { items: ["tPx200Dn", "tDd"], nums: { tMaDays: 200, tDdN: 5 }, join: "and", strat: -1 }
+        { items: ["sPx200Dn"], nums: { sMaDays: 200 }, join: "and", strat: -1 },
+        { items: ["sPx200Up"], nums: { sMaDays: 200 }, join: "and", strat: 0 },
+        { items: ["sPx200Up"], nums: { sMaDays: 200 }, join: "and", strat: -1 },
+        { items: ["sPx200Dn"], nums: { sMaDays: 200 }, join: "and", strat: -1 }
       ];
     }
     function loadBenchRows(target, fromVal, toVal) {
@@ -1839,8 +1845,8 @@
         : [["1306", "TOPIX連動ETF（1306）"], ["nikkei", "日経225（終値ベース）"]];
       sec.innerHTML = '<div class="bt-regime-head"><span class="bt-regime-title">トレンド切替</span>' +
         '<select id="bt-regime-mode" class="bt-select" aria-label="トレンド切替の分類数"><option value="off">使わない</option><option value="2">2分類</option><option value="3">3分類</option><option value="4">4分類</option></select>' +
-        '<label class="bt-regime-target">判定対象 <select id="bt-regime-target" class="bt-select" aria-label="トレンド判定対象">' + targets.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + "</option>"; }).join("") + "</select></label>" +
-        '<span class="bt-res-note">通常モードの実行に適用します。トレンドは判定対象の終値で判定し、上から順に最初に当てはまったものを採用します（どれにも当てはまらなければ割当なし）。保有中のポジションは、開いた戦略の売り条件で判定します。</span></div>' +
+        '<label class="bt-regime-target" style="display:none">判定対象 <select id="bt-regime-target" class="bt-select" aria-label="トレンド判定対象">' + targets.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + "</option>"; }).join("") + "</select></label>" +
+        '<span class="bt-res-note">通常モードの実行に適用します。トレンドは各銘柄の株価で判定し、上から順に最初に当てはまったものを採用します（どれにも当てはまらなければ割当なし）。保有中のポジションは、開いた戦略の売り条件で判定します。</span></div>' +
         '<div class="bt-regime-cards" id="bt-regime-cards"></div>';
       btMain.parentNode.insertBefore(sec, btMain);
       var modeEl = sec.querySelector("#bt-regime-mode");
