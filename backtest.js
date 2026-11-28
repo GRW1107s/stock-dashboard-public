@@ -1889,12 +1889,13 @@
       sec.innerHTML = '<div class="bt-regime-head"><span class="bt-regime-title">トレンド切替</span>' +
         '<select id="bt-regime-mode" class="bt-select" aria-label="トレンド切替の分類数"><option value="off">使わない</option><option value="2">2分類</option><option value="3">3分類</option><option value="4">4分類</option></select>' +
         '<label class="bt-regime-target" style="display:none">判定対象 <select id="bt-regime-target" class="bt-select" aria-label="トレンド判定対象">' + targets.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + "</option>"; }).join("") + "</select></label>" +
-        '<span class="bt-res-note">通常モードの実行に適用します。トレンドは各銘柄の株価・MA・スイングの10条件スコアで判定します。保有中のポジションは、開いた戦略の売り条件で判定します。</span></div>' +
+        '<span id="bt-regime-score-controls" style="display:none"></span><span class="bt-res-note">通常モードの実行に適用します。各銘柄の株価で判定します。保有中は開いた戦略の売り条件で判定します。</span></div>' +
         '<div class="bt-regime-cards" id="bt-regime-cards"></div>';
       btMain.parentNode.insertBefore(sec, btMain);
       var modeEl = sec.querySelector("#bt-regime-mode");
       var targetEl = sec.querySelector("#bt-regime-target");
       var cardsEl = sec.querySelector("#bt-regime-cards");
+      var scoreControls = sec.querySelector("#bt-regime-score-controls");
       var assignEl = document.createElement("div");
       assignEl.className = "bt-regime-assign";
       assignEl.id = "bt-regime-assign";
@@ -1925,39 +1926,44 @@
         }
         return html;
       }
+      function scoreInput(key, max) {
+        return '<input class="bt-select bt-regime-num" type="number" min="1" max="'+max+'" step="1" data-score-key="'+key+'" value="'+esc(state.scoreSettings[key])+'" style="width:52px;box-sizing:border-box">';
+      }
       function renderCards() {
         cardsEl.innerHTML = "";
-        if (state.mode === "off") { cardsEl.style.display = "none"; return; }
+        if (state.mode === "off") { cardsEl.style.display = "none"; scoreControls.style.display="none"; return; }
         cardsEl.style.display = "";
+        scoreControls.style.display="inline-flex";
+        scoreControls.style.flexWrap="wrap";
+        scoreControls.style.alignItems="center";
+        scoreControls.style.gap="8px 14px";
         cardsEl.style.gridTemplateColumns = "repeat(" + (TREND_NAMES[state.mode].length + 1) + ", minmax(0, 1fr))";
         var p = state.scoreSettings;
-        var settings = document.createElement("div");
-        settings.className = "bt-regime-card";
-        settings.style.gridColumn = "1 / -1";
-        var html='<div class="bt-regime-card-head"><strong>共通設定</strong></div><div class="bt-regime-fam"><label>移動平均線 <select class="bt-select" data-score-key="maType"><option value="SMA"'+(p.maType==="SMA"?" selected":"")+'>SMA</option><option value="EMA"'+(p.maType!=="SMA"?" selected":"")+'>EMA</option></select></label>';
-        [["pivot","Pivot左右本数",100],["upThreshold","上昇判定閾値（/10）",10],["downThreshold","下落判定閾値（/10）",10]].forEach(function(x){html+='<label class="bt-regime-item">'+x[1]+' <input class="bt-select" type="number" min="1" max="'+x[2]+'" step="1" data-score-key="'+x[0]+'" value="'+esc(p[x[0]])+'" style="width:64px"></label>';});
-        settings.innerHTML=html+'</div><div class="bt-res-note">チェックは固定。10条件のうち閾値以上を満たし、反対方向より得点が高い場合に方向を確定します。</div>';
-        cardsEl.appendChild(settings);
+        scoreControls.innerHTML='<label>移動平均線 <select class="bt-select" data-score-key="maType"><option value="SMA"'+(p.maType==="SMA"?" selected":"")+'>SMA</option><option value="EMA"'+(p.maType!=="SMA"?" selected":"")+'>EMA</option></select></label><label>Pivot '+scoreInput("pivot",100)+'</label>';
         var ma=p.maType==="SMA"?"SMA":"EMA";
         var names=TREND_NAMES[state.mode];
         names.forEach(function(name,di){
           var up=state.mode==="4"?di===1:di===0;
           var down=di===names.length-1;
           var card=document.createElement("div");card.className="bt-regime-card";
-          var h='<div class="bt-regime-card-head"><strong>'+esc(name)+'</strong></div><div class="bt-regime-items">';
+          var h='<div class="bt-regime-card-head"><strong>'+esc(name)+'</strong>';
+          if(up||down) h+='<span>組み合わせ <label>'+scoreInput(up?"upThreshold":"downThreshold",10)+' / 10 条件以上</label></span>';
+          h+='</div><div class="bt-regime-items">';
           function group(title,items){
-            h+='<div class="bt-regime-group">'+esc(title)+'</div><div class="bt-regime-fam">';
+            h+='<div class="bt-regime-fam" aria-label="'+esc(title)+'">';
             items.forEach(function(t){h+='<label class="bt-regime-item"><input type="checkbox" checked disabled aria-label="'+esc(t)+'（固定）"> '+esc(t)+'</label>';});
             h+='</div>';
           }
           if(up||down){
             var op=up?"＞":"＜", slope=up?"上向き":"下向き";
+            h+='<div class="bt-regime-group">株価</div>';
             group("株価と移動平均線",[20,60,100].map(function(n){return "株価"+op+n+ma;}));
-            group("移動平均線の傾き",[20,60,100].map(function(n,i){return n+ma+" "+slope+"（"+[3,5,10][i]+"日前比）";}));
+            group("移動平均線の傾き",[20,60,100].map(function(n,i){return n+ma+"が"+slope;}));
             group("移動平均線の配列",["20"+ma+op+"60"+ma,"60"+ma+op+"100"+ma]);
             group("高値・安値",up?["安値切り上げ","高値切り上げ・高値突破"]:["高値切り下げ","安値切り下げ・安値割れ"]);
-            h+='<div class="bt-res-note">判定：10条件中 '+esc(up?p.upThreshold:p.downThreshold)+' 条件以上、かつ反対方向より高得点</div>';
+            h+='<div class="bt-res-note">反対方向より高得点。傾き：3・5・10日前比（固定）</div>';
           }else{
+            h+='<div class="bt-regime-group">移行条件</div>';
             group("移行条件",state.mode==="3"?["上昇・下落の確定条件をいずれも満たさない"]:["上昇・下落の確定条件をいずれも満たさない",di===0?"直前の確定トレンドが下落":"直前の確定トレンドが上昇"]);
           }
           card.innerHTML=h+'</div>';cardsEl.appendChild(card);
@@ -1965,8 +1971,10 @@
         cardsEl.appendChild(assignEl);
       }
       function trendSummary(def) {
-        return "10条件スコア / "+state.scoreSettings.maType+" / 上昇 "+state.scoreSettings.upThreshold+"・下落 "+state.scoreSettings.downThreshold;
-
+        var i=state.defs[state.mode].indexOf(def), p=state.scoreSettings;
+        var up=state.mode==="4"?i===1:i===0;
+        if(up||i===state.defs[state.mode].length-1) return p.maType+" "+(up?"上昇":"下落")+" "+(up?p.upThreshold:p.downThreshold)+"/10以上";
+        return state.mode==="3"?"上昇・下落未確定":i===0?"下落後の中立":"上昇後の中立";
       }
       function stratOptsFor(def) {
         return '<option value="-1"' + (def.strat < 0 ? " selected" : "") + ">割当なし</option>" + [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<option value="' + i + '"' + (def.strat === i ? " selected" : "") + ">戦略" + (i + 1) + "</option>"; }).join("");
