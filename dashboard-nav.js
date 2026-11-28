@@ -124,16 +124,20 @@
       }
       return;
     }
-    const tabs=pages[page];
-    if(!tabs)return;
-    const starts=tabs.map(t=>{
-      const matches=main.querySelectorAll(":scope > "+t.start);
-      return matches[t.index||0]||null;
-    });
-    if(starts.some(x=>!x)||starts.some((x,i)=>i>0&&x===starts[i-1])){
-      console.warn("Dashboard: page section anchors missing; keeping all content visible.");
-      return;
+    const definitions=pages[page];
+    if(!definitions)return;
+    const tabs=[],starts=[];
+    for(const tab of definitions){
+      const matches=main.querySelectorAll(":scope > "+tab.start);
+      const anchor=matches[tab.index||0]||null;
+      if(!anchor||starts.includes(anchor)){
+        console.warn("Dashboard: missing or duplicate section anchor:",tab.label);
+        continue;
+      }
+      tabs.push(tab);
+      starts.push(anchor);
     }
+    if(!tabs.length)return;
     const nav=document.createElement("nav");
     nav.className="stock-dashboard-subtabs";
     nav.setAttribute("aria-label","サブタブ");
